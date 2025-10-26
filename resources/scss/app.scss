@@ -1,0 +1,107 @@
+// Fonts
+@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap');
+
+// Variables
+$primary: #0d6efd;
+$secondary: #6c757d;
+$success: #198754;
+$danger: #dc3545;
+$warning: #ffc107;
+$info: #0dcaf0;
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// Custom Styles
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.table {
+    font-size: 0.9rem;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+.btn {
+    font-weight: 500;
+}
+
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stat-card {
+    cursor: pointer;
+}
+
+.timeline {
+    position: relative;
+}
+
+.notification-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    min-width: 18px;
+    text-align: center;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .sidebar,
+    .navbar,
+    .btn,
+    .breadcrumb {
+        display: none !important;
+    }
+    
+    .main-content {
+        padding: 0 !important;
+    }
+}
+
+// Animations
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert {
+    animation: fadeIn 0.3s ease-in;
+}
+
+// Custom scrollbar
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+

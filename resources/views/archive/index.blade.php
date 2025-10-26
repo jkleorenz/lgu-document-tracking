@@ -1,0 +1,114 @@
+@extends('layouts.app')
+
+@section('title', 'Archived Documents')
+
+@section('content')
+<div class="container-fluid">
+    <div class="mb-4">
+        <h2 class="fw-bold"><i class="bi bi-archive"></i> Archived Documents</h2>
+        <p class="text-muted">View and manage archived documents</p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ route('archive.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" name="search" class="form-control" placeholder="Search archived documents..." value="{{ request('search') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="from_date" class="form-control" placeholder="From Date" value="{{ request('from_date') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="to_date" class="form-control" placeholder="To Date" value="{{ request('to_date') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Archived Documents Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-archive"></i> Archived Documents 
+                <span class="badge bg-secondary">{{ $archivedDocuments->total() }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Document #</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Department</th>
+                            <th>Created By</th>
+                            <th>Archived Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($archivedDocuments as $document)
+                        <tr>
+                            <td><strong>{{ $document->document_number }}</strong></td>
+                            <td>{{ Str::limit($document->title, 50) }}</td>
+                            <td><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
+                            <td>{{ $document->department->code }}</td>
+                            <td>{{ $document->creator->name }}</td>
+                            <td>
+                                <small>{{ $document->archived_at->format('M d, Y') }}</small><br>
+                                <small class="text-muted">{{ $document->archived_at->diffForHumans() }}</small>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="{{ route('archive.show', $document) }}" class="btn btn-sm btn-info" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @can('archive-documents')
+                                    <form method="POST" action="{{ route('archive.restore', $document) }}" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-success" title="Restore" onclick="return confirm('Restore this document from archive?')">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </form>
+                                    @endcan
+                                    @role('Administrator')
+                                    <form method="POST" action="{{ route('archive.destroy', $document) }}" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Permanently Delete" onclick="return confirm('⚠️ PERMANENTLY DELETE this document?\n\nThis action CANNOT be undone!\n\nDocument: {{ $document->document_number }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    @endrole
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-archive" style="font-size: 3rem;"></i>
+                                <p class="mb-0">No archived documents found</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3">
+                {{ $archivedDocuments->links() }}
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
