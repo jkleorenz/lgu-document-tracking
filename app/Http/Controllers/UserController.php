@@ -148,9 +148,12 @@ class UserController extends Controller
     {
         $this->authorize('verify-users');
 
-        $user->load(['department', 'roles', 'createdDocuments', 'handlingDocuments']);
+        $user->load(['department', 'roles', 'createdDocuments', 'statusLogs']);
+        
+        // Get handling documents based on role
+        $handlingDocuments = $user->handlingDocuments()->get();
 
-        return view('users.show', compact('user'));
+        return view('users.show', compact('user', 'handlingDocuments'));
     }
 
     /**

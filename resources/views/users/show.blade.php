@@ -82,7 +82,7 @@
                     </div>
                     <div class="mb-3">
                         <small class="text-muted">Currently Handling</small>
-                        <h3>{{ $user->handlingDocuments->count() }}</h3>
+                        <h3>{{ $handlingDocuments->count() }}</h3>
                     </div>
                     <div class="mb-0">
                         <small class="text-muted">Status Updates Made</small>
@@ -151,7 +151,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($user->handlingDocuments as $document)
+                                @forelse($handlingDocuments as $document)
                                 <tr>
                                     <td>
                                         <a href="{{ route('documents.show', $document) }}">

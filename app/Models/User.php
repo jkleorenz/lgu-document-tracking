@@ -100,14 +100,9 @@ class User extends Authenticatable
      */
     public function pendingDocumentsCount()
     {
-        // For administrators: count all pending documents and priority documents
+        // For administrators: count all active documents
         if ($this->hasRole('Administrator')) {
-            return Document::active()
-                ->where(function($query) {
-                    $query->where('status', 'Pending')
-                          ->orWhere('is_priority', true);
-                })
-                ->count();
+            return Document::active()->count();
         }
         
         // For department heads: count documents in their department needing action
@@ -135,6 +130,36 @@ class User extends Authenticatable
     public function statusLogs()
     {
         return $this->hasMany(DocumentStatusLog::class, 'updated_by');
+    }
+
+    /**
+     * Get documents that this user is currently handling (via their department)
+     */
+    public function handlingDocuments()
+    {
+        // For Department Heads: documents in their department
+        if ($this->hasRole('Department Head') && $this->department_id) {
+            return Document::where('department_id', $this->department_id)
+                ->whereIn('status', ['Pending', 'Received', 'Under Review', 'Forwarded'])
+                ->latest();
+        }
+        
+        // For LGU Staff: their pending documents
+        if ($this->hasRole('LGU Staff')) {
+            return Document::where('created_by', $this->id)
+                ->whereIn('status', ['Pending', 'Under Review'])
+                ->latest();
+        }
+        
+        // For Administrators: all active documents needing attention
+        if ($this->hasRole('Administrator')) {
+            return Document::active()
+                ->whereIn('status', ['Pending', 'Under Review'])
+                ->latest();
+        }
+        
+        // Default: empty collection
+        return Document::whereRaw('1 = 0');
     }
 }
 
