@@ -22,7 +22,6 @@ class Document extends Model
         'document_type',
         'qr_code_path',
         'created_by',
-        'current_handler_id',
         'department_id',
         'status',
         'is_priority',
@@ -96,14 +95,6 @@ class Document extends Model
     }
 
     /**
-     * Get the current handler of this document
-     */
-    public function currentHandler()
-    {
-        return $this->belongsTo(User::class, 'current_handler_id');
-    }
-
-    /**
      * Get the department this document is assigned to
      */
     public function department()
@@ -125,6 +116,21 @@ class Document extends Model
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+    /**
+     * Get the current handler (most recent user who updated the status)
+     */
+    public function currentHandler()
+    {
+        return $this->hasOneThrough(
+            User::class,
+            DocumentStatusLog::class,
+            'document_id',     // Foreign key on document_status_logs table
+            'id',              // Foreign key on users table
+            'id',              // Local key on documents table
+            'updated_by'       // Local key on document_status_logs table
+        )->latest('document_status_logs.created_at');
     }
 
     /**

@@ -4,10 +4,46 @@
 
 @section('content')
 <style>
+    /* Buttons with text */
     .btn-uniform {
-        min-width: 170px;
+        min-width: 160px;
         padding: 8px 16px;
         text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 0.875rem;
+        white-space: nowrap;
+        height: 38px;
+        line-height: 1.2;
+        border: none;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-uniform:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    /* Icon-only buttons - uniform square size */
+    .btn-uniform i:only-child {
+        margin: 0;
+    }
+    
+    .btn-uniform:not(:has(i + *)) {
+        min-width: 38px;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-uniform i {
+        font-size: 0.95rem;
+        flex-shrink: 0;
     }
 </style>
 
@@ -22,20 +58,25 @@
         </nav>
         <div class="d-flex justify-content-between align-items-start">
             <div>
-                <h2 class="fw-bold"><i class="bi bi-file-earmark-text"></i> {{ $document->title }}</h2>
+                <h2 class="fw-bold">
+                    <i class="bi bi-file-earmark-text"></i> {{ $document->title }}
+                    @if($document->status == 'Approved')
+                    <i class="bi bi-check-circle-fill text-success ms-2" title="Approved"></i>
+                    @endif
+                </h2>
                 <p class="text-muted">{{ $document->document_number }}</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
                 <!-- Administrator Verification Buttons -->
                 @role('Administrator')
                 @if($document->status == 'Pending Verification')
-                <form method="POST" action="{{ route('documents.approve', $document) }}" class="d-inline">
+                <form method="POST" action="{{ route('documents.approve', $document) }}" style="display: inline-block; margin: 0;">
                     @csrf
-                    <button type="submit" class="btn btn-success" onclick="return confirm('Approve this document and forward to department?')">
+                    <button type="submit" class="btn btn-success btn-uniform" onclick="return confirm('Approve this document and forward to department?')">
                         <i class="bi bi-check-circle"></i> Approve
                     </button>
                 </form>
-                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                <button type="button" class="btn btn-danger btn-uniform" data-bs-toggle="modal" data-bs-target="#rejectModal">
                     <i class="bi bi-x-circle"></i> Reject
                 </button>
                 @endif
@@ -43,29 +84,20 @@
                 
                 @can('manage-documents')
                 @if($document->created_by == auth()->id() || auth()->user()->hasRole('Administrator'))
-                <a href="{{ route('documents.edit', $document) }}" class="btn btn-warning btn-uniform">
-                    <i class="bi bi-pencil"></i> Edit
+                <a href="{{ route('documents.edit', $document) }}" class="btn btn-warning btn-uniform" title="Edit Document">
+                    <i class="bi bi-pencil"></i>
                 </a>
                 @endif
                 @endcan
-                <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-secondary btn-uniform" target="_blank">
-                    <i class="bi bi-qr-code"></i> Print QR
+                <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-secondary btn-uniform" target="_blank" title="Print QR Code">
+                    <i class="bi bi-qr-code"></i>
                 </a>
-                @can('set-priority')
-                <form method="POST" action="{{ route('documents.priority', $document) }}" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-{{ $document->is_priority ? 'outline-danger' : 'danger' }} btn-uniform">
-                        <i class="bi bi-exclamation-triangle"></i> 
-                        {{ $document->is_priority ? 'Remove Priority' : 'Set Priority' }}
-                    </button>
-                </form>
-                @endcan
                 @can('archive-documents')
                 @if($document->status != 'Archived')
-                <form method="POST" action="{{ route('documents.archive', $document) }}" class="d-inline">
+                <form method="POST" action="{{ route('documents.archive', $document) }}" style="display: inline-block; margin: 0;">
                     @csrf
-                    <button type="submit" class="btn btn-dark btn-uniform" onclick="return confirm('Are you sure you want to archive this document?')">
-                        <i class="bi bi-archive"></i> Archive
+                    <button type="submit" class="btn btn-dark btn-uniform" title="Archive Document" onclick="return confirm('Are you sure you want to archive this document?')">
+                        <i class="bi bi-archive"></i>
                     </button>
                 </form>
                 @endif

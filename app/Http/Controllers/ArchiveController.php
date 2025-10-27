@@ -14,7 +14,7 @@ class ArchiveController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Document::with(['creator', 'department', 'currentHandler'])
+        $query = Document::with(['creator', 'department'])
             ->archived();
 
         // Filter based on user role
@@ -61,16 +61,14 @@ class ArchiveController extends Controller
         // Check if user has permission to view this document
         $user = Auth::user();
         
-        if (!$user->hasRole('Administrator')) {
-            if ($user->hasRole('LGU Staff') && $document->created_by !== $user->id) {
-                abort(403, 'Unauthorized access to this document.');
-            }
+        // LGU Staff can view all archived documents (needed for tracking)
+        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff')) {
             if ($user->hasRole('Department Head') && $document->department_id !== $user->department_id) {
                 abort(403, 'Unauthorized access to this document.');
             }
         }
 
-        $document->load(['creator', 'department', 'currentHandler', 'statusLogs.updatedBy']);
+        $document->load(['creator', 'department', 'statusLogs.updatedBy']);
 
         return view('archive.show', compact('document'));
     }
@@ -86,10 +84,25 @@ class ArchiveController extends Controller
             return back()->withErrors(['error' => 'Document is not archived.']);
         }
 
+        // Load department relationship
+        $document->load('department.head');
+        
+        $oldStatus = $document->status;
+        
+        // Restore the document
         $document->update([
             'status' => 'Under Review',
             'archived_at' => null,
         ]);
+
+        // Log the restoration
+        \App\Models\DocumentStatusLog::createLog(
+            $document->id,
+            Auth::id(),
+            $oldStatus,
+            'Under Review',
+            'Document restored from archive'
+        );
 
         return redirect()->route('documents.show', $document)
             ->with('success', 'Document restored from archive successfully!');

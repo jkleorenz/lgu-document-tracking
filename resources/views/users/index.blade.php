@@ -3,6 +3,44 @@
 @section('title', 'User Management')
 
 @section('content')
+<style>
+    /* Uniform Action Buttons */
+    .btn-group .btn-sm {
+        min-width: 36px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+        margin: 0 3px;
+    }
+    
+    .btn-group .btn-sm i {
+        font-size: 1rem;
+        margin: 0;
+    }
+    
+    .btn-group {
+        gap: 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .btn-group form {
+        margin: 0;
+        display: inline-flex;
+    }
+    
+    /* Override Bootstrap btn-group styles that connect buttons */
+    .btn-group .btn-sm:first-child,
+    .btn-group .btn-sm:not(:first-child),
+    .btn-group .btn-sm:last-child {
+        border-radius: 8px !important;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold"><i class="bi bi-people"></i> User Management</h2>
@@ -57,16 +95,16 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Department</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
+                            <th style="white-space: nowrap;">NAME</th>
+                            <th style="white-space: nowrap;">EMAIL</th>
+                            <th class="text-center" style="white-space: nowrap;">DEPARTMENT</th>
+                            <th class="text-center" style="white-space: nowrap;">ROLE</th>
+                            <th class="text-center" style="white-space: nowrap;">STATUS</th>
+                            <th class="text-center" style="white-space: nowrap;">JOINED</th>
+                            <th class="text-center" style="white-space: nowrap;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,9 +112,9 @@
                         <tr>
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
-                            <td>{{ $user->department->name ?? 'N/A' }}</td>
-                            <td><span class="badge bg-primary">{{ $user->roles->first()->name ?? 'No Role' }}</span></td>
-                            <td>
+                            <td class="text-center">{{ $user->department->name ?? 'N/A' }}</td>
+                            <td class="text-center"><span class="badge bg-primary">{{ $user->roles->first()->name ?? 'No Role' }}</span></td>
+                            <td class="text-center">
                                 @if($user->status == 'verified')
                                 <span class="badge bg-success">Verified</span>
                                 @elseif($user->status == 'pending')
@@ -85,20 +123,20 @@
                                 <span class="badge bg-danger">Rejected</span>
                                 @endif
                             </td>
-                            <td><small>{{ $user->created_at->format('M d, Y') }}</small></td>
-                            <td>
+                            <td class="text-center"><small>{{ $user->created_at->format('M d, Y') }}</small></td>
+                            <td class="text-center">
                                 <div class="btn-group">
-                                    <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-info" title="View">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-warning" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     @if($user->id != auth()->id())
-                                    <form method="POST" action="{{ route('users.destroy', $user) }}" class="d-inline">
+                                    <form method="POST" action="{{ route('users.destroy', $user) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this user?')">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Delete this user?')">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

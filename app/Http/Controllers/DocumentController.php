@@ -29,7 +29,7 @@ class DocumentController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Document::with(['creator', 'department', 'currentHandler']);
+        $query = Document::with(['creator', 'department']);
 
         // Filter based on user role
         if ($user->hasRole('LGU Staff')) {
@@ -60,8 +60,9 @@ class DocumentController extends Controller
             });
         }
 
-        // Exclude archived documents unless specifically requested
-        if (!$request->filled('show_archived')) {
+        // Exclude archived documents unless specifically requested OR filtering by Approved status
+        // (Approved documents are auto-archived, so we need to show them)
+        if (!$request->filled('show_archived') && $request->status !== 'Approved') {
             $query->active();
         }
 
@@ -103,6 +104,7 @@ class DocumentController extends Controller
             'description' => ['nullable', 'string'],
             'document_type' => ['required', 'string'],
             'department_id' => ['required', 'exists:departments,id'],
+            'is_priority' => ['nullable', 'boolean'],
         ]);
 
         DB::beginTransaction();
@@ -119,6 +121,7 @@ class DocumentController extends Controller
                 'department_id' => $validated['department_id'],
                 'created_by' => Auth::id(),
                 'status' => 'Pending',
+                'is_priority' => $request->has('is_priority') ? true : false,
             ]);
 
             // Generate QR code
@@ -140,11 +143,15 @@ class DocumentController extends Controller
             // Notify department users with specific details
             $creator = Auth::user();
             $department = Department::find($document->department_id);
+            $priorityText = $document->is_priority ? ' [PRIORITY]' : '';
+            $notificationType = $document->is_priority ? 'warning' : 'info';
+            $actionText = $document->is_priority ? 'This is a PRIORITY document. Please review and take immediate action.' : 'Please review and take action.';
+            
             $this->notificationService->notifyDepartmentUsers(
                 $document->department_id,
-                'New Document Received - ' . $department->name,
-                "New document '{$document->title}' ({$document->document_number}) has been created and assigned to {$department->name} by {$creator->name} (Administrator). Please review and take action.",
-                'info',
+                'New Document Received - ' . $department->name . $priorityText,
+                "New document '{$document->title}' ({$document->document_number}) has been created and assigned to {$department->name} by {$creator->name} (Administrator). {$actionText}",
+                $notificationType,
                 $document->id
             );
 
@@ -168,12 +175,8 @@ class DocumentController extends Controller
         // Check if user has permission to view this document
         $user = Auth::user();
         
-        if (!$user->hasRole('Administrator')) {
-            // LGU Staff can view documents they created
-            if ($user->hasRole('LGU Staff') && $document->created_by !== $user->id) {
-                abort(403, 'Unauthorized access to this document.');
-            }
-            
+        // LGU Staff can view all documents (needed for QR scanning and tracking)
+        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff')) {
             // Department Head can view documents in their department OR documents they've handled/forwarded
             if ($user->hasRole('Department Head')) {
                 $hasHandled = DocumentStatusLog::where('document_id', $document->id)
@@ -294,7 +297,6 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'status' => ['required', 'string'],
             'remarks' => ['nullable', 'string'],
-            'handler_id' => ['nullable', 'exists:users,id'],
             'forward_to_department' => ['nullable', 'exists:departments,id'],
         ]);
 
@@ -314,7 +316,6 @@ class DocumentController extends Controller
                 $document->update([
                     'status' => 'Forwarded',
                     'department_id' => $newDepartmentId,
-                    'current_handler_id' => null, // Clear handler when forwarding
                 ]);
                 
                 // Log the status change with forwarding info
@@ -358,7 +359,6 @@ class DocumentController extends Controller
             // Normal status update without forwarding
             $updates = [
                 'status' => $validated['status'],
-                'current_handler_id' => $validated['handler_id'] ?? $document->current_handler_id,
             ];
 
             // If status is Approved and NOT forwarding, auto-archive (document is finished)
@@ -383,14 +383,6 @@ class DocumentController extends Controller
                 $document->created_by,
                 $validated['status']
             );
-
-            // Notify new handler if assigned
-            if (isset($validated['handler_id'])) {
-                $this->notificationService->notifyDocumentForwarded(
-                    $document,
-                    $validated['handler_id']
-                );
-            }
 
             DB::commit();
 
@@ -421,13 +413,6 @@ class DocumentController extends Controller
                 $document,
                 $document->created_by
             );
-
-            if ($document->current_handler_id) {
-                $this->notificationService->notifyPriorityDocument(
-                    $document,
-                    $document->current_handler_id
-                );
-            }
 
             // Notify department users
             $this->notificationService->notifyDepartmentUsers(
@@ -597,12 +582,12 @@ class DocumentController extends Controller
         // Check if user has access to this document
         $user = Auth::user();
         
-        if ($user->hasRole('LGU Staff') && $document->created_by != $user->id) {
-            abort(403, 'Unauthorized to view this document timeline.');
-        }
-        
-        if ($user->hasRole('Department Head') && $document->department_id != $user->department_id) {
-            abort(403, 'Unauthorized to view this document timeline.');
+        // LGU Staff can view all document timelines (needed for tracking)
+        // Department Heads can only view documents in their department
+        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff')) {
+            if ($user->hasRole('Department Head') && $document->department_id != $user->department_id) {
+                abort(403, 'Unauthorized to view this document timeline.');
+            }
         }
         
         return view('documents.timeline', compact('document'));

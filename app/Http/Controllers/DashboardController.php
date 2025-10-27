@@ -43,6 +43,7 @@ class DashboardController extends Controller
     {
         $data = [
             'activeDocuments' => Document::active()->count(),
+            'approvedDocuments' => Document::where('status', 'Approved')->count(),
             'priorityDocuments' => Document::priority()->active()->count(),
             'archivedDocuments' => Document::archived()->count(),
             'pendingVerifications' => User::where('status', 'pending')->count(),
@@ -106,20 +107,24 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
+        // Count documents handled by this department head
+        $handlingDocuments = \DB::table('document_status_logs')
+            ->where('updated_by', $user->id)
+            ->distinct('document_id')
+            ->count('document_id');
+        
         $data = [
             'departmentDocuments' => Document::where('department_id', $user->department_id)
                 ->active()
                 ->count(),
             'forReview' => Document::where('department_id', $user->department_id)
-                ->whereIn('status', ['Received', 'Under Review'])
+                ->whereIn('status', ['Received', 'Under Review', 'Forwarded'])
                 ->count(),
             'priorityDocuments' => Document::where('department_id', $user->department_id)
                 ->where('is_priority', true)
                 ->active()
                 ->count(),
-            'handlingDocuments' => Document::where('current_handler_id', $user->id)
-                ->active()
-                ->count(),
+            'handlingDocuments' => $handlingDocuments,
             'recentDocuments' => Document::with(['creator', 'currentHandler'])
                 ->where('department_id', $user->department_id)
                 ->active()

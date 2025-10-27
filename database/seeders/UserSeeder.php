@@ -17,8 +17,8 @@ class UserSeeder extends Seeder
     {
         // Get departments
         $mayorOffice = Department::where('code', 'MAYOR')->first();
-        $hrDept = Department::where('code', 'HRD')->first();
-        $finDept = Department::where('code', 'FIN')->first();
+        $treasDept = Department::where('code', 'TREAS')->first();
+        $budgetDept = Department::where('code', 'BUDGET')->first();
         $engrDept = Department::where('code', 'ENGR')->first();
 
         // Create Administrator
@@ -36,33 +36,33 @@ class UserSeeder extends Seeder
         $this->command->info('  Email: admin@lgu.gov');
         $this->command->info('  Password: password');
 
-        // Create Department Head for HR
-        $hrHead = User::create([
+        // Create Department Head for Treasurer's Office
+        $treasHead = User::create([
             'name' => 'Maria Santos',
             'email' => 'maria.santos@lgu.gov',
             'password' => Hash::make('password'),
             'phone' => '+63 912 345 6780',
-            'department_id' => $hrDept->id,
+            'department_id' => $treasDept->id,
             'status' => 'verified',
         ]);
-        $hrHead->assignRole('Department Head');
+        $treasHead->assignRole('Department Head');
 
-        // Update HR department head
-        $hrDept->update(['head_id' => $hrHead->id]);
+        // Update Treasurer's Office department head
+        $treasDept->update(['head_id' => $treasHead->id]);
 
-        // Create Department Head for Finance
-        $finHead = User::create([
+        // Create Department Head for Budget Office
+        $budgetHead = User::create([
             'name' => 'Juan Dela Cruz',
             'email' => 'juan.delacruz@lgu.gov',
             'password' => Hash::make('password'),
             'phone' => '+63 912 345 6781',
-            'department_id' => $finDept->id,
+            'department_id' => $budgetDept->id,
             'status' => 'verified',
         ]);
-        $finHead->assignRole('Department Head');
+        $budgetHead->assignRole('Department Head');
 
-        // Update Finance department head
-        $finDept->update(['head_id' => $finHead->id]);
+        // Update Budget Office department head
+        $budgetDept->update(['head_id' => $budgetHead->id]);
 
         // Create LGU Staff
         $staff1 = User::create([
@@ -70,7 +70,7 @@ class UserSeeder extends Seeder
             'email' => 'ana.reyes@lgu.gov',
             'password' => Hash::make('password'),
             'phone' => '+63 912 345 6782',
-            'department_id' => $hrDept->id,
+            'department_id' => $treasDept->id,
             'status' => 'verified',
         ]);
         $staff1->assignRole('LGU Staff');
@@ -80,7 +80,7 @@ class UserSeeder extends Seeder
             'email' => 'pedro.garcia@lgu.gov',
             'password' => Hash::make('password'),
             'phone' => '+63 912 345 6783',
-            'department_id' => $finDept->id,
+            'department_id' => $budgetDept->id,
             'status' => 'verified',
         ]);
         $staff2->assignRole('LGU Staff');

@@ -80,14 +80,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Get documents currently assigned to this user
-     */
-    public function handlingDocuments()
-    {
-        return $this->hasMany(Document::class, 'current_handler_id');
-    }
-
-    /**
      * Get notifications for this user
      */
     public function notifications()
@@ -101,6 +93,40 @@ class User extends Authenticatable
     public function unreadNotificationsCount()
     {
         return $this->notifications()->where('is_read', false)->count();
+    }
+
+    /**
+     * Get count of documents requiring user's attention
+     */
+    public function pendingDocumentsCount()
+    {
+        // For administrators: count all pending documents and priority documents
+        if ($this->hasRole('Administrator')) {
+            return Document::active()
+                ->where(function($query) {
+                    $query->where('status', 'Pending')
+                          ->orWhere('is_priority', true);
+                })
+                ->count();
+        }
+        
+        // For department heads: count documents in their department needing action
+        if ($this->hasRole('Department Head') && $this->department_id) {
+            return Document::active()
+                ->where('department_id', $this->department_id)
+                ->whereIn('status', ['Pending', 'Received', 'Under Review', 'Forwarded'])
+                ->count();
+        }
+        
+        // For LGU staff: count their pending documents
+        if ($this->hasRole('LGU Staff')) {
+            return Document::active()
+                ->where('created_by', $this->id)
+                ->whereIn('status', ['Pending', 'Under Review'])
+                ->count();
+        }
+        
+        return 0;
     }
 
     /**

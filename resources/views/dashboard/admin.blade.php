@@ -16,8 +16,8 @@
         <h5 class="text-muted mb-3"><i class="bi bi-file-text"></i> Document Overview</h5>
     </div>
     <div class="row mb-4">
-        <div class="col-lg-4 col-md-6 mb-3">
-            <a href="{{ route('documents.index', ['status' => 'Pending']) }}" class="text-decoration-none">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <a href="{{ route('documents.index') }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -34,7 +34,25 @@
             </a>
         </div>
 
-        <div class="col-lg-4 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <a href="{{ route('documents.index', ['status' => 'Approved']) }}" class="text-decoration-none">
+                <div class="card stat-card h-100 clickable-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="stat-icon bg-primary bg-opacity-10">
+                                <i class="bi bi-check2-circle text-primary"></i>
+                            </div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">Finished</span>
+                        </div>
+                        <h6 class="text-muted mb-2">Approved Documents</h6>
+                        <h2 class="fw-bold mb-0 text-dark">{{ $approvedDocuments }}</h2>
+                        <small class="text-primary"><i class="bi bi-arrow-right-circle"></i> View approved</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
             <a href="{{ route('documents.index', ['priority' => '1']) }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
@@ -56,7 +74,7 @@
             </a>
         </div>
 
-        <div class="col-lg-4 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
             <a href="{{ route('archive.index') }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
@@ -146,9 +164,9 @@
     </div>
 
     <!-- Document Status Distribution -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
+    <div class="row mb-4">
+        <div class="col-lg-5 mb-3">
+            <div class="card h-100">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Document Status Distribution</h5>
                 </div>
@@ -161,7 +179,7 @@
                         </div>
                         <div class="progress">
                             <div class="progress-bar" role="progressbar" 
-                                 style="width: {{ $totalDocuments > 0 ? ($count / $totalDocuments) * 100 : 0 }}%">
+                                 style="width: {{ $activeDocuments > 0 ? ($count / $activeDocuments) * 100 : 0 }}%">
                             </div>
                         </div>
                     </div>
@@ -170,15 +188,15 @@
             </div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card">
+        <div class="col-lg-7 mb-3">
+            <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Documents</h5>
                     <a href="{{ route('documents.index') }}" class="btn btn-sm btn-primary">View All</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
                                     <th>Document #</th>
@@ -196,7 +214,10 @@
                                         </a>
                                     </td>
                                     <td>
-                                        {{ Str::limit($document->title, 30) }}
+                                        {{ Str::limit($document->title, 35) }}
+                                        @if($document->status == 'Approved')
+                                        <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.85rem;"></i>
+                                        @endif
                                         @if($document->is_priority)
                                         <span class="badge badge-priority">PRIORITY</span>
                                         @endif

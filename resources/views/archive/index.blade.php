@@ -43,32 +43,37 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
-                            <th>Document #</th>
-                            <th>Title</th>
-                            <th>Type</th>
-                            <th>Department</th>
-                            <th>Created By</th>
-                            <th>Archived Date</th>
-                            <th>Actions</th>
+                            <th class="text-center" style="width: 12%; white-space: nowrap;">DOCUMENT #</th>
+                            <th style="width: 22%; white-space: nowrap;">TITLE</th>
+                            <th class="text-center" style="width: 10%; white-space: nowrap;">TYPE</th>
+                            <th class="text-center" style="width: 12%; white-space: nowrap;">DEPARTMENT</th>
+                            <th class="text-center" style="width: 12%; white-space: nowrap;">CREATED BY</th>
+                            <th class="text-center" style="width: 14%; white-space: nowrap;">ARCHIVED DATE</th>
+                            <th class="text-center" style="width: 18%; white-space: nowrap;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($archivedDocuments as $document)
                         <tr>
-                            <td><strong>{{ $document->document_number }}</strong></td>
-                            <td>{{ Str::limit($document->title, 50) }}</td>
-                            <td><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
-                            <td>{{ $document->department->code }}</td>
-                            <td>{{ $document->creator->name }}</td>
+                            <td class="text-center"><strong>{{ $document->document_number }}</strong></td>
                             <td>
+                                {{ Str::limit($document->title, 50) }}
+                                @if($document->status == 'Approved')
+                                <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
+                                @endif
+                            </td>
+                            <td class="text-center"><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
+                            <td class="text-center">{{ $document->department->code }}</td>
+                            <td class="text-center">{{ $document->creator->name }}</td>
+                            <td class="text-center">
                                 <small>{{ $document->archived_at->format('M d, Y') }}</small><br>
                                 <small class="text-muted">{{ $document->archived_at->diffForHumans() }}</small>
                             </td>
-                            <td>
-                                <div class="d-flex gap-1">
+                            <td class="text-center">
+                                <div class="d-flex gap-1 justify-content-center">
                                     <a href="{{ route('archive.show', $document) }}" class="btn btn-sm btn-info" title="View">
                                         <i class="bi bi-eye"></i>
                                     </a>

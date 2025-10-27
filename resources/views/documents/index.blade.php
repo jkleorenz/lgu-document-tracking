@@ -69,48 +69,53 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
-                            <th>Document #</th>
-                            <th>Title</th>
-                            <th>Type</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                            <th>Created By</th>
-                            <th>Current Handler</th>
-                            <th>Date</th>
-                            <th>Actions</th>
+                            <th class="text-center" style="width: 12%; white-space: nowrap;">DOCUMENT #</th>
+                            <th style="width: 18%; white-space: nowrap;">TITLE</th>
+                            <th class="text-center" style="width: 8%; white-space: nowrap;">TYPE</th>
+                            <th class="text-center" style="width: 10%; white-space: nowrap;">DEPARTMENT</th>
+                            <th class="text-center" style="width: 10%; white-space: nowrap;">STATUS</th>
+                            <th class="text-center" style="width: 10%; white-space: nowrap;">CREATED BY</th>
+                            <th class="text-center" style="width: 12%; white-space: nowrap;">CURRENT HANDLER</th>
+                            <th class="text-center" style="width: 8%; white-space: nowrap;">DATE</th>
+                            <th class="text-center" style="width: 12%; white-space: nowrap;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($documents as $document)
                         <tr class="{{ $document->is_priority ? 'table-warning' : '' }}">
-                            <td>
+                            <td class="text-center">
                                 <strong>{{ $document->document_number }}</strong>
                                 @if($document->is_priority)
                                 <br><span class="badge badge-priority">PRIORITY</span>
                                 @endif
                             </td>
-                            <td>{{ Str::limit($document->title, 50) }}</td>
-                            <td><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
-                            <td>{{ $document->department ? $document->department->code : 'N/A' }}</td>
                             <td>
+                                {{ Str::limit($document->title, 50) }}
+                                @if($document->status == 'Approved')
+                                <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
+                                @endif
+                            </td>
+                            <td class="text-center"><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
+                            <td class="text-center">{{ $document->department ? $document->department->code : 'N/A' }}</td>
+                            <td class="text-center">
                                 <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info'))) }}">
                                     {{ $document->status }}
                                 </span>
                             </td>
-                            <td>{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
-                            <td>
+                            <td class="text-center">{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
+                            <td class="text-center">
                                 @if($document->currentHandler)
                                 {{ $document->currentHandler->name }}
                                 @else
                                 <span class="text-muted">Unassigned</span>
                                 @endif
                             </td>
-                            <td><small>{{ $document->created_at->format('M d, Y') }}</small></td>
-                            <td>
-                                <div class="d-flex gap-1">
+                            <td class="text-center"><small>{{ $document->created_at->format('M d, Y') }}</small></td>
+                            <td class="text-center">
+                                <div class="d-flex gap-1 justify-content-center">
                                     <a href="{{ route('documents.show', $document) }}" class="btn btn-sm btn-info" title="View">
                                         <i class="bi bi-eye"></i>
                                     </a>

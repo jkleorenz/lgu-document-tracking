@@ -87,6 +87,23 @@
                             <small class="form-text text-muted">Provide additional details about this document</small>
                         </div>
 
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       role="switch" 
+                                       id="is_priority" 
+                                       name="is_priority" 
+                                       value="1"
+                                       {{ old('is_priority') ? 'checked' : '' }}>
+                                <label class="form-check-label" for="is_priority">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning"></i> 
+                                    <strong>Mark as PRIORITY</strong>
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Priority documents will be highlighted and require immediate attention</small>
+                        </div>
+
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i> Create Document

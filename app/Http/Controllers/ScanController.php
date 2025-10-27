@@ -26,7 +26,7 @@ class ScanController extends Controller
         // If coming from QR code scan with document number
         if ($request->filled('document')) {
             $document = Document::where('document_number', $request->document)
-                ->with(['creator', 'department', 'currentHandler', 'statusLogs.updatedBy'])
+                ->with(['creator', 'department', 'statusLogs.updatedBy'])
                 ->first();
 
             if ($document) {
@@ -50,7 +50,7 @@ class ScanController extends Controller
 
         // Find document by document number
         $document = Document::where('document_number', $validated['document_number'])
-            ->with(['creator', 'department', 'currentHandler', 'statusLogs.updatedBy'])
+            ->with(['creator', 'department', 'statusLogs.updatedBy'])
             ->first();
 
         if (!$document) {
@@ -63,13 +63,9 @@ class ScanController extends Controller
         // Check if user has permission to view this document
         $user = Auth::user();
         
-        if (!$user->hasRole('Administrator')) {
-            if ($user->hasRole('LGU Staff') && $document->created_by !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have permission to access this document.',
-                ], 403);
-            }
+        // LGU Staff can scan and view all documents for tracking purposes
+        // Department Heads can only view documents in their department
+        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff')) {
             if ($user->hasRole('Department Head') && $document->department_id !== $user->department_id) {
                 return response()->json([
                     'success' => false,
@@ -86,11 +82,11 @@ class ScanController extends Controller
                 'document_number' => $document->document_number,
                 'title' => $document->title,
                 'description' => $document->description,
+                'document_type' => $document->document_type,
                 'status' => $document->status,
                 'is_priority' => $document->is_priority,
-                'department' => $document->department->name,
-                'created_by' => $document->creator->name,
-                'current_handler' => $document->currentHandler ? $document->currentHandler->name : 'Unassigned',
+                'department' => $document->department ? $document->department->name : 'N/A',
+                'created_by' => $document->creator ? $document->creator->name : 'Unknown',
                 'created_at' => $document->created_at->format('M d, Y h:i A'),
             ],
             'redirect_url' => route('documents.show', $document),
@@ -116,7 +112,6 @@ class ScanController extends Controller
             // Update document status
             $document->update([
                 'status' => $validated['status'],
-                'current_handler_id' => Auth::id(),
             ]);
 
             // Log the status change
