@@ -15,13 +15,23 @@
 
     <!-- Filters -->
     <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="bi bi-funnel"></i> Filters
+                @if(request()->hasAny(['search', 'status', 'department', 'priority']))
+                <span class="badge bg-info ms-2">Active</span>
+                @endif
+            </h6>
+        </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('documents.index') }}">
+            <form method="GET" action="{{ route('documents.index') }}" id="filterForm">
                 <div class="row g-3">
                     <div class="col-md-3">
+                        <label class="form-label small">Search</label>
                         <input type="text" name="search" class="form-control" placeholder="Search documents..." value="{{ request('search') }}">
                     </div>
                     <div class="col-md-2">
+                        <label class="form-label small">Status</label>
                         <select name="status" class="form-select">
                             <option value="">All Status</option>
                             <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
@@ -34,6 +44,7 @@
                     </div>
                     @role('Administrator')
                     <div class="col-md-2">
+                        <label class="form-label small">Department</label>
                         <select name="department" class="form-select">
                             <option value="">All Departments</option>
                             @foreach($departments as $dept)
@@ -45,6 +56,7 @@
                     </div>
                     @endrole
                     <div class="col-md-2">
+                        <label class="form-label small">Priority</label>
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" name="priority" id="priority" value="1" {{ request('priority') ? 'checked' : '' }}>
                             <label class="form-check-label" for="priority">
@@ -53,20 +65,52 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <button type="submit" class="btn btn-info">
-                            <i class="bi bi-funnel"></i> Filter
-                        </button>
-                        <a href="{{ route('documents.index') }}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Clear
-                        </a>
+                        <label class="form-label small">&nbsp;</label>
+                        <div>
+                            <button type="submit" class="btn btn-info">
+                                <i class="bi bi-funnel"></i> Filter
+                            </button>
+                            <a href="{{ route('documents.index') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        </div>
                     </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Results Summary -->
+    @if(request()->hasAny(['search', 'status', 'department', 'priority']))
+    <div class="alert alert-info">
+        <strong><i class="bi bi-info-circle"></i> Showing filtered results:</strong>
+        @if(request('search'))
+            <span class="badge bg-primary">Search: "{{ request('search') }}"</span>
+        @endif
+        @if(request('status'))
+            <span class="badge bg-primary">Status: {{ request('status') }}</span>
+        @endif
+        @if(request('department'))
+            @php
+                $dept = $departments->find(request('department'));
+            @endphp
+            @if($dept)
+                <span class="badge bg-primary">Department: {{ $dept->name }}</span>
+            @endif
+        @endif
+        @if(request('priority'))
+            <span class="badge bg-warning">Priority Only</span>
+        @endif
+        <span class="ms-2">{{ $documents->total() }} {{ Str::plural('document', $documents->total()) }} found</span>
+    </div>
+    @endif
+
     <!-- Documents Table -->
     <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-table"></i> Documents List</h6>
+            <span class="badge bg-secondary">Total: {{ $documents->total() }}</span>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">

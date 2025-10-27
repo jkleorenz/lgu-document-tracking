@@ -33,24 +33,15 @@ class DocumentController extends Controller
 
         // Filter based on user role
         if ($user->hasRole('LGU Staff')) {
+            // LGU Staff can only see their own documents
             $query->where('created_by', $user->id);
         } elseif ($user->hasRole('Department Head')) {
+            // Department Heads can only see documents in their department
             $query->where('department_id', $user->department_id);
         }
+        // Administrators can see all documents (no filter applied)
 
-        // Apply filters
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('priority')) {
-            $query->where('is_priority', true);
-        }
-
-        if ($request->filled('department')) {
-            $query->where('department_id', $request->department);
-        }
-
+        // Apply search filter
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -60,13 +51,29 @@ class DocumentController extends Controller
             });
         }
 
+        // Apply status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Apply department filter (only for Administrators)
+        if ($request->filled('department') && $user->hasRole('Administrator')) {
+            $query->where('department_id', $request->department);
+        }
+
+        // Apply priority filter
+        if ($request->filled('priority')) {
+            $query->where('is_priority', true);
+        }
+
         // Exclude archived documents unless specifically requested OR filtering by Approved status
         // (Approved documents are auto-archived, so we need to show them)
         if (!$request->filled('show_archived') && $request->status !== 'Approved') {
             $query->active();
         }
 
-        $documents = $query->latest()->paginate(15);
+        // Order by latest and paginate
+        $documents = $query->latest()->paginate(15)->withQueryString();
         $departments = Department::active()->get();
 
         return view('documents.index', compact('documents', 'departments'));
