@@ -56,30 +56,41 @@
         
         /* Print Preview Buttons */
         .no-print {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 15px 10px;
         }
         
         .btn-print {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
             background: #0d6efd;
             color: white;
-            padding: 8px 20px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            margin: 0 5px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-width: 100px;
         }
         
         .btn-print:hover {
             background: #0b5ed7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-print:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
         .btn-close {
@@ -92,11 +103,6 @@
     </style>
 </head>
 <body>
-    <div class="no-print">
-        <button onclick="window.print()" class="btn-print">🖨️ Print</button>
-        <button onclick="window.close()" class="btn-print btn-close">✖️ Close</button>
-    </div>
-
     <div class="print-content">
         <!-- Document Number -->
         <div class="doc-number">{{ $document->document_number }}</div>
@@ -108,6 +114,12 @@
             @else
             <p style="font-size: 8pt;">QR Code not available</p>
             @endif
+        </div>
+
+        <!-- Print Preview Buttons -->
+        <div class="no-print">
+            <button onclick="window.print()" class="btn-print">🖨️ Print</button>
+            <button onclick="window.close()" class="btn-print btn-close">✖️ Close</button>
         </div>
     </div>
 
