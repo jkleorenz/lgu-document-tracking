@@ -33,8 +33,16 @@
             <div>
                 <h2 class="fw-bold">
                     <i class="bi bi-archive"></i> {{ $document->title }}
-                    @if($document->status == 'Approved')
+                    @php
+                        // Get the status before archiving to show correct badge
+                        $preArchiveStatus = $document->getPreArchiveStatus();
+                        $displayStatus = $preArchiveStatus ?: $document->status;
+                    @endphp
+                    @if($displayStatus == 'Approved')
                     <i class="bi bi-check-circle-fill text-success ms-2" title="Approved"></i>
+                    @endif
+                    @if($displayStatus == 'Rejected')
+                    <i class="bi bi-x-circle-fill text-danger ms-2" title="Rejected"></i>
                     @endif
                 </h2>
                 <p class="text-muted">{{ $document->document_number }} <span class="badge bg-dark">ARCHIVED</span></p>
@@ -88,9 +96,19 @@
                         <tr>
                             <th>Final Status:</th>
                             <td>
-                                <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : 'secondary' }}">
+                                @php
+                                    // Get the status before archiving to show correct badge
+                                    $preArchiveStatus = $document->getPreArchiveStatus();
+                                    $displayStatus = $preArchiveStatus ?: $document->status;
+                                @endphp
+                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Rejected' ? 'danger' : 'secondary') }}">
                                     {{ $document->status }}
                                 </span>
+                                @if($preArchiveStatus && $preArchiveStatus !== 'Archived')
+                                <span class="badge bg-{{ $preArchiveStatus == 'Approved' ? 'success' : ($preArchiveStatus == 'Rejected' ? 'danger' : 'secondary') }} ms-2">
+                                    {{ $preArchiveStatus }}
+                                </span>
+                                @endif
                             </td>
                         </tr>
                         <tr>
@@ -130,24 +148,34 @@
                             </div>
                             <div class="border-start border-2 ps-3 flex-grow-1">
                                 <div class="mb-1">
-                                    <span class="badge bg-{{ $log->new_status == 'Approved' ? 'success' : ($log->new_status == 'Received' ? 'success' : ($log->new_status == 'Pending' ? 'warning' : ($log->new_status == 'Rejected' ? 'danger' : 'info'))) }}">
-                                        {{ $log->new_status }}
-                                    </span>
                                     @php
                                         // Extract "to department" information from remarks if it's a forward
                                         $toInfo = '';
+                                        $isCombined = false;
                                         if (Str::contains($log->remarks, 'to')) {
-                                            preg_match('/to (.+)/', $log->remarks, $matches);
+                                            // Match "to [DepartmentName]" and stop at period or end
+                                            preg_match('/to ([^.]+)/', $log->remarks, $matches);
                                             if (isset($matches[1])) {
                                                 $toInfo = trim($matches[1]);
-                                                // Remove any trailing period
-                                                $toInfo = rtrim($toInfo, '.');
+                                                // Check if this is a combined Approved and Forwarded action
+                                                $isCombined = $log->new_status == 'Approved' && Str::contains($log->remarks, 'Approved and forwarded');
                                             }
                                         }
                                     @endphp
-                                    @if($toInfo)
-                                    <span class="text-muted">to</span>
-                                    <span class="badge bg-primary">{{ $toInfo }}</span>
+                                    @if($isCombined)
+                                        <span class="badge bg-success">Approved</span>
+                                        <span class="text-muted ms-1">and</span>
+                                        <span class="badge bg-info ms-1">Forwarded</span>
+                                        <span class="text-muted ms-1">to</span>
+                                        <span class="badge bg-primary ms-1">{{ $toInfo }}</span>
+                                    @else
+                                        <span class="badge bg-{{ $log->new_status == 'Approved' ? 'success' : ($log->new_status == 'Received' ? 'success' : ($log->new_status == 'Pending' ? 'warning' : ($log->new_status == 'Rejected' ? 'danger' : 'info'))) }}">
+                                            {{ $log->new_status }}
+                                        </span>
+                                        @if($toInfo)
+                                        <span class="text-muted ms-1">to</span>
+                                        <span class="badge bg-primary ms-1">{{ $toInfo }}</span>
+                                        @endif
                                     @endif
                                 </div>
                                 <div class="text-muted small">

@@ -107,7 +107,7 @@ class Document extends Model
      */
     public function statusLogs()
     {
-        return $this->hasMany(DocumentStatusLog::class)->orderBy('created_at', 'desc');
+        return $this->hasMany(DocumentStatusLog::class)->orderBy('id', 'desc');
     }
 
     /**
@@ -171,6 +171,38 @@ class Document extends Model
     public function scopeActive($query)
     {
         return $query->whereNull('archived_at');
+    }
+
+    /**
+     * Get the status before archiving (the last status before "Archived")
+     */
+    public function getPreArchiveStatus(): ?string
+    {
+        // Find the status log entry where status changed to "Archived"
+        $archiveLog = $this->statusLogs()
+            ->where('new_status', 'Archived')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        // If found, return the old_status (the status before archiving)
+        if ($archiveLog && $archiveLog->old_status) {
+            return $archiveLog->old_status;
+        }
+
+        // If no archive log found, check if current status is Archived
+        // and get the most recent status that's not "Archived"
+        if ($this->status === 'Archived') {
+            $lastNonArchiveStatus = $this->statusLogs()
+                ->where('new_status', '!=', 'Archived')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($lastNonArchiveStatus) {
+                return $lastNonArchiveStatus->new_status;
+            }
+        }
+
+        return null;
     }
 }
 

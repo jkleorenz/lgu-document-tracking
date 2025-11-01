@@ -230,7 +230,7 @@
     </div>
     <div class="card-body">
         @php
-            $statusLogs = $document->statusLogs()->orderBy('created_at', 'asc')->get();
+            $statusLogs = $document->statusLogs()->orderBy('id', 'desc')->get();
             
             // Track department journey
             $departments = collect();

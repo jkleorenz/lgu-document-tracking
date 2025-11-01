@@ -39,7 +39,7 @@ class DocumentController extends Controller
             // Department Heads can only see documents in their department
             $query->where('department_id', $user->department_id);
         }
-        // Administrators can see all documents (no filter applied)
+        // Administrators and Mayor can see all documents (no filter applied)
 
         // Apply search filter
         if ($request->filled('search')) {
@@ -53,11 +53,44 @@ class DocumentController extends Controller
 
         // Apply status filter
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $status = $request->status;
+            
+            // Special handling for Rejected and Approved: include archived documents
+            // because these documents are often archived but we still want to show them when filtering
+            if ($status === 'Rejected' || $status === 'Approved') {
+                // Include both active and archived documents with this status
+                // Also check archived documents that had this status before archiving
+                $query->where(function($q) use ($status) {
+                    // Documents with current status matching
+                    $q->where('status', $status);
+                    
+                    // OR archived documents that had this status before archiving
+                    // We'll need to check status logs for archived documents
+                    if ($status === 'Rejected' || $status === 'Approved') {
+                        // Get document IDs from status logs where the old_status matches
+                        // and the new_status is "Archived"
+                        $archivedDocIds = DB::table('document_status_logs')
+                            ->where('old_status', $status)
+                            ->where('new_status', 'Archived')
+                            ->distinct()
+                            ->pluck('document_id');
+                        
+                        if ($archivedDocIds->isNotEmpty()) {
+                            $q->orWhere(function($subQ) use ($archivedDocIds) {
+                                $subQ->where('status', 'Archived')
+                                     ->whereIn('id', $archivedDocIds);
+                            });
+                        }
+                    }
+                });
+            } else {
+                // For other statuses, just filter by current status
+                $query->where('status', $status);
+            }
         }
 
-        // Apply department filter (only for Administrators)
-        if ($request->filled('department') && $user->hasRole('Administrator')) {
+        // Apply department filter (for Administrators and Mayor)
+        if ($request->filled('department') && ($user->hasRole('Administrator') || $user->hasRole('Mayor'))) {
             $query->where('department_id', $request->department);
         }
 
@@ -66,27 +99,30 @@ class DocumentController extends Controller
             $query->where('is_priority', true);
         }
 
-        // Exclude archived documents unless specifically requested OR filtering by Approved status
-        // (Approved documents are auto-archived, so we need to show them)
-        if (!$request->filled('show_archived') && $request->status !== 'Approved') {
+        // Exclude archived documents unless specifically requested OR filtering by Approved/Rejected status
+        // (Approved and Rejected documents may be archived, but we want to show them when filtering)
+        if (!$request->filled('show_archived') && 
+            $request->status !== 'Approved' && 
+            $request->status !== 'Rejected') {
             $query->active();
         }
 
         // Order by latest and paginate
-        $documents = $query->latest()->paginate(15)->withQueryString();
+        // Load status logs for archived documents to check pre-archive status
+        $documents = $query->with('statusLogs')->latest()->paginate(15)->withQueryString();
         $departments = Department::active()->get();
 
         return view('documents.index', compact('documents', 'departments'));
     }
 
     /**
-     * Show the form for creating a new document (Admin only)
+     * Show the form for creating a new document (Admin, Mayor, LGU Staff, Department Head)
      */
     public function create()
     {
-        // Only administrators can create documents
-        if (!Auth::user()->hasRole('Administrator')) {
-            abort(403, 'Only administrators can create documents.');
+        // Administrators, Mayor, LGU Staff, and Department Heads can create documents
+        if (!Auth::user()->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff', 'Department Head'])) {
+            abort(403, 'Only administrators, mayor, LGU staff, and department heads can create documents.');
         }
         
         $departments = Department::active()->get();
@@ -96,13 +132,13 @@ class DocumentController extends Controller
     }
 
     /**
-     * Store a newly created document in storage (Admin only)
+     * Store a newly created document in storage (Admin, Mayor, LGU Staff, Department Head)
      */
     public function store(Request $request)
     {
-        // Only administrators can create documents
-        if (!Auth::user()->hasRole('Administrator')) {
-            abort(403, 'Only administrators can create documents.');
+        // Administrators, Mayor, LGU Staff, and Department Heads can create documents
+        if (!Auth::user()->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff', 'Department Head'])) {
+            abort(403, 'Only administrators, mayor, LGU staff, and department heads can create documents.');
         }
 
         // Validate input
@@ -119,7 +155,12 @@ class DocumentController extends Controller
             // Generate unique document number
             $documentNumber = Document::generateDocumentNumber();
 
-            // Create document (Admin only - no verification needed)
+            // Get department and creator info before creating document
+            $department = Department::find($validated['department_id']);
+            $creator = Auth::user();
+            $creatorRole = $creator->roles->first()->name ?? 'User';
+
+            // Create document (forwarded to department)
             $document = Document::create([
                 'document_number' => $documentNumber,
                 'title' => $validated['title'],
@@ -127,7 +168,7 @@ class DocumentController extends Controller
                 'document_type' => $validated['document_type'],
                 'department_id' => $validated['department_id'],
                 'created_by' => Auth::id(),
-                'status' => 'Pending',
+                'status' => 'Forwarded',
                 'is_priority' => $request->has('is_priority') ? true : false,
             ]);
 
@@ -143,21 +184,19 @@ class DocumentController extends Controller
                 $document->id,
                 Auth::id(),
                 null,
-                'Pending',
-                'Document created by administrator'
+                'Forwarded',
+                "Document forwarded to {$department->name} by {$creatorRole}"
             );
 
             // Notify department users with specific details
-            $creator = Auth::user();
-            $department = Department::find($document->department_id);
             $priorityText = $document->is_priority ? ' [PRIORITY]' : '';
             $notificationType = $document->is_priority ? 'warning' : 'info';
-            $actionText = $document->is_priority ? 'This is a PRIORITY document. Please review and take immediate action.' : 'Please review and take action.';
+            $actionText = $document->is_priority ? 'This is a PRIORITY document. Please acknowledge receipt and take immediate action.' : 'Please acknowledge receipt and take action.';
             
             $this->notificationService->notifyDepartmentUsers(
                 $document->department_id,
-                'New Document Received - ' . $department->name . $priorityText,
-                "New document '{$document->title}' ({$document->document_number}) has been created and assigned to {$department->name} by {$creator->name} (Administrator). {$actionText}",
+                'New Document Forwarded - ' . $department->name . $priorityText,
+                "New document '{$document->title}' ({$document->document_number}) has been forwarded to {$department->name} by {$creator->name} ({$creatorRole}). {$actionText}",
                 $notificationType,
                 $document->id
             );
@@ -182,8 +221,8 @@ class DocumentController extends Controller
         // Check if user has permission to view this document
         $user = Auth::user();
         
-        // LGU Staff can view all documents (needed for QR scanning and tracking)
-        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff')) {
+        // LGU Staff, Administrators, and Mayor can view all documents (needed for QR scanning and tracking)
+        if (!$user->hasRole('Administrator') && !$user->hasRole('Mayor') && !$user->hasRole('LGU Staff')) {
             // Department Head can view documents in their department OR documents they've handled/forwarded
             if ($user->hasRole('Department Head')) {
                 $hasHandled = DocumentStatusLog::where('document_id', $document->id)
@@ -208,8 +247,8 @@ class DocumentController extends Controller
     {
         $this->authorize('manage-documents');
         
-        // Only creator or admin can edit
-        if (!Auth::user()->hasRole('Administrator') && $document->created_by !== Auth::id()) {
+        // Only creator, admin, or mayor can edit
+        if (!Auth::user()->hasAnyRole(['Administrator', 'Mayor']) && $document->created_by !== Auth::id()) {
             abort(403, 'Unauthorized to edit this document.');
         }
 
@@ -226,8 +265,8 @@ class DocumentController extends Controller
     {
         $this->authorize('manage-documents');
 
-        // Only creator or admin can update
-        if (!Auth::user()->hasRole('Administrator') && $document->created_by !== Auth::id()) {
+        // Only creator, admin, or mayor can update
+        if (!Auth::user()->hasAnyRole(['Administrator', 'Mayor']) && $document->created_by !== Auth::id()) {
             abort(403, 'Unauthorized to update this document.');
         }
 
@@ -319,29 +358,55 @@ class DocumentController extends Controller
                 $newDepartmentId = $validated['forward_to_department'];
                 $newDepartment = Department::findOrFail($newDepartmentId);
                 
-                // Update department
+                // Get current user info
+                $forwarder = Auth::user();
+                $forwarderRole = $forwarder->roles->first()->name ?? 'User';
+                
+                // Check if both status change and forwarding are happening
+                $isStatusChange = $validated['status'] !== 'Forwarded' && $validated['status'] !== $oldStatus;
+                
+                if ($isStatusChange) {
+                    // Create a single combined log entry for both actions
+                    $combinedRemarks = "Approved and forwarded from {$oldDepartment->name} to {$newDepartment->name}";
+                    if (!empty($validated['remarks'])) {
+                        $combinedRemarks .= ". " . $validated['remarks'];
+                    }
+                    
+                    DocumentStatusLog::createLog(
+                        $document->id,
+                        Auth::id(),
+                        $oldStatus,
+                        $validated['status'], // Status will be "Approved"
+                        $combinedRemarks
+                    );
+                    
+                    // Notify document creator about status change
+                    $this->notificationService->notifyStatusUpdate(
+                        $document,
+                        $document->created_by,
+                        $validated['status']
+                    );
+                } else {
+                    // Only forwarding, no status change
+                    $forwardRemarks = "Forwarded from {$oldDepartment->name} to {$newDepartment->name}";
+                    if (!empty($validated['remarks'])) {
+                        $forwardRemarks .= ". " . $validated['remarks'];
+                    }
+                    
+                    DocumentStatusLog::createLog(
+                        $document->id,
+                        Auth::id(),
+                        $oldStatus,
+                        'Forwarded',
+                        $forwardRemarks
+                    );
+                }
+                
+                // Update department and status to Forwarded
                 $document->update([
                     'status' => 'Forwarded',
                     'department_id' => $newDepartmentId,
                 ]);
-                
-                // Log the status change with forwarding info
-                $forwardRemarks = "Forwarded from {$oldDepartment->name} to {$newDepartment->name}";
-                if (!empty($validated['remarks'])) {
-                    $forwardRemarks .= ". " . $validated['remarks'];
-                }
-                
-                DocumentStatusLog::createLog(
-                    $document->id,
-                    Auth::id(),
-                    $oldStatus,
-                    'Forwarded',
-                    $forwardRemarks
-                );
-                
-                // Get current user info
-                $forwarder = Auth::user();
-                $forwarderRole = $forwarder->roles->first()->name ?? 'User';
                 
                 // Notify document creator about forwarding
                 $this->notificationService->notifyStatusUpdate(
@@ -351,16 +416,25 @@ class DocumentController extends Controller
                 );
                 
                 // Notify ALL users in the new department with specific details
+                $statusText = ($validated['status'] !== 'Forwarded' && $validated['status'] !== $oldStatus) 
+                    ? "Status changed to {$validated['status']} and " 
+                    : "";
+                    
                 $this->notificationService->notifyDepartmentUsers(
                     $newDepartmentId,
                     'Document Received - Forwarded to ' . $newDepartment->name,
-                    "Document '{$document->title}' ({$document->document_number}) was forwarded to {$newDepartment->name} by {$forwarder->name} ({$forwarderRole}) from {$oldDepartment->name}. Please review and take action.",
+                    "Document '{$document->title}' ({$document->document_number}) was {$statusText}forwarded to {$newDepartment->name} by {$forwarder->name} ({$forwarderRole}) from {$oldDepartment->name}. Please review and take action.",
                     'info',
                     $document->id
                 );
                 
                 DB::commit();
-                return back()->with('success', "Document forwarded to {$newDepartment->name} successfully!");
+                
+                $message = ($validated['status'] !== 'Forwarded' && $validated['status'] !== $oldStatus)
+                    ? "Document status changed to {$validated['status']} and forwarded to {$newDepartment->name} successfully!"
+                    : "Document forwarded to {$newDepartment->name} successfully!";
+                    
+                return back()->with('success', $message);
             }
             
             // Normal status update without forwarding
@@ -444,16 +518,19 @@ class DocumentController extends Controller
 
         DB::beginTransaction();
         try {
+            // Save the old status BEFORE updating
+            $oldStatus = $document->status;
+            
             $document->update([
                 'status' => 'Archived',
                 'archived_at' => now(),
             ]);
 
-            // Log the archiving
+            // Log the archiving with the correct old status
             DocumentStatusLog::createLog(
                 $document->id,
                 Auth::id(),
-                $document->status,
+                $oldStatus,
                 'Archived',
                 'Document archived'
             );
@@ -589,9 +666,9 @@ class DocumentController extends Controller
         // Check if user has access to this document
         $user = Auth::user();
         
-        // LGU Staff can view all document timelines (needed for tracking)
+        // LGU Staff, Administrators, and Mayor can view all document timelines (needed for tracking)
         // Department Heads can only view documents in their department
-        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff')) {
+        if (!$user->hasRole('Administrator') && !$user->hasRole('Mayor') && !$user->hasRole('LGU Staff')) {
             if ($user->hasRole('Department Head') && $document->department_id != $user->department_id) {
                 abort(403, 'Unauthorized to view this document timeline.');
             }

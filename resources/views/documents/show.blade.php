@@ -83,7 +83,7 @@
                 @endrole
                 
                 @can('manage-documents')
-                @if($document->created_by == auth()->id() || auth()->user()->hasRole('Administrator'))
+                @if($document->created_by == auth()->id() || auth()->user()->hasAnyRole(['Administrator', 'Mayor']))
                 <a href="{{ route('documents.edit', $document) }}" class="btn btn-warning btn-uniform" title="Edit Document">
                     <i class="bi bi-pencil"></i>
                 </a>
@@ -136,6 +136,16 @@
                                 @if($document->status == 'Pending Verification')
                                 <span class="badge bg-warning text-dark ms-2">
                                     <i class="bi bi-shield-exclamation"></i> AWAITING ADMIN APPROVAL
+                                </span>
+                                @endif
+                                @if($document->status == 'Rejected')
+                                <span class="badge bg-danger text-white ms-2">
+                                    <i class="bi bi-x-circle-fill"></i> DOCUMENT REJECTED
+                                </span>
+                                @endif
+                                @if($document->status == 'Approved')
+                                <span class="badge bg-success text-white ms-2">
+                                    <i class="bi bi-check-circle-fill"></i> DOCUMENT APPROVED
                                 </span>
                                 @endif
                                 @if($document->is_priority)
@@ -256,24 +266,34 @@
                             </div>
                             <div class="border-start border-2 ps-3 flex-grow-1">
                                 <div class="mb-1">
-                                    <span class="badge bg-{{ $log->new_status == 'Approved' ? 'success' : ($log->new_status == 'Received' ? 'success' : ($log->new_status == 'Pending' ? 'warning' : ($log->new_status == 'Rejected' ? 'danger' : 'info'))) }}">
-                                        {{ $log->new_status }}
-                                    </span>
                                     @php
                                         // Extract "to department" information from remarks if it's a forward
                                         $toInfo = '';
+                                        $isCombined = false;
                                         if (Str::contains($log->remarks, 'to')) {
-                                            preg_match('/to (.+)/', $log->remarks, $matches);
+                                            // Match "to [DepartmentName]" and stop at period or end
+                                            preg_match('/to ([^.]+)/', $log->remarks, $matches);
                                             if (isset($matches[1])) {
                                                 $toInfo = trim($matches[1]);
-                                                // Remove any trailing period
-                                                $toInfo = rtrim($toInfo, '.');
+                                                // Check if this is a combined Approved and Forwarded action
+                                                $isCombined = $log->new_status == 'Approved' && Str::contains($log->remarks, 'Approved and forwarded');
                                             }
                                         }
                                     @endphp
-                                    @if($toInfo)
-                                    <span class="text-muted">to</span>
-                                    <span class="badge bg-primary">{{ $toInfo }}</span>
+                                    @if($isCombined)
+                                        <span class="badge bg-success">Approved</span>
+                                        <span class="text-muted ms-1">and</span>
+                                        <span class="badge bg-info ms-1">Forwarded</span>
+                                        <span class="text-muted ms-1">to</span>
+                                        <span class="badge bg-primary ms-1">{{ $toInfo }}</span>
+                                    @else
+                                        <span class="badge bg-{{ $log->new_status == 'Approved' ? 'success' : ($log->new_status == 'Received' ? 'success' : ($log->new_status == 'Pending' ? 'warning' : ($log->new_status == 'Rejected' ? 'danger' : 'info'))) }}">
+                                            {{ $log->new_status }}
+                                        </span>
+                                        @if($toInfo)
+                                        <span class="text-muted ms-1">to</span>
+                                        <span class="badge bg-primary ms-1">{{ $toInfo }}</span>
+                                        @endif
                                     @endif
                                 </div>
                                 <div class="text-muted small">
