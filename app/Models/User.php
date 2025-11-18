@@ -25,6 +25,7 @@ class User extends Authenticatable
         'phone',
         'department_id',
         'status',
+        'profile_picture',
     ];
 
     /**
@@ -72,6 +73,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the profile picture URL
+     */
+    public function getProfilePictureUrlAttribute()
+    {
+        if ($this->profile_picture) {
+            return asset('storage/' . $this->profile_picture);
+        }
+        return null;
+    }
+
+    /**
      * Get documents created by this user
      */
     public function createdDocuments()
@@ -113,12 +125,15 @@ class User extends Authenticatable
                 ->count();
         }
         
-        // For LGU staff: count their pending documents
+        // For LGU staff: count documents forwarded to their department that require action
+        // (exclude documents they created themselves, as those are waiting on others, not them)
         if ($this->hasRole('LGU Staff')) {
-            return Document::active()
-                ->where('created_by', $this->id)
-                ->whereIn('status', ['Pending', 'Under Review'])
-                ->count();
+            if ($this->department_id) {
+                return Document::active()
+                    ->where('department_id', $this->department_id)
+                    ->whereIn('status', ['Forwarded', 'Received', 'Under Review'])
+                    ->count();
+            }
         }
         
         return 0;
@@ -144,10 +159,20 @@ class User extends Authenticatable
                 ->latest();
         }
         
-        // For LGU Staff: their pending documents
+        // For LGU Staff: their pending documents AND documents forwarded to their department
         if ($this->hasRole('LGU Staff')) {
-            return Document::where('created_by', $this->id)
-                ->whereIn('status', ['Pending', 'Under Review'])
+            return Document::where(function($query) {
+                    // Documents created by the user
+                    $query->where('created_by', $this->id)
+                          ->whereIn('status', ['Pending', 'Under Review']);
+                })
+                ->orWhere(function($query) {
+                    // Documents forwarded to their department (even if not created by them)
+                    if ($this->department_id) {
+                        $query->where('department_id', $this->department_id)
+                              ->whereIn('status', ['Forwarded', 'Received', 'Under Review']);
+                    }
+                })
                 ->latest();
         }
         

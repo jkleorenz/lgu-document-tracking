@@ -61,8 +61,16 @@
                             <td class="text-center"><strong>{{ $document->document_number }}</strong></td>
                             <td>
                                 {{ Str::limit($document->title, 50) }}
-                                @if($document->status == 'Approved')
+                                @php
+                                    // Get the status before archiving to show correct badge
+                                    $preArchiveStatus = $document->getPreArchiveStatus();
+                                    $displayStatus = $preArchiveStatus ?: $document->status;
+                                @endphp
+                                @if($displayStatus == 'Approved')
                                 <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
+                                @endif
+                                @if($displayStatus == 'Rejected')
+                                <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
                                 @endif
                             </td>
                             <td class="text-center"><span class="badge bg-secondary">{{ $document->document_type }}</span></td>

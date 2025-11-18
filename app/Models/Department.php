@@ -62,5 +62,33 @@ class Department extends Model
     {
         return $query->where('is_active', true);
     }
+
+    /**
+     * Get the display name with code (ensures code is not duplicated)
+     * Removes any existing code from the name before appending the code
+     *
+     * @return string
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        // Remove any occurrence of the code in parentheses from the name
+        $cleanedName = preg_replace('/\s*\(' . preg_quote($this->code, '/') . '\)\s*/', '', $this->name);
+        $cleanedName = trim($cleanedName);
+        
+        // Append the code
+        return $cleanedName . ' (' . $this->code . ')';
+    }
+
+    /**
+     * Get clean name without code
+     *
+     * @return string
+     */
+    public function getCleanNameAttribute(): string
+    {
+        // Remove any occurrence of the code in parentheses from the name
+        $cleanedName = preg_replace('/\s*\(' . preg_quote($this->code, '/') . '\)\s*/', '', $this->name);
+        return trim($cleanedName);
+    }
 }
 

@@ -17,12 +17,62 @@
 
     <div class="row">
         <div class="col-md-8">
+            <!-- Profile Picture -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-image"></i> Profile Picture</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        @if($user->profile_picture)
+                            <img src="{{ asset('storage/' . $user->profile_picture) }}" 
+                                 alt="Profile Picture" 
+                                 class="rounded-circle" 
+                                 style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #dee2e6;">
+                        @else
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 150px; height: 150px; border: 3px solid #dee2e6;">
+                                <i class="bi bi-person" style="font-size: 4rem; color: white;"></i>
+                            </div>
+                        @endif
+                    </div>
+                    <form method="POST" action="{{ route('profile.picture') }}" enctype="multipart/form-data" class="mb-2">
+                        @csrf
+                        <div class="mb-3">
+                            <input type="file" 
+                                   class="form-control @error('profile_picture') is-invalid @enderror" 
+                                   id="profile_picture" 
+                                   name="profile_picture" 
+                                   accept="image/jpeg,image/png,image/jpg,image/gif">
+                            @error('profile_picture')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="form-text text-muted">Max size: 2MB. Formats: JPG, PNG, GIF</small>
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-upload"></i> Upload Picture
+                            </button>
+                            @if($user->profile_picture)
+                            <form method="POST" action="{{ route('profile.picture.remove') }}" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove your profile picture?')">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                            </form>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">Update Your Information</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('profile.update') }}">
+                    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -109,6 +159,7 @@
                 <div class="card-body">
                     <p><strong>What you can update:</strong></p>
                     <ul class="small">
+                        <li>Your profile picture</li>
                         <li>Your full name</li>
                         <li>Email address</li>
                         <li>Phone number</li>

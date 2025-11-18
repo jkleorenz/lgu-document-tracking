@@ -116,9 +116,17 @@
                                             {{ $document->document_number }}
                                         </a>
                                     </td>
-                                    <td>{{ Str::limit($document->title, 50) }}</td>
                                     <td>
-                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Pending' ? 'warning' : 'info') }}">
+                                        {{ Str::limit($document->title, 50) }}
+                                        @if($document->status == 'Approved')
+                                        <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                        @if($document->status == 'Rejected')
+                                        <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')) }}">
                                             {{ $document->status }}
                                         </span>
                                     </td>
@@ -158,7 +166,15 @@
                                             {{ $document->document_number }}
                                         </a>
                                     </td>
-                                    <td>{{ Str::limit($document->title, 50) }}</td>
+                                    <td>
+                                        {{ Str::limit($document->title, 50) }}
+                                        @if($document->status == 'Approved')
+                                        <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                        @if($document->status == 'Rejected')
+                                        <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                    </td>
                                     <td>
                                         <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info'))) }}">
                                             {{ $document->status }}

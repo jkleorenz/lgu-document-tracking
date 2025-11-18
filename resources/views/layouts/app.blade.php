@@ -593,7 +593,14 @@
                 </div>
                 <div class="dropdown">
                     <a class="user-dropdown dropdown-toggle text-decoration-none" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle" style="font-size: 1.5rem;"></i>
+                        @if(auth()->user()->profile_picture)
+                            <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}" 
+                                 alt="Profile" 
+                                 class="rounded-circle" 
+                                 style="width: 40px; height: 40px; object-fit: cover; margin-right: 8px;">
+                        @else
+                            <i class="bi bi-person-circle" style="font-size: 1.5rem;"></i>
+                        @endif
                         <div>
                             <div style="font-weight: 600; font-size: 0.9rem;">{{ auth()->user()->name }}</div>
                             <small class="text-muted">{{ auth()->user()->roles->first()->name }}</small>

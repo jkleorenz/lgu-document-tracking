@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold"><i class="bi bi-file-earmark-text"></i> Documents</h2>
-        @role('Administrator')
+        @role('Administrator|Mayor|LGU Staff|Department Head')
         <a href="{{ route('documents.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Create New Document
         </a>
@@ -42,7 +42,7 @@
                             <option value="Rejected" {{ request('status') == 'Rejected' ? 'selected' : '' }}>Rejected</option>
                         </select>
                     </div>
-                    @role('Administrator')
+                    @role('Administrator|Mayor')
                     <div class="col-md-2">
                         <label class="form-label small">Department</label>
                         <select name="department" class="form-select">
@@ -88,7 +88,7 @@
             <span class="badge bg-primary">Search: "{{ request('search') }}"</span>
         @endif
         @if(request('status'))
-            <span class="badge bg-primary">Status: {{ request('status') }}</span>
+            <span class="badge bg-primary">Status: {{ request('status') === 'for_review' ? 'For Review' : request('status') }}</span>
         @endif
         @if(request('department'))
             @php
@@ -138,16 +138,43 @@
                             </td>
                             <td>
                                 {{ Str::limit($document->title, 50) }}
-                                @if($document->status == 'Approved')
+                                @php
+                                    // For archived documents, check pre-archive status for icon display
+                                    $iconStatus = $document->status;
+                                    if ($document->status === 'Archived') {
+                                        $preArchiveStatus = $document->getPreArchiveStatus();
+                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved')) {
+                                            $iconStatus = $preArchiveStatus;
+                                        }
+                                    }
+                                @endphp
+                                @if($iconStatus == 'Approved')
                                 <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
+                                @endif
+                                @if($iconStatus == 'Rejected')
+                                <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
                                 @endif
                             </td>
                             <td class="text-center"><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
                             <td class="text-center">{{ $document->department ? $document->department->code : 'N/A' }}</td>
                             <td class="text-center">
-                                <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info'))) }}">
-                                    {{ $document->status }}
+                                @php
+                                    // For archived documents, get the pre-archive status for display
+                                    $displayStatus = $document->status;
+                                    $preArchiveStatus = null;
+                                    if ($document->status === 'Archived') {
+                                        $preArchiveStatus = $document->getPreArchiveStatus();
+                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved')) {
+                                            $displayStatus = $preArchiveStatus;
+                                        }
+                                    }
+                                @endphp
+                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info'))) }}">
+                                    {{ $displayStatus }}
                                 </span>
+                                @if($document->status === 'Archived' && $preArchiveStatus && $preArchiveStatus !== 'Archived')
+                                <br><small class="text-muted">(Archived)</small>
+                                @endif
                             </td>
                             <td class="text-center">{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
                             <td class="text-center">
@@ -164,7 +191,7 @@
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     @can('manage-documents')
-                                    @if($document->created_by == auth()->id() || auth()->user()->hasRole('Administrator'))
+                                    @if($document->created_by == auth()->id() || auth()->user()->hasAnyRole(['Administrator', 'Mayor']))
                                     <a href="{{ route('documents.edit', $document) }}" class="btn btn-sm btn-warning" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>

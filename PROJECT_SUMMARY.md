@@ -27,9 +27,10 @@ This is a fully functional Laravel-based web application for tracking and managi
 #### 3. **QR Code System**
 - Automatic QR code generation for each document
 - Printable QR codes with document information
-- QR code scanning interface
+- Hardware 2D scanner integration (USB/Wireless)
 - Quick document lookup via QR scan
-- Mobile-friendly scanner
+- Auto-focus input field for seamless scanning
+- Real-time scan feedback and processing
 
 #### 4. **Notification System**
 - In-system notifications
@@ -197,7 +198,7 @@ lgu-document-tracking/
 ### Frontend
 - **Bootstrap 5** - UI framework
 - **Bootstrap Icons** - Icon library
-- **Vanilla JavaScript** - Interactivity
+- **Vanilla JavaScript** - Interactivity (includes hardware scanner integration)
 - **Axios** - HTTP requests
 - **Vite** - Asset bundling
 
@@ -348,9 +349,10 @@ php artisan serve
 ## 📱 Mobile Support
 
 - Responsive design works on all screen sizes
-- QR scanner interface optimized for mobile
+- Hardware scanner integration works on any device with USB/Wireless support
 - Touch-friendly buttons and forms
 - Mobile-optimized tables and cards
+- Scanner input field optimized for hardware devices
 
 ## 🎯 Production Ready
 

@@ -56,48 +56,36 @@
         
         /* Print Preview Buttons */
         .no-print {
+            margin-top: 15px;
+            padding: 10px;
+            text-align: center;
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 12px;
-            margin-top: 20px;
-            padding: 15px 10px;
+            gap: 10px;
         }
         
-        .btn-print {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+        .no-print .btn-print {
             background: #0d6efd;
             color: white;
-            padding: 10px 20px;
+            padding: 8px 20px;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             font-size: 14px;
-            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-width: 100px;
+            display: inline-block;
+        }
+        
+        .no-print .btn-print:hover {
+            background: #0b5ed7;
+        }
+        
+        .no-print .btn-close {
+            background: #6c757d;
             min-width: 100px;
         }
         
-        .btn-print:hover {
-            background: #0b5ed7;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-        
-        .btn-print:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-close {
-            background: #6c757d;
-        }
-        
-        .btn-close:hover {
+        .no-print .btn-close:hover {
             background: #5a6268;
         }
     </style>

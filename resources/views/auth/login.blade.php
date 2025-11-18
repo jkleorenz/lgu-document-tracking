@@ -20,47 +20,50 @@
         overflow: hidden;
     }
     .login-header {
-        padding: 40px 40px 30px;
+        padding: 20px 30px 15px;
         text-align: center;
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%);
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
     .login-body {
-        padding: 40px;
+        padding: 25px 30px;
     }
     .brand-icon {
-        width: 80px;
-        height: 80px;
+        width: 60px;
+        height: 60px;
         background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-        border-radius: 20px;
+        border-radius: 15px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2.5rem;
-        margin: 0 auto 20px;
-        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+        font-size: 1.8rem;
+        margin: 0 auto 12px;
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
     }
     .form-floating {
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     .form-floating .form-control {
-        border-radius: 12px;
+        border-radius: 10px;
         border: 2px solid #e2e8f0;
-        padding: 1rem 0.75rem;
-        height: calc(3.5rem + 2px);
+        padding: 0.75rem 0.65rem;
+        height: calc(3.125rem + 2px);
+        font-size: 0.9375rem;
     }
     .form-floating label {
-        padding: 1rem 0.75rem;
+        padding: 0.75rem 0.65rem;
+        font-size: 0.9375rem;
     }
     .btn-login {
         background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
         border: none;
-        border-radius: 12px;
-        padding: 14px;
+        border-radius: 10px;
+        padding: 12px 16px;
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 0.9375rem;
         box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
         transition: all 0.3s;
+        min-height: 44px;
     }
     .btn-login:hover {
         transform: translateY(-2px);
@@ -70,7 +73,7 @@
         display: flex;
         align-items: center;
         text-align: center;
-        margin: 24px 0;
+        margin: 18px 0;
     }
     .divider::before,
     .divider::after {
@@ -86,20 +89,20 @@
 </style>
 
 <div class="container">
-    <div class="row justify-content-center align-items-center min-vh-100">
+    <div class="row justify-content-center align-items-center" style="min-height: 100vh; padding: 20px 0;">
         <div class="col-md-5 col-lg-4">
             <div class="login-card">
                 <div class="login-header">
                     <div class="brand-icon">
                         <i class="bi bi-file-text text-white"></i>
                     </div>
-                    <h2 class="fw-bold mb-2" style="color: #0f172a;">LGU DocTrack</h2>
-                    <p class="text-muted mb-0">Document Tracking System</p>
+                    <h2 class="fw-bold mb-1" style="color: #0f172a; font-size: 1.5rem;">LGU DocTrack</h2>
+                    <p class="text-muted mb-0" style="font-size: 0.85rem;">Document Tracking System</p>
                 </div>
 
                 <div class="login-body">
                     @if(session('success'))
-                    <div class="alert alert-success border-0 shadow-sm" style="border-radius: 12px;">
+                    <div class="alert alert-success border-0 shadow-sm mb-3" style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.85rem;">
                         <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
                     </div>
                     @endif
@@ -135,12 +138,12 @@
                             @enderror
                         </div>
 
-                        <div class="form-check mb-3">
+                        <div class="form-check mb-2">
                             <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                            <label class="form-check-label" for="remember">Remember me</label>
+                            <label class="form-check-label" for="remember" style="font-size: 0.9375rem;">Remember me</label>
                         </div>
 
-                        <button type="submit" class="btn btn-login btn-primary w-100 mb-3">
+                        <button type="submit" class="btn btn-login btn-primary w-100 mb-2">
                             <i class="bi bi-box-arrow-in-right"></i> Sign In
                         </button>
 
@@ -149,7 +152,7 @@
                         </div>
 
                         <div class="text-center">
-                            <p class="mb-0 text-muted">
+                            <p class="mb-0 text-muted" style="font-size: 0.875rem;">
                                 Don't have an account? 
                                 <a href="{{ route('register') }}" class="text-decoration-none fw-semibold" style="color: #2563eb;">
                                     Create Account
@@ -160,8 +163,8 @@
                 </div>
             </div>
 
-            <div class="text-center mt-4">
-                <small class="text-white-50">&copy; {{ date('Y') }} LGU Document Tracking System. All rights reserved.</small>
+            <div class="text-center mt-3">
+                <small class="text-white-50" style="font-size: 0.8125rem;">&copy; {{ date('Y') }} LGU Document Tracking System. All rights reserved.</small>
             </div>
         </div>
     </div>

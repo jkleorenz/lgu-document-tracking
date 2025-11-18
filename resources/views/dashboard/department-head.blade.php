@@ -16,7 +16,7 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <a href="{{ route('documents.index', ['department' => auth()->user()->department_id]) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #0d6efd;">
                     <div class="card-body">
@@ -35,8 +35,8 @@
             </a>
         </div>
 
-        <div class="col-md-3">
-            <a href="{{ route('documents.index', ['status' => 'Under Review', 'department' => auth()->user()->department_id]) }}" class="text-decoration-none">
+        <div class="col-md-4">
+            <a href="{{ route('documents.index', ['status' => 'for_review']) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #ffc107;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -54,7 +54,7 @@
             </a>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4">
             <a href="{{ route('documents.index', ['priority' => '1', 'department' => auth()->user()->department_id]) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #dc3545;">
                     <div class="card-body">
@@ -66,25 +66,6 @@
                             </div>
                             <div class="text-danger" style="font-size: 2.5rem;">
                                 <i class="bi bi-exclamation-triangle"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-3">
-            <a href="{{ route('documents.index', ['department' => auth()->user()->department_id]) }}" class="text-decoration-none">
-                <div class="card stat-card clickable-card" style="border-left-color: #198754;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Handling</h6>
-                                <h2 class="fw-bold mb-0 text-dark">{{ $handlingDocuments }}</h2>
-                                <small class="text-success"><i class="bi bi-arrow-right-circle"></i> View handling</small>
-                            </div>
-                            <div class="text-success" style="font-size: 2.5rem;">
-                                <i class="bi bi-person-check"></i>
                             </div>
                         </div>
                     </div>
@@ -172,7 +153,15 @@
                                         <br><span class="badge badge-priority">PRIORITY</span>
                                         @endif
                                     </td>
-                                    <td>{{ Str::limit($document->title, 40) }}</td>
+                                    <td>
+                                        {{ Str::limit($document->title, 40) }}
+                                        @if($document->status == 'Approved')
+                                        <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                        @if($document->status == 'Rejected')
+                                        <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                    </td>
                                     <td>{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')) }}">

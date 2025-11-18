@@ -150,8 +150,9 @@ lgu-document-tracking/
 - Automatic generation upon document creation
 - Unique QR code for each document
 - Printable format for physical attachment
-- Mobile-friendly scanning interface
+- Hardware 2D scanner support (USB/Wireless)
 - Instant document retrieval via QR scan
+- Auto-focus scanner input for quick processing
 
 ### Notification System
 - Real-time in-system notifications

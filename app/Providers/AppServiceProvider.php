@@ -26,19 +26,19 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-documents', function ($user) {
-            return $user->hasAnyRole(['Administrator', 'LGU Staff']);
+            return $user->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff']);
         });
 
         Gate::define('view-all-documents', function ($user) {
-            return $user->hasRole('Administrator');
+            return $user->hasAnyRole(['Administrator', 'Mayor']);
         });
 
         Gate::define('archive-documents', function ($user) {
-            return $user->hasAnyRole(['Administrator', 'Department Head']);
+            return $user->hasAnyRole(['Administrator', 'Mayor', 'Department Head']);
         });
 
         Gate::define('set-priority', function ($user) {
-            return $user->hasRole('Administrator');
+            return $user->hasAnyRole(['Administrator', 'Mayor']);
         });
     }
 }

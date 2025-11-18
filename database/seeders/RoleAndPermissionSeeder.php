@@ -44,24 +44,41 @@ class RoleAndPermissionSeeder extends Seeder
         $adminRole->givePermissionTo(Permission::all());
 
         // Create LGU Staff role
-        // LGU Staff can ONLY scan QR, update status, forward documents, and view documents
+        // LGU Staff can now create documents, scan QR, update status, forward documents, and view documents
         $staffRole = Role::create(['name' => 'LGU Staff']);
         $staffRole->givePermissionTo([
             'view documents',        // View documents
+            'create documents',       // Create documents (NEW PRIVILEGE)
             'scan qr codes',         // Scan QR code
             'update status',         // Update status via QR scanning
             'receive notifications', // Receive notifications
         ]);
 
         // Create Department Head role
-        // Department Head can scan QR, update status, forward documents, archive, and view department documents
+        // Department Head can now create documents, scan QR, update status, forward documents, archive, and view department documents
         $deptHeadRole = Role::create(['name' => 'Department Head']);
         $deptHeadRole->givePermissionTo([
             'view documents',            // View forwarded documents
             'view department documents', // View documents in their department
+            'create documents',          // Create documents (NEW PRIVILEGE)
             'archive documents',         // Archive document
             'scan qr codes',             // Scan QR code
             'update status',             // Update status via QR scanning
+            'receive notifications',     // Receive notifications
+        ]);
+
+        // Create Mayor role
+        // Mayor can create documents, view all documents, and manage documents
+        $mayorRole = Role::create(['name' => 'Mayor']);
+        $mayorRole->givePermissionTo([
+            'view documents',            // View documents
+            'view all documents',        // View all documents
+            'create documents',          // Create documents
+            'edit documents',            // Edit documents
+            'archive documents',         // Archive documents
+            'scan qr codes',             // Scan QR code
+            'update status',             // Update status
+            'set priority',              // Set priority
             'receive notifications',     // Receive notifications
         ]);
 

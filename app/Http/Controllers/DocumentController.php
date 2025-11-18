@@ -33,8 +33,17 @@ class DocumentController extends Controller
 
         // Filter based on user role
         if ($user->hasRole('LGU Staff')) {
-            // LGU Staff can only see their own documents
-            $query->where('created_by', $user->id);
+            // LGU Staff can see their own documents AND documents forwarded to their department
+            $query->where(function($q) use ($user) {
+                // Documents created by the user
+                $q->where('created_by', $user->id);
+            })->orWhere(function($q) use ($user) {
+                // Documents forwarded to their department (even if not created by them)
+                if ($user->department_id) {
+                    $q->where('department_id', $user->department_id)
+                      ->whereIn('status', ['Forwarded', 'Received', 'Under Review']);
+                }
+            });
         } elseif ($user->hasRole('Department Head')) {
             // Department Heads can only see documents in their department
             $query->where('department_id', $user->department_id);
@@ -55,9 +64,13 @@ class DocumentController extends Controller
         if ($request->filled('status')) {
             $status = $request->status;
             
+            // Special handling for "for_review" - show Received, Under Review, or Forwarded
+            if ($status === 'for_review') {
+                $query->whereIn('status', ['Received', 'Under Review', 'Forwarded']);
+            }
             // Special handling for Rejected and Approved: include archived documents
             // because these documents are often archived but we still want to show them when filtering
-            if ($status === 'Rejected' || $status === 'Approved') {
+            elseif ($status === 'Rejected' || $status === 'Approved') {
                 // Include both active and archived documents with this status
                 // Also check archived documents that had this status before archiving
                 $query->where(function($q) use ($status) {

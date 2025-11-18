@@ -60,7 +60,12 @@
             <div>
                 <h2 class="fw-bold">
                     <i class="bi bi-file-earmark-text"></i> {{ $document->title }}
-                    @if($document->status == 'Approved')
+                    @php
+                        // Get the status before archiving to show correct badge
+                        $preArchiveStatus = $document->getPreArchiveStatus();
+                        $displayStatus = $preArchiveStatus ?: $document->status;
+                    @endphp
+                    @if($displayStatus == 'Approved')
                     <i class="bi bi-check-circle-fill text-success ms-2" title="Approved"></i>
                     @endif
                 </h2>
@@ -130,20 +135,35 @@
                         <tr>
                             <th>Status:</th>
                             <td>
-                                <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Pending Verification' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')))) }}">
-                                    {{ $document->status }}
+                                @php
+                                    // For archived documents, get the pre-archive status for display
+                                    $displayStatus = $document->status;
+                                    $preArchiveStatus = null;
+                                    
+                                    // Check if document was manually archived (status changed to 'Archived')
+                                    if ($document->status === 'Archived') {
+                                        $preArchiveStatus = $document->getPreArchiveStatus();
+                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved')) {
+                                            $displayStatus = $preArchiveStatus;
+                                        }
+                                    }
+                                    // If status is 'Approved' and archived_at is set, it's auto-archived - show 'Approved'
+                                    // This case doesn't need special handling as status is already 'Approved'
+                                @endphp
+                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Pending Verification' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info')))) }}">
+                                    {{ $displayStatus }}
                                 </span>
-                                @if($document->status == 'Pending Verification')
+                                @if($displayStatus == 'Pending Verification')
                                 <span class="badge bg-warning text-dark ms-2">
                                     <i class="bi bi-shield-exclamation"></i> AWAITING ADMIN APPROVAL
                                 </span>
                                 @endif
-                                @if($document->status == 'Rejected')
+                                @if($displayStatus == 'Rejected')
                                 <span class="badge bg-danger text-white ms-2">
                                     <i class="bi bi-x-circle-fill"></i> DOCUMENT REJECTED
                                 </span>
                                 @endif
-                                @if($document->status == 'Approved')
+                                @if($displayStatus == 'Approved')
                                 <span class="badge bg-success text-white ms-2">
                                     <i class="bi bi-check-circle-fill"></i> DOCUMENT APPROVED
                                 </span>
@@ -157,7 +177,7 @@
                             <th>Department:</th>
                             <td>
                                 @if($document->department)
-                                {{ $document->department->name }} ({{ $document->department->code }})
+                                {{ $document->department->display_name }}
                                 @else
                                 <span class="text-muted">Unassigned</span>
                                 @endif
@@ -234,7 +254,7 @@
                                     @endphp
                                     @foreach($departments as $dept)
                                     @if($dept->id != $document->department_id)
-                                    <option value="{{ $dept->id }}">{{ $dept->name }} ({{ $dept->code }})</option>
+                                    <option value="{{ $dept->id }}">{{ $dept->display_name }}</option>
                                     @endif
                                     @endforeach
                                 </select>

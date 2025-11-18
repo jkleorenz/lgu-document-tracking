@@ -39,7 +39,7 @@ class DepartmentSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'Planning and Development Office (MPDO)',
+                'name' => 'Planning and Development Office',
                 'code' => 'MPDO',
                 'description' => 'Municipal planning and development coordination',
                 'is_active' => true,
@@ -59,10 +59,26 @@ class DepartmentSeeder extends Seeder
         ];
 
         foreach ($departments as $department) {
-            Department::create($department);
+            // Use updateOrCreate to avoid duplicates and update existing records
+            Department::updateOrCreate(
+                ['code' => $department['code']],
+                $department
+            );
         }
 
-        $this->command->info('Departments created successfully!');
+        // Fix any existing MPDO department that may have duplicate code in the name
+        $mpdo = Department::where('code', 'MPDO')->first();
+        if ($mpdo) {
+            // Remove any occurrence of (MPDO) from the name, including duplicates
+            $cleanedName = preg_replace('/\s*\(MPDO\)\s*/', '', $mpdo->name);
+            $cleanedName = trim($cleanedName);
+            if ($cleanedName !== $mpdo->name) {
+                $mpdo->update(['name' => $cleanedName]);
+                $this->command->info("Fixed MPDO department name: '{$cleanedName}'");
+            }
+        }
+
+        $this->command->info('Departments created/updated successfully!');
     }
 }
 

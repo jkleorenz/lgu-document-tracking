@@ -71,7 +71,7 @@
                                     required>
                                 @foreach($departments as $department)
                                 <option value="{{ $department->id }}" {{ old('department_id', $document->department_id) == $department->id ? 'selected' : '' }}>
-                                    {{ $department->name }} ({{ $department->code }})
+                                    {{ $department->display_name }}
                                 </option>
                                 @endforeach
                             </select>
@@ -94,7 +94,7 @@
                                 @foreach($departments as $department)
                                 @if($department->id != $document->department_id)
                                 <option value="{{ $department->id }}" {{ old('forward_to_department') == $department->id ? 'selected' : '' }}>
-                                    {{ $department->name }} ({{ $department->code }})
+                                    {{ $department->display_name }}
                                 </option>
                                 @endif
                                 @endforeach

@@ -22,6 +22,11 @@ class DashboardController extends Controller
             return $this->adminDashboard();
         }
         
+        // Mayor Dashboard (uses admin dashboard)
+        if ($user->hasRole('Mayor')) {
+            return $this->adminDashboard();
+        }
+        
         // LGU Staff Dashboard
         if ($user->hasRole('LGU Staff')) {
             return $this->staffDashboard();
@@ -107,24 +112,18 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Count documents handled by this department head
-        $handlingDocuments = \DB::table('document_status_logs')
-            ->where('updated_by', $user->id)
-            ->distinct('document_id')
-            ->count('document_id');
-        
         $data = [
             'departmentDocuments' => Document::where('department_id', $user->department_id)
                 ->active()
                 ->count(),
             'forReview' => Document::where('department_id', $user->department_id)
                 ->whereIn('status', ['Received', 'Under Review', 'Forwarded'])
+                ->active()
                 ->count(),
             'priorityDocuments' => Document::where('department_id', $user->department_id)
                 ->where('is_priority', true)
                 ->active()
                 ->count(),
-            'handlingDocuments' => $handlingDocuments,
             'recentDocuments' => Document::with(['creator', 'currentHandler'])
                 ->where('department_id', $user->department_id)
                 ->active()

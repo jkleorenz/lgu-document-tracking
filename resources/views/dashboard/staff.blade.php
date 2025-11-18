@@ -144,7 +144,15 @@
                                         <br><span class="badge badge-priority">PRIORITY</span>
                                         @endif
                                     </td>
-                                    <td>{{ Str::limit($document->title, 40) }}</td>
+                                    <td>
+                                        {{ Str::limit($document->title, 40) }}
+                                        @if($document->status == 'Approved')
+                                        <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                        @if($document->status == 'Rejected')
+                                        <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.85rem;"></i>
+                                        @endif
+                                    </td>
                                     <td>{{ $document->department ? $document->department->name : 'N/A' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')) }}">

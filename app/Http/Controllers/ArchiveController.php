@@ -43,7 +43,7 @@ class ArchiveController extends Controller
             $query->whereDate('archived_at', '<=', $request->to_date);
         }
 
-        $archivedDocuments = $query->latest('archived_at')->paginate(15);
+        $archivedDocuments = $query->with('statusLogs')->latest('archived_at')->paginate(15);
 
         return view('archive.index', compact('archivedDocuments'));
     }
