@@ -54,8 +54,6 @@ Route::middleware(['auth'])->group(function () {
     
     // Document Management
     Route::resource('documents', DocumentController::class);
-    Route::post('/documents/{document}/update-status', [DocumentController::class, 'updateStatus'])
-        ->name('documents.update-status');
     Route::post('/documents/{document}/priority', [DocumentController::class, 'setPriority'])
         ->name('documents.priority');
     Route::post('/documents/{document}/archive', [DocumentController::class, 'archive'])
@@ -68,12 +66,16 @@ Route::middleware(['auth'])->group(function () {
         ->name('documents.print-qr');
     Route::get('/documents/{document}/timeline', [DocumentController::class, 'timeline'])
         ->name('documents.timeline');
+    Route::get('/documents/{document}/report', [DocumentController::class, 'generateReport'])
+        ->name('documents.report');
     
     // QR Code Scanner
     Route::get('/scan', [ScanController::class, 'index'])->name('scan.index');
     Route::post('/scan', [ScanController::class, 'scan'])->name('scan.process');
     Route::post('/scan/quick-update', [ScanController::class, 'quickUpdate'])
         ->name('scan.quick-update');
+    Route::post('/scan/complete', [ScanController::class, 'complete'])->name('scan.complete');
+    Route::post('/scan/return', [ScanController::class, 'returnDocument'])->name('scan.return');
     
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])

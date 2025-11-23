@@ -17,7 +17,7 @@
     </div>
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('documents.index') }}" class="text-decoration-none">
+            <a href="{{ route('documents.index', ['status' => 'Active']) }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -35,7 +35,7 @@
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('documents.index', ['status' => 'Approved']) }}" class="text-decoration-none">
+            <a href="{{ route('documents.index', ['status' => 'Completed']) }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -44,9 +44,9 @@
                             </div>
                             <span class="badge bg-primary bg-opacity-10 text-primary">Finished</span>
                         </div>
-                        <h6 class="text-muted mb-2">Approved Documents</h6>
-                        <h2 class="fw-bold mb-0 text-dark">{{ $approvedDocuments }}</h2>
-                        <small class="text-primary"><i class="bi bi-arrow-right-circle"></i> View approved</small>
+                        <h6 class="text-muted mb-2">Completed Documents</h6>
+                        <h2 class="fw-bold mb-0 text-dark">{{ $completedDocuments }}</h2>
+                        <small class="text-primary"><i class="bi bi-arrow-right-circle"></i> View completed</small>
                     </div>
                 </div>
             </a>
@@ -145,7 +145,7 @@
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('documents.index') }}" class="text-decoration-none">
+            <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#departmentFilterModal">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -201,7 +201,7 @@
                                 <tr>
                                     <th>Document #</th>
                                     <th>Title</th>
-                                    <th>Status</th>
+                                    <th>Current Status</th>
                                     <th>Date</th>
                                 </tr>
                             </thead>
@@ -226,7 +226,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info'))) }}">
+                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Completed' ? 'primary' : ($document->status == 'Return' ? 'danger' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info'))))) }}">
                                             {{ $document->status }}
                                         </span>
                                     </td>
@@ -301,5 +301,61 @@
     </div>
     @endif
 </div>
+
+<!-- Department Filter Modal -->
+<div class="modal fade" id="departmentFilterModal" tabindex="-1" aria-labelledby="departmentFilterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="departmentFilterModalLabel">
+                    <i class="bi bi-building"></i> Filter Documents by Department
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Select a department to view its documents:</p>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <a href="{{ route('documents.index') }}" class="text-decoration-none">
+                            <div class="card border h-100 hover-shadow" style="cursor: pointer; transition: all 0.2s;">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-list-ul text-primary" style="font-size: 1.5rem;"></i>
+                                    <h6 class="mb-0 mt-2">All Departments</h6>
+                                    <small class="text-muted">View all documents</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    @foreach($departments as $dept)
+                    <div class="col-md-6">
+                        <a href="{{ route('documents.index', ['department' => $dept->id]) }}" class="text-decoration-none">
+                            <div class="card border h-100 hover-shadow" style="cursor: pointer; transition: all 0.2s;">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-building text-success" style="font-size: 1.5rem;"></i>
+                                    <h6 class="mb-0 mt-2">{{ $dept->name }}</h6>
+                                    <small class="text-muted">{{ $dept->code }}</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('styles')
+<style>
+    .hover-shadow:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+</style>
+@endpush
+
 @endsection
 

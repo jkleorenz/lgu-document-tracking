@@ -64,7 +64,7 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
         
-        $departments = Department::active()->get();
+        $departments = Department::active()->orderBy('name')->get();
         return view('auth.register', compact('departments'));
     }
 

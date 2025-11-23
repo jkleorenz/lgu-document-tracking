@@ -49,7 +49,7 @@
                             <th class="text-center" style="width: 12%; white-space: nowrap;">DOCUMENT #</th>
                             <th style="width: 22%; white-space: nowrap;">TITLE</th>
                             <th class="text-center" style="width: 10%; white-space: nowrap;">TYPE</th>
-                            <th class="text-center" style="width: 12%; white-space: nowrap;">DEPARTMENT</th>
+                            <th class="text-center" style="width: 12%; white-space: nowrap;">CURRENT DEPARTMENT</th>
                             <th class="text-center" style="width: 12%; white-space: nowrap;">CREATED BY</th>
                             <th class="text-center" style="width: 14%; white-space: nowrap;">ARCHIVED DATE</th>
                             <th class="text-center" style="width: 18%; white-space: nowrap;">ACTIONS</th>
@@ -68,6 +68,9 @@
                                 @endphp
                                 @if($displayStatus == 'Approved')
                                 <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
+                                @endif
+                                @if($displayStatus == 'Completed')
+                                <i class="bi bi-check-circle-fill text-primary" title="Completed" style="font-size: 0.9rem;"></i>
                                 @endif
                                 @if($displayStatus == 'Rejected')
                                 <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
@@ -92,6 +95,9 @@
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
                                     </form>
+                                    <a href="{{ route('documents.report', ['document' => $document->id, 'format' => 'pdf']) }}" class="btn btn-sm btn-info" title="Generate Report" target="_blank">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </a>
                                     @endcan
                                     @role('Administrator')
                                     <form method="POST" action="{{ route('archive.destroy', $document) }}" class="d-inline">

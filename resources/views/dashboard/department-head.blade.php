@@ -138,7 +138,7 @@
                                     <th>Document Number</th>
                                     <th>Title</th>
                                     <th>Created By</th>
-                                    <th>Status</th>
+                                    <th>Current Status</th>
                                     <th>Current Handler</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -164,7 +164,7 @@
                                     </td>
                                     <td>{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
                                     <td>
-                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')) }}">
+                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Completed' ? 'primary' : ($document->status == 'Return' ? 'danger' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')))) }}">
                                             {{ $document->status }}
                                         </span>
                                     </td>

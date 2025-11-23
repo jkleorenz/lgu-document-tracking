@@ -104,7 +104,7 @@
                                 <tr>
                                     <th>Document #</th>
                                     <th>Title</th>
-                                    <th>Status</th>
+                                    <th>Current Status</th>
                                     <th>Date</th>
                                 </tr>
                             </thead>
@@ -154,7 +154,7 @@
                                 <tr>
                                     <th>Document #</th>
                                     <th>Title</th>
-                                    <th>Status</th>
+                                    <th>Current Status</th>
                                     <th>Date Assigned</th>
                                 </tr>
                             </thead>

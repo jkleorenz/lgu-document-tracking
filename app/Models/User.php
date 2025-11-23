@@ -117,23 +117,20 @@ class User extends Authenticatable
             return Document::active()->count();
         }
         
-        // For department heads: count documents in their department needing action
-        if ($this->hasRole('Department Head') && $this->department_id) {
+        // For department heads and LGU staff: count documents in their department needing action
+        if (($this->hasRole('Department Head') || $this->hasRole('LGU Staff')) && $this->department_id) {
             return Document::active()
-                ->where('department_id', $this->department_id)
-                ->whereIn('status', ['Pending', 'Received', 'Under Review', 'Forwarded'])
+                ->where(function($query) {
+                    // Documents forwarded to their department
+                    $query->where('department_id', $this->department_id)
+                          ->whereIn('status', ['Pending', 'Received', 'Under Review', 'Forwarded']);
+                })
+                ->orWhere(function($query) {
+                    // Documents created by the user
+                    $query->where('created_by', $this->id)
+                          ->whereIn('status', ['Pending', 'Under Review']);
+                })
                 ->count();
-        }
-        
-        // For LGU staff: count documents forwarded to their department that require action
-        // (exclude documents they created themselves, as those are waiting on others, not them)
-        if ($this->hasRole('LGU Staff')) {
-            if ($this->department_id) {
-                return Document::active()
-                    ->where('department_id', $this->department_id)
-                    ->whereIn('status', ['Forwarded', 'Received', 'Under Review'])
-                    ->count();
-            }
         }
         
         return 0;

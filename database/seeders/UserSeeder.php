@@ -17,9 +17,9 @@ class UserSeeder extends Seeder
     {
         // Get departments
         $mayorOffice = Department::where('code', 'MAYOR')->first();
-        $treasDept = Department::where('code', 'TREAS')->first();
+        $treasDept = Department::where('code', 'MTO')->first(); // MTO (Office of the Municipal Treasurer)
         $budgetDept = Department::where('code', 'BUDGET')->first();
-        $engrDept = Department::where('code', 'ENGR')->first();
+        $engrDept = Department::where('code', 'MEO')->first(); // MEO (Office of the Municipal Engineer)
 
         // Create Administrator
         $admin = User::create([

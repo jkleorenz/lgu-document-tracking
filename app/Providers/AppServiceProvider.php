@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-documents', function ($user) {
-            return $user->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff']);
+            return $user->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff', 'Department Head']);
         });
 
         Gate::define('view-all-documents', function ($user) {
@@ -34,7 +34,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('archive-documents', function ($user) {
-            return $user->hasAnyRole(['Administrator', 'Mayor', 'Department Head']);
+            // LGU Staff and Department Head have identical archive privileges
+            return $user->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff', 'Department Head']);
         });
 
         Gate::define('set-priority', function ($user) {

@@ -36,17 +36,17 @@
         </div>
 
         <div class="col-md-4">
-            <a href="{{ route('documents.index', ['status' => 'Pending']) }}" class="text-decoration-none">
-                <div class="card stat-card clickable-card" style="border-left-color: #ffc107;">
+            <a href="{{ route('documents.index', ['status' => 'Return']) }}" class="text-decoration-none">
+                <div class="card stat-card clickable-card" style="border-left-color: #dc3545;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="text-muted mb-2">Pending</h6>
-                                <h2 class="fw-bold mb-0 text-dark">{{ $pendingDocuments }}</h2>
-                                <small class="text-warning"><i class="bi bi-arrow-right-circle"></i> View pending</small>
+                                <h6 class="text-muted mb-2">Return Documents</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ $returnDocuments }}</h2>
+                                <small class="text-danger"><i class="bi bi-arrow-right-circle"></i> View returned</small>
                             </div>
-                            <div class="text-warning" style="font-size: 2.5rem;">
-                                <i class="bi bi-clock-history"></i>
+                            <div class="text-danger" style="font-size: 2.5rem;">
+                                <i class="bi bi-arrow-return-left"></i>
                             </div>
                         </div>
                     </div>
@@ -55,14 +55,14 @@
         </div>
 
         <div class="col-md-4">
-            <a href="{{ route('documents.index', ['status' => 'Approved']) }}" class="text-decoration-none">
+            <a href="{{ route('documents.index', ['status' => 'Completed']) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #198754;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="text-muted mb-2">Approved</h6>
-                                <h2 class="fw-bold mb-0 text-dark">{{ $approvedDocuments }}</h2>
-                                <small class="text-success"><i class="bi bi-arrow-right-circle"></i> View approved</small>
+                                <h6 class="text-muted mb-2">Completed</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ $completedDocuments }}</h2>
+                                <small class="text-success"><i class="bi bi-arrow-right-circle"></i> View completed</small>
                             </div>
                             <div class="text-success" style="font-size: 2.5rem;">
                                 <i class="bi bi-check-circle"></i>
@@ -129,7 +129,7 @@
                                     <th>Document Number</th>
                                     <th>Title</th>
                                     <th>Department</th>
-                                    <th>Status</th>
+                                    <th>Current Status</th>
                                     <th>Handler</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -155,7 +155,7 @@
                                     </td>
                                     <td>{{ $document->department ? $document->department->name : 'N/A' }}</td>
                                     <td>
-                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')) }}">
+                                        <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Completed' ? 'primary' : ($document->status == 'Return' ? 'danger' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')))) }}">
                                             {{ $document->status }}
                                         </span>
                                     </td>

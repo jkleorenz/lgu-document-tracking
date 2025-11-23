@@ -56,11 +56,11 @@ class Department extends Model
     }
 
     /**
-     * Scope to get only active departments
+     * Scope to get only active departments, ordered alphabetically by name
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true)->orderBy('name');
     }
 
     /**

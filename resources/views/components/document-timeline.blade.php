@@ -363,22 +363,42 @@
                 </div>
                         <div class="timeline-content">
                             <div class="timeline-title">
-                                <span class="badge bg-{{ $log->new_status == 'Approved' ? 'success' : ($log->new_status == 'Received' ? 'success' : ($log->new_status == 'Pending' || $log->new_status == 'Pending Verification' ? 'warning' : ($log->new_status == 'Rejected' ? 'danger' : 'info'))) }}">
+                                @php
+                                    // Check if this is a return action
+                                    $isReturn = $log->new_status == 'Return';
+                                    
+                                    // Determine badge color - red for returns, otherwise use standard colors
+                                    $badgeColor = 'info';
+                                    if ($isReturn) {
+                                        $badgeColor = 'danger';
+                                    } elseif ($log->new_status == 'Approved') {
+                                        $badgeColor = 'success';
+                                    } elseif ($log->new_status == 'Completed') {
+                                        $badgeColor = 'primary';
+                                    } elseif ($log->new_status == 'Received') {
+                                        $badgeColor = 'success';
+                                    } elseif ($log->new_status == 'Pending' || $log->new_status == 'Pending Verification') {
+                                        $badgeColor = 'warning';
+                                    } elseif ($log->new_status == 'Rejected') {
+                                        $badgeColor = 'danger';
+                                    }
+                                @endphp
+                                <span class="badge bg-{{ $badgeColor }}">
                                     {{ $log->new_status }}
                                 </span>
                             </div>
                             <div class="timeline-meta">
-                                <span>by <strong>{{ $log->updatedBy ? $log->updatedBy->name : 'System' }}</strong> 
                                 @if($log->updatedBy && $log->updatedBy->department)
-                                ({{ $log->updatedBy->department->name }})
+                                <span>by <strong>{{ $log->updatedBy->department->name }}</strong></span>
+                                @else
+                                <span>by <strong>{{ $log->updatedBy ? $log->updatedBy->name : 'System' }}</strong></span>
                                 @endif
-                                </span>
                             </div>
                             <div class="timeline-date">
                                 {{ $log->action_date->format('M d, Y h:i A') }}
                             </div>
                     
-                    @if($log->remarks)
+                    @if($log->remarks && $isReturn)
                     <div class="timeline-remarks">
                         <i class="bi bi-chat-text"></i> {{ $log->remarks }}
                     </div>

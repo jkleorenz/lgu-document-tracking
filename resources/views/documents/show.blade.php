@@ -97,6 +97,9 @@
                 <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-secondary btn-uniform" target="_blank" title="Print QR Code">
                     <i class="bi bi-qr-code"></i>
                 </a>
+                <a href="{{ route('documents.report', ['document' => $document->id, 'format' => 'pdf']) }}" class="btn btn-info btn-uniform" title="Generate Report">
+                    <i class="bi bi-file-earmark-text"></i>
+                </a>
                 @can('archive-documents')
                 @if($document->status != 'Archived')
                 <form method="POST" action="{{ route('documents.archive', $document) }}" style="display: inline-block; margin: 0;">
@@ -133,7 +136,7 @@
                             <td><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
                         </tr>
                         <tr>
-                            <th>Status:</th>
+                            <th>Current Status:</th>
                             <td>
                                 @php
                                     // For archived documents, get the pre-archive status for display
@@ -143,14 +146,14 @@
                                     // Check if document was manually archived (status changed to 'Archived')
                                     if ($document->status === 'Archived') {
                                         $preArchiveStatus = $document->getPreArchiveStatus();
-                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved')) {
+                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved' || $preArchiveStatus === 'Completed')) {
                                             $displayStatus = $preArchiveStatus;
                                         }
                                     }
                                     // If status is 'Approved' and archived_at is set, it's auto-archived - show 'Approved'
                                     // This case doesn't need special handling as status is already 'Approved'
                                 @endphp
-                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Pending Verification' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info')))) }}">
+                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Completed' ? 'primary' : ($displayStatus == 'Return' ? 'danger' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Pending Verification' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info')))))) }}">
                                     {{ $displayStatus }}
                                 </span>
                                 @if($displayStatus == 'Pending Verification')
@@ -166,6 +169,16 @@
                                 @if($displayStatus == 'Approved')
                                 <span class="badge bg-success text-white ms-2">
                                     <i class="bi bi-check-circle-fill"></i> DOCUMENT APPROVED
+                                </span>
+                                @endif
+                                @if($displayStatus == 'Completed')
+                                <span class="badge bg-primary text-white ms-2">
+                                    <i class="bi bi-check-circle-fill"></i> DOCUMENT COMPLETED
+                                </span>
+                                @endif
+                                @if($displayStatus == 'Return')
+                                <span class="badge bg-danger text-white ms-2">
+                                    <i class="bi bi-arrow-return-left"></i> DOCUMENT RETURNED
                                 </span>
                                 @endif
                                 @if($document->is_priority)
@@ -215,63 +228,6 @@
                 </div>
             </div>
 
-            <!-- Update Status Form -->
-            @if($document->status != 'Archived')
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Update Document Status</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ route('documents.update-status', $document) }}">
-                        @csrf
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="status" class="form-label">New Status <span class="text-danger">*</span></label>
-                                <select class="form-select" id="status" name="status" required>
-                                    <option value="Pending" {{ $document->status == 'Pending' ? 'selected' : '' }}>Pending</option>
-                                    <option value="Received" {{ $document->status == 'Received' ? 'selected' : '' }}>Received</option>
-                                    <option value="Under Review" {{ $document->status == 'Under Review' ? 'selected' : '' }}>Under Review</option>
-                                    <option value="Forwarded" {{ $document->status == 'Forwarded' ? 'selected' : '' }}>Forwarded</option>
-                                    <option value="Approved" {{ $document->status == 'Approved' ? 'selected' : '' }}>Approved</option>
-                                    <option value="Rejected" {{ $document->status == 'Rejected' ? 'selected' : '' }}>Rejected</option>
-                                </select>
-                            </div>
-                            <div class="col-md-8 mb-3">
-                                <label for="remarks" class="form-label">Remarks (Optional)</label>
-                                <input type="text" class="form-control" id="remarks" name="remarks" placeholder="Add remarks...">
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="forward_to_department_status" class="form-label">
-                                    <i class="bi bi-arrow-right-circle"></i> Forward to Department (Optional)
-                                </label>
-                                <select class="form-select" id="forward_to_department_status" name="forward_to_department">
-                                    <option value="">-- No Forwarding --</option>
-                                    @php
-                                        $departments = \App\Models\Department::where('is_active', true)->get();
-                                    @endphp
-                                    @foreach($departments as $dept)
-                                    @if($dept->id != $document->department_id)
-                                    <option value="{{ $dept->id }}">{{ $dept->display_name }}</option>
-                                    @endif
-                                    @endforeach
-                                </select>
-                                <small class="form-text text-muted">
-                                    <i class="bi bi-info-circle"></i> Current: <strong>{{ $document->department ? $document->department->name : 'Unassigned' }}</strong>
-                                </small>
-                            </div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> Update Status
-                        </button>
-                    </form>
-                </div>
-            </div>
-            @endif
-
             <!-- Status History -->
             <div class="card">
                 <div class="card-header">
@@ -287,41 +243,36 @@
                             <div class="border-start border-2 ps-3 flex-grow-1">
                                 <div class="mb-1">
                                     @php
-                                        // Extract "to department" information from remarks if it's a forward
-                                        $toInfo = '';
-                                        $isCombined = false;
-                                        if (Str::contains($log->remarks, 'to')) {
-                                            // Match "to [DepartmentName]" and stop at period or end
-                                            preg_match('/to ([^.]+)/', $log->remarks, $matches);
-                                            if (isset($matches[1])) {
-                                                $toInfo = trim($matches[1]);
-                                                // Check if this is a combined Approved and Forwarded action
-                                                $isCombined = $log->new_status == 'Approved' && Str::contains($log->remarks, 'Approved and forwarded');
-                                            }
+                                        // Check if this is a return action
+                                        $isReturn = $log->new_status == 'Return';
+                                        
+                                        // Determine badge color - red for returns, otherwise use standard colors
+                                        $badgeColor = 'info';
+                                        if ($isReturn) {
+                                            $badgeColor = 'danger';
+                                        } elseif ($log->new_status == 'Approved') {
+                                            $badgeColor = 'success';
+                                        } elseif ($log->new_status == 'Completed') {
+                                            $badgeColor = 'primary';
+                                        } elseif ($log->new_status == 'Received') {
+                                            $badgeColor = 'success';
+                                        } elseif ($log->new_status == 'Pending') {
+                                            $badgeColor = 'warning';
+                                        } elseif ($log->new_status == 'Rejected') {
+                                            $badgeColor = 'danger';
                                         }
                                     @endphp
-                                    @if($isCombined)
-                                        <span class="badge bg-success">Approved</span>
-                                        <span class="text-muted ms-1">and</span>
-                                        <span class="badge bg-info ms-1">Forwarded</span>
-                                        <span class="text-muted ms-1">to</span>
-                                        <span class="badge bg-primary ms-1">{{ $toInfo }}</span>
-                                    @else
-                                        <span class="badge bg-{{ $log->new_status == 'Approved' ? 'success' : ($log->new_status == 'Received' ? 'success' : ($log->new_status == 'Pending' ? 'warning' : ($log->new_status == 'Rejected' ? 'danger' : 'info'))) }}">
-                                            {{ $log->new_status }}
-                                        </span>
-                                        @if($toInfo)
-                                        <span class="text-muted ms-1">to</span>
-                                        <span class="badge bg-primary ms-1">{{ $toInfo }}</span>
-                                        @endif
-                                    @endif
+                                    <span class="badge bg-{{ $badgeColor }}">
+                                        {{ $log->new_status }}
+                                    </span>
                                 </div>
                                 <div class="text-muted small">
-                                    by <strong>{{ $log->updatedBy ? $log->updatedBy->name : 'System' }}</strong>
                                     @if($log->updatedBy && $log->updatedBy->department)
-                                    <span class="text-muted">({{ $log->updatedBy->department->name }})</span>
+                                    by <strong>{{ $log->updatedBy->department->name }}</strong>
+                                    @else
+                                    by <strong>{{ $log->updatedBy ? $log->updatedBy->name : 'System' }}</strong>
                                     @endif
-                                    @if($log->remarks)
+                                    @if($log->remarks && $isReturn)
                                     <br><em>{{ $log->remarks }}</em>
                                     @endif
                                 </div>
@@ -343,11 +294,14 @@
                 </div>
                 <div class="card-body text-center">
                     @if($document->qr_code_path)
-                    <img src="{{ asset($document->qr_code_path) }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 250px;">
+                    <img src="{{ asset($document->qr_code_path) }}" alt="QR Code" id="qr-code-image" class="img-fluid mb-3" style="max-width: 250px;">
                     <div class="d-grid gap-2">
                         <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-primary" target="_blank">
                             <i class="bi bi-printer"></i> Print QR Code
                         </a>
+                        <button type="button" class="btn btn-success" onclick="saveQRCode()">
+                            <i class="bi bi-download"></i> Save QR Code
+                        </button>
                     </div>
                     @else
                     <p class="text-muted">QR Code not available</p>
@@ -413,5 +367,72 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function saveQRCode() {
+    const qrCodeImage = document.getElementById('qr-code-image');
+    if (!qrCodeImage) {
+        alert('QR Code image not found.');
+        return;
+    }
+    
+    // Get the image source
+    const imageUrl = qrCodeImage.src;
+    const documentNumber = '{{ $document->document_number }}';
+    
+    // Create a new image to load the QR code
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // Handle CORS if needed
+    
+    img.onload = function() {
+        // Create a canvas element
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to match image (with higher resolution for better quality)
+        const scale = 2; // 2x resolution for better quality
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        
+        // Scale the context for higher resolution
+        ctx.scale(scale, scale);
+        
+        // Draw the image on canvas
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert canvas to PNG blob
+        canvas.toBlob(function(blob) {
+            if (!blob) {
+                alert('Failed to convert QR code to PNG.');
+                return;
+            }
+            
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'QRCode_' + documentNumber + '.png';
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+        }, 'image/png', 1.0); // PNG format with maximum quality
+    };
+    
+    img.onerror = function() {
+        alert('Failed to load QR code image. Please try again.');
+    };
+    
+    // Load the image
+    img.src = imageUrl;
+}
+</script>
+@endpush
+
 @endsection
 

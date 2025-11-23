@@ -48,12 +48,19 @@
 
                         <div class="mb-3">
                             <label for="document_type" class="form-label">Document Type <span class="text-danger">*</span></label>
+                            @php
+                                $currentType = old('document_type', $document->document_type);
+                                $isOtherType = !in_array($currentType, $documentTypes);
+                                $selectedType = $isOtherType ? 'Others' : $currentType;
+                                $otherValue = $isOtherType ? $currentType : old('document_type_other');
+                            @endphp
+                            
                             <select class="form-select @error('document_type') is-invalid @enderror" 
                                     id="document_type" 
                                     name="document_type" 
                                     required>
                                 @foreach($documentTypes as $type)
-                                <option value="{{ $type }}" {{ old('document_type', $document->document_type) == $type ? 'selected' : '' }}>
+                                <option value="{{ $type }}" {{ $selectedType == $type ? 'selected' : '' }}>
                                     {{ $type }}
                                 </option>
                                 @endforeach
@@ -61,6 +68,27 @@
                             @error('document_type')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            
+                            <!-- Custom input for "Others" -->
+                            <div id="document_type_other_wrapper" class="mt-3 p-3 bg-light rounded border" style="display: {{ $isOtherType ? 'block' : 'none' }};">
+                                <label for="document_type_other" class="form-label fw-bold">
+                                    <i class="bi bi-pencil-square"></i> Specify Document Type <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control @error('document_type_other') is-invalid @enderror" 
+                                       id="document_type_other" 
+                                       name="document_type_other" 
+                                       value="{{ $otherValue }}"
+                                       placeholder="Enter your custom document type here..."
+                                       autocomplete="off"
+                                       {{ $isOtherType ? 'required' : '' }}>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> Please enter the specific document type you need.
+                                </small>
+                                @error('document_type_other')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -139,7 +167,7 @@
                 <div class="card-body">
                     <table class="table table-sm table-borderless">
                         <tr>
-                            <th>Status:</th>
+                            <th>Current Status:</th>
                             <td>
                                 <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : 'info')) }}">
                                     {{ $document->status }}
@@ -167,4 +195,78 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const documentTypeSelect = document.getElementById('document_type');
+    const documentTypeOtherWrapper = document.getElementById('document_type_other_wrapper');
+    const documentTypeOtherInput = document.getElementById('document_type_other');
+    const form = documentTypeSelect.closest('form');
+    
+    function toggleOtherInput() {
+        if (documentTypeSelect.value === 'Others') {
+            documentTypeOtherWrapper.style.display = 'block';
+            documentTypeOtherInput.setAttribute('required', 'required');
+            documentTypeOtherInput.setAttribute('aria-required', 'true');
+            // Focus on the input for better UX
+            setTimeout(() => {
+                documentTypeOtherInput.focus();
+            }, 100);
+        } else {
+            documentTypeOtherWrapper.style.display = 'none';
+            documentTypeOtherInput.removeAttribute('required');
+            documentTypeOtherInput.removeAttribute('aria-required');
+            // Only clear if switching away from Others
+            if (documentTypeSelect.value !== 'Others') {
+                documentTypeOtherInput.value = '';
+            }
+            // Clear any validation errors
+            documentTypeOtherInput.classList.remove('is-invalid');
+        }
+    }
+    
+    // Validate before form submission
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (documentTypeSelect.value === 'Others') {
+                if (!documentTypeOtherInput.value || documentTypeOtherInput.value.trim() === '') {
+                    e.preventDefault();
+                    documentTypeOtherInput.classList.add('is-invalid');
+                    documentTypeOtherInput.focus();
+                    
+                    // Show custom error message
+                    let errorDiv = documentTypeOtherInput.nextElementSibling;
+                    if (!errorDiv || !errorDiv.classList.contains('invalid-feedback')) {
+                        errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        documentTypeOtherInput.parentNode.appendChild(errorDiv);
+                    }
+                    errorDiv.textContent = 'Please specify the document type.';
+                    
+                    return false;
+                } else {
+                    documentTypeOtherInput.classList.remove('is-invalid');
+                }
+            }
+        });
+    }
+    
+    // Check on page load
+    toggleOtherInput();
+    
+    // Check on change
+    documentTypeSelect.addEventListener('change', toggleOtherInput);
+    
+    // Real-time validation for the custom input
+    documentTypeOtherInput.addEventListener('input', function() {
+        if (documentTypeSelect.value === 'Others') {
+            if (this.value.trim() !== '') {
+                this.classList.remove('is-invalid');
+            }
+        }
+    });
+});
+</script>
+@endpush
 

@@ -116,7 +116,7 @@
 <div class="container-fluid">
     <div class="mb-4">
         <h2 class="fw-bold"><i class="bi bi-qr-code-scan"></i> QR Code Scanner</h2>
-        <p class="text-muted">Scan document QR codes to view and update status</p>
+        <p class="text-muted">Scan document QR codes to receive document</p>
     </div>
 
     <!-- Document Result Display (Hidden by default, shown after scan) -->
@@ -149,15 +149,19 @@
                             <td><span class="badge bg-secondary" id="doc-type"></span></td>
                         </tr>
                         <tr>
-                            <th>Status:</th>
+                            <th>Current Status:</th>
                             <td>
                                 <span id="doc-status-badge"></span>
                                 <span id="doc-priority-badge" style="display: none;" class="badge badge-priority ms-2">PRIORITY</span>
                             </td>
                         </tr>
                         <tr>
-                            <th>Department:</th>
+                            <th>Current Department:</th>
                             <td id="doc-department"></td>
+                        </tr>
+                        <tr>
+                            <th>Last Location:</th>
+                            <td id="doc-last-location">N/A</td>
                         </tr>
                         <tr>
                             <th>Created By:</th>
@@ -180,137 +184,94 @@
                         <button onclick="resetScanner()" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> Scan Another Document
                         </button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="document-actions-btn">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="complete-document-btn">
+                                    <i class="bi bi-check-circle"></i> Complete
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" id="return-document-btn">
+                                    <i class="bi bi-arrow-return-left"></i> Return
+                                </a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card mb-3">
+            <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-pin-map-fill"></i> Document Whereabouts</h5>
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Document Whereabouts</h5>
                 </div>
                 <div class="card-body">
-                    <div class="text-center p-3">
-                        <i class="bi bi-building" style="font-size: 3rem; color: #0d6efd;"></i>
-                        <h5 class="mt-3" id="whereabouts-dept"></h5>
-                        <div class="mt-3">
-                            <span id="whereabouts-status-badge"></span>
-                        </div>
-                    </div>
+                    <p class="mb-2"><strong>Current Department:</strong></p>
+                    <p class="fs-5" id="whereabouts-dept"></p>
+                    <hr>
+                    <p class="mb-2"><strong>Current Status:</strong></p>
+                    <p id="whereabouts-status-badge"></p>
                 </div>
             </div>
-            
-            <div class="card">
-                <div class="card-header">
+
+            <div class="card mt-3">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="bi bi-info-circle"></i> Quick Info</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <small class="text-muted">Document Number</small>
-                        <div class="fw-bold" id="quick-doc-number"></div>
-                    </div>
-                    <div class="mb-3">
-                        <small class="text-muted">Status</small>
-                        <div id="quick-status"></div>
-                    </div>
-                    <div class="mb-3">
-                        <small class="text-muted">Priority</small>
-                        <div id="quick-priority"></div>
-                    </div>
+                    <p class="mb-2"><strong>Document Number:</strong></p>
+                    <p id="quick-doc-number"></p>
+                    <hr>
+                    <p class="mb-2"><strong>Status:</strong></p>
+                    <p id="quick-status"></p>
+                    <hr>
+                    <p class="mb-2"><strong>Priority:</strong></p>
+                    <p id="quick-priority"></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scanner Interface (Shown by default) -->
-    <div id="scanner-interface" class="row justify-content-center">
-        <div class="col-md-8">
+    <!-- Scanner Interface -->
+    <div id="scanner-interface" class="row">
+        <div class="col-md-8 offset-md-2">
             <div class="card">
-                <div class="card-body p-4">
-                    <!-- Hardware Scanner Section -->
-                    <div id="scanner-section">
-                        <div class="text-center mb-4">
-                            <div style="font-size: 4rem; color: #0d6efd;">
-                                <i class="bi bi-upc-scan"></i>
-                            </div>
-                            <h3 class="mt-3">Hardware QR Scanner Ready</h3>
-                            <p class="text-muted">Use your 2D scanner device to scan document QR codes</p>
-                        </div>
-
-                        <!-- Scanner Status -->
-                        <div id="scanner-status" class="alert alert-success text-center" style="display: block;">
-                            <i class="bi bi-check-circle"></i> <span id="status-message">Scanner Ready - Point your device at a QR code</span>
-                        </div>
-
-                        <!-- Scanner Input (Hidden field to capture scanner input) -->
-                        <div class="text-center mb-4">
-                            <div class="input-group" style="max-width: 600px; margin: 0 auto;">
-                                <span class="input-group-text bg-primary text-white">
-                                    <i class="bi bi-upc-scan"></i>
-                                </span>
-                                <input type="text" 
-                                       class="form-control form-control-lg" 
-                                       id="scanner_input" 
-                                       placeholder="Waiting for scanner input..."
-                                       autofocus
-                                       autocomplete="off">
-                            </div>
-                            <small class="text-muted mt-2 d-block">
-                                <i class="bi bi-info-circle"></i> This field will automatically capture scanner input
-                            </small>
-                        </div>
-
-                        <!-- Scanner Activity Indicator -->
-                        <div id="scanning-indicator" class="text-center" style="display: none;">
-                            <div class="spinner-border text-primary" role="status">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-upc-scan"></i> Scanner Ready</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="scanner-status" class="alert alert-success text-center">
+                        <p id="status-message" class="mb-0">Scanner Ready - Point your device at a QR code</p>
+                        <div id="scanning-indicator" style="display: none;" class="mt-2">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
                                 <span class="visually-hidden">Scanning...</span>
                             </div>
-                            <p class="mt-2 text-muted">Processing scan...</p>
                         </div>
                     </div>
 
-                    <!-- Divider -->
-                    <div class="text-center my-4">
-                        <hr>
-                        <span class="bg-white px-3 text-muted" style="position: relative; top: -20px;">OR</span>
+                    <div class="mb-4">
+                        <input 
+                            type="text" 
+                            id="scanner_input" 
+                            class="form-control form-control-lg text-center" 
+                            placeholder="Scan QR code or type document number here..."
+                            autocomplete="off"
+                            autofocus
+                        >
+                        <small class="text-muted d-block mt-2">Press Enter or click outside to process</small>
                     </div>
 
-                    <!-- Manual Entry Section -->
-                    <div class="text-center">
-                        <h5 class="mb-3">Enter Document Number Manually</h5>
-                        <form method="POST" action="{{ route('scan.process') }}" id="scanForm">
-                            @csrf
-                            <div class="mb-3">
-                                <input type="text" 
-                                       class="form-control form-control-lg text-center" 
-                                       name="document_number" 
-                                       id="document_number" 
-                                       placeholder="Enter Document Number"
-                                       required>
-                            </div>
-                            <button type="submit" class="btn btn-outline-primary btn-lg">
-                                <i class="bi bi-search"></i> Search Document
-                            </button>
-                        </form>
+                    <div class="d-flex justify-content-center">
+                        <button type="button" class="btn btn-secondary" id="clear-btn">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
                     </div>
-                </div>
-            </div>
-
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> How to Use</h5>
-                </div>
-                <div class="card-body">
-                    <ol>
-                        <li><strong>Hardware Scanner:</strong> Point your 2D scanner device at the QR code - it will automatically scan and process</li>
-                        <li><strong>Manual Entry:</strong> Enter the document number in the field above and click Search</li>
-                        <li>View document details and status after scanning/searching</li>
-                        <li>Update document status if you have permission</li>
-                    </ol>
                     
                     <div class="alert alert-info mt-3">
-                        <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> Make sure the scanner input field is focused (click on it if needed). The QR code is printed on the physical document for quick access.
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>How to use:</strong> Point your device camera at a QR code to scan automatically, or manually type the document number in the field above and press Enter.
                     </div>
                 </div>
             </div>
@@ -318,267 +279,395 @@
     </div>
 </div>
 
+<!-- Return Document Modal -->
+<div class="modal fade" id="returnDocumentModal" tabindex="-1" aria-labelledby="returnDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="returnDocumentModalLabel">
+                    <i class="bi bi-arrow-return-left"></i> Return Document
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="returnDocumentForm">
+                @csrf
+                <div class="modal-body">
+                    <input type="hidden" id="return-document-id" name="document_id" value="">
+                    <div class="mb-3">
+                        <label for="return-remarks" class="form-label">Remarks <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="return-remarks" name="remarks" rows="4" required placeholder="Enter remarks for returning this document..."></textarea>
+                        <small class="text-muted">Please provide a reason or remarks for returning this document.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-arrow-return-left"></i> Return Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
 <script>
-// Hardware Scanner Implementation
-let scannerBuffer = '';
-let scannerTimeout = null;
-let isProcessing = false;
-let isManualEntryActive = false; // Flag to track if manual entry field is being used
+// Store document ID globally for actions
+let currentDocumentId = null;
 
-// Extract document number from QR code data
-function extractDocumentNumber(qrData) {
-    // If QR code contains a URL with document parameter
-    if (qrData.includes('?document=') || qrData.includes('&document=')) {
-        try {
-            const url = new URL(qrData);
-            const documentNumber = url.searchParams.get('document');
-            if (documentNumber) {
-                return documentNumber;
-            }
-        } catch (e) {
-            console.log('Not a URL, using as-is');
-        }
-    }
-    
-    // If it's just the document number, return as-is
-    return qrData.trim();
-}
-
-// Initialize Hardware Scanner Listener
-function initializeHardwareScanner() {
-    const scannerInput = document.getElementById('scanner_input');
-    const statusDiv = document.getElementById('scanner-status');
-    const statusMsg = document.getElementById('status-message');
-    const scanningIndicator = document.getElementById('scanning-indicator');
-    
-    if (!scannerInput) return;
-    
-    // Listen for input events (scanner sends characters rapidly)
-    scannerInput.addEventListener('input', function(e) {
-        if (isProcessing) return;
+// Use event delegation for complete button (works even if button is dynamically added)
+document.addEventListener('click', function(e) {
+    // Check if the clicked element is the complete button or inside it
+    const completeBtn = e.target.closest('#complete-document-btn');
+    if (completeBtn) {
+        e.preventDefault();
+        e.stopPropagation();
         
-        // Clear existing timeout
-        if (scannerTimeout) {
-            clearTimeout(scannerTimeout);
+        console.log('Complete button clicked, currentDocumentId:', currentDocumentId);
+        
+        // Check if document is selected
+        if (!currentDocumentId) {
+            alert('No document selected. Please scan a document first.');
+            return false;
         }
         
-        // Set a timeout to process the complete scan
-        // Hardware scanners typically send all data within 50-100ms
-        scannerTimeout = setTimeout(() => {
-            processScannerInput(scannerInput.value);
-        }, 150);
-    });
-    
-    // Also listen for Enter key (most scanners send Enter after scan)
-    scannerInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && scannerInput.value.trim() !== '') {
-            e.preventDefault();
-            if (scannerTimeout) {
-                clearTimeout(scannerTimeout);
-            }
-            processScannerInput(scannerInput.value);
+        // Confirm action
+        if (!confirm('Are you sure you want to mark this document as complete and approve it?\n\nThis will mark the document as completed and automatically archive it.')) {
+            return false;
         }
-    });
-    
-    // Keep focus on scanner input, but only if manual entry is not active
-    scannerInput.addEventListener('blur', function(e) {
-        setTimeout(() => {
-            const scannerInterface = document.getElementById('scanner-interface');
-            const manualInput = document.getElementById('document_number');
-            const activeElement = document.activeElement;
-            
-            // Only refocus scanner if:
-            // 1. Scanner interface is visible
-            // 2. Manual entry is not active
-            // 3. User is not focusing on manual entry field or form elements
-            // 4. User clicked somewhere else (not on an input field)
-            if (scannerInterface && scannerInterface.style.display !== 'none' && !isManualEntryActive) {
-                const isManualEntryField = activeElement === manualInput;
-                const isFormElement = activeElement && (
-                    activeElement.closest('#scanForm') || 
-                    activeElement.type === 'submit' || 
-                    activeElement.tagName === 'BUTTON'
-                );
-                const isInputField = activeElement && (
-                    activeElement.tagName === 'INPUT' || 
-                    activeElement.tagName === 'TEXTAREA' || 
-                    activeElement.tagName === 'SELECT'
-                );
-                
-                // Don't refocus if user is interacting with manual entry form
-                if (!isManualEntryField && !isFormElement && !isInputField) {
-                    scannerInput.focus();
+        
+        // Close dropdown if open
+        const dropdown = completeBtn.closest('.dropdown-menu');
+        if (dropdown && dropdown.parentElement) {
+            const dropdownToggle = dropdown.parentElement.querySelector('.dropdown-toggle');
+            if (dropdownToggle && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
+                if (bsDropdown) {
+                    bsDropdown.hide();
                 }
             }
-        }, 150);
-    });
-    
-    // Initial focus (but only if manual entry field isn't being used)
-    setTimeout(() => {
-        if (!isManualEntryActive) {
-            scannerInput.focus();
-        }
-    }, 300);
-}
-
-// Process scanned input
-function processScannerInput(scannedData) {
-    if (!scannedData || scannedData.trim() === '' || isProcessing) {
-        return;
-    }
-    
-    isProcessing = true;
-    const scannerInput = document.getElementById('scanner_input');
-    const statusDiv = document.getElementById('scanner-status');
-    const statusMsg = document.getElementById('status-message');
-    const scanningIndicator = document.getElementById('scanning-indicator');
-    
-    // Extract document number
-    const documentNumber = extractDocumentNumber(scannedData);
-    console.log('Hardware Scanner detected:', scannedData);
-    console.log('Extracted document number:', documentNumber);
-    
-    // Update UI
-    statusMsg.textContent = `Scanned: ${documentNumber}`;
-    statusDiv.className = 'alert alert-success text-center';
-    scanningIndicator.style.display = 'block';
-    
-    // Clear input
-    scannerInput.value = '';
-    
-    // Submit the scanned document number
-    submitDocumentNumber(documentNumber);
-}
-
-// Submit document number (from scan or manual entry)
-function submitDocumentNumber(documentNumber) {
-    const statusDiv = document.getElementById('scanner-status');
-    const statusMsg = document.getElementById('status-message');
-    const scanningIndicator = document.getElementById('scanning-indicator');
-    
-    statusDiv.style.display = 'block';
-    statusMsg.textContent = 'Looking up document...';
-    statusDiv.className = 'alert alert-info text-center';
-    
-    const formData = new FormData();
-    formData.append('document_number', documentNumber);
-    formData.append('_token', '{{ csrf_token() }}');
-    
-    fetch('{{ route("scan.process") }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json',
-        },
-        body: formData
-    })
-    .then(response => {
-        // Check if response is OK
-        if (!response.ok) {
-            // Handle HTTP error status codes
-            return response.json().catch(() => {
-                throw new Error(`Server error (${response.status}). Please try again.`);
-            }).then(errorData => {
-                throw new Error(errorData.message || `Error: ${response.statusText || response.status}`);
-            });
         }
         
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
+        // Disable button to prevent double submission
+        completeBtn.style.pointerEvents = 'none';
+        const originalText = completeBtn.innerHTML;
+        completeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        
+        const formData = new FormData();
+        formData.append('document_id', currentDocumentId);
+        formData.append('_token', '{{ csrf_token() }}');
+        
+        fetch('{{ route("scan.complete") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || 'Failed to complete document');
+                });
+            }
             return response.json();
-        } else {
-            // If not JSON, try to get text and show error
-            return response.text().then(text => {
-                throw new Error('Invalid response from server. Please try again.');
-            });
-        }
-    })
-    .then(data => {
-        scanningIndicator.style.display = 'none';
-        
-        if (data.success && data.document) {
-            statusMsg.textContent = 'Document found! Loading details...';
-            statusDiv.className = 'alert alert-success text-center';
-            
-            // Clear input fields
-            document.getElementById('scanner_input').value = '';
-            document.getElementById('document_number').value = '';
-            
-            // Clear manual entry flag
-            isManualEntryActive = false;
-            
-            // Display document information
-            displayDocument(data.document, data.redirect_url);
-            
-            // Hide scanner interface
-            document.getElementById('scanner-interface').style.display = 'none';
-            statusDiv.style.display = 'none';
-            
-            // Reset processing flag
-            isProcessing = false;
-        } else {
-            statusMsg.textContent = data.message || 'Document not found';
-            statusDiv.className = 'alert alert-danger text-center';
-            
-            // Reset processing flag and refocus after delay
-            setTimeout(() => {
-                statusDiv.className = 'alert alert-success text-center';
-                statusMsg.textContent = 'Scanner Ready - Point your device at a QR code';
-                isProcessing = false;
-                
-                // Refocus on the field that was used (manual entry or scanner)
-                const manualInput = document.getElementById('document_number');
-                const scannerInput = document.getElementById('scanner_input');
-                
-                // If manual input has value or was recently focused, refocus it
-                if (manualInput.value || (document.activeElement && document.activeElement.id === 'document_number')) {
-                    isManualEntryActive = true;
-                    manualInput.focus();
-                    manualInput.select(); // Select the text for easy re-entry
-                } else {
-                    isManualEntryActive = false;
-                    scannerInput?.focus();
-                }
-            }, 3000);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        scanningIndicator.style.display = 'none';
-        statusMsg.textContent = 'Error processing request. Please try again.';
-        statusDiv.className = 'alert alert-danger text-center';
-        
-        // Reset processing flag and refocus after delay
-        setTimeout(() => {
-            statusDiv.className = 'alert alert-success text-center';
-            statusMsg.textContent = 'Scanner Ready - Point your device at a QR code';
-            isProcessing = false;
-            
-            // Refocus on the field that was used (manual entry or scanner)
-            const manualInput = document.getElementById('document_number');
-            const scannerInput = document.getElementById('scanner_input');
-            
-            // If manual input has value or was recently focused, refocus it
-            if (manualInput.value || (document.activeElement && document.activeElement.id === 'document_number')) {
-                isManualEntryActive = true;
-                manualInput.focus();
-                manualInput.select(); // Select the text for easy re-entry
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
+                // Reload the page to show updated status
+                location.reload();
             } else {
-                isManualEntryActive = false;
-                scannerInput?.focus();
+                alert('Error: ' + (data.message || 'Failed to complete document.'));
+                // Re-enable button
+                completeBtn.style.pointerEvents = 'auto';
+                completeBtn.innerHTML = originalText;
             }
-        }, 3000);
-    });
-}
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while completing the document: ' + (error.message || 'Unknown error'));
+            // Re-enable button
+            completeBtn.style.pointerEvents = 'auto';
+            completeBtn.innerHTML = originalText;
+        });
+    }
+});
+
+// Use event delegation for return button (works even if button is dynamically added)
+document.addEventListener('click', function(e) {
+    // Check if the clicked element is the return button or inside it
+    const returnBtn = e.target.closest('#return-document-btn');
+    if (returnBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Return button clicked, currentDocumentId:', currentDocumentId);
+        
+        // Check if document is selected
+        if (!currentDocumentId) {
+            alert('No document selected. Please scan a document first.');
+            return false;
+        }
+        
+        // Set the document ID in the hidden field
+        const docIdField = document.getElementById('return-document-id');
+        if (docIdField) {
+            docIdField.value = currentDocumentId;
+            console.log('Document ID set in hidden field:', currentDocumentId);
+        }
+        
+        // Close dropdown if open
+        const dropdown = returnBtn.closest('.dropdown-menu');
+        if (dropdown && dropdown.parentElement) {
+            const dropdownToggle = dropdown.parentElement.querySelector('.dropdown-toggle');
+            if (dropdownToggle && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
+                if (bsDropdown) {
+                    bsDropdown.hide();
+                }
+            }
+        }
+        
+        // Open the modal
+        const modalElement = document.getElementById('returnDocumentModal');
+        if (modalElement) {
+            console.log('Opening return modal');
+            // Use Bootstrap 5 modal
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                let modal = bootstrap.Modal.getInstance(modalElement);
+                if (!modal) {
+                    modal = new bootstrap.Modal(modalElement);
+                }
+                modal.show();
+            } else {
+                // Fallback: show modal manually
+                console.log('Bootstrap not available, using fallback');
+                modalElement.classList.add('show');
+                modalElement.style.display = 'block';
+                modalElement.setAttribute('aria-hidden', 'false');
+                modalElement.setAttribute('aria-modal', 'true');
+                document.body.classList.add('modal-open');
+                
+                // Remove existing backdrop if any
+                const existingBackdrop = document.querySelector('.modal-backdrop');
+                if (existingBackdrop) {
+                    existingBackdrop.remove();
+                }
+                
+                // Create backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+            }
+            
+            // Focus on remarks field after modal is shown
+            setTimeout(function() {
+                const remarksField = document.getElementById('return-remarks');
+                if (remarksField) {
+                    remarksField.focus();
+                }
+            }, 300);
+        } else {
+            console.error('Return modal element not found!');
+            alert('Error: Return modal not found. Please refresh the page.');
+        }
+    }
+});
+
+// Wait for DOM to be ready for modal initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle modal show event to ensure document ID is set
+    const returnModal = document.getElementById('returnDocumentModal');
+    if (returnModal) {
+        returnModal.addEventListener('show.bs.modal', function () {
+            // Ensure document ID is set when modal opens
+            const docIdField = document.getElementById('return-document-id');
+            if (docIdField && currentDocumentId) {
+                docIdField.value = currentDocumentId;
+            }
+        });
+        
+        // Handle when modal is shown (Bootstrap event)
+        returnModal.addEventListener('shown.bs.modal', function () {
+            // Focus on remarks field when modal is shown
+            const remarksField = document.getElementById('return-remarks');
+            if (remarksField) {
+                remarksField.focus();
+            }
+        });
+    }
+
+    // Return document form handler
+    const returnForm = document.getElementById('returnDocumentForm');
+    if (returnForm) {
+        returnForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Return form submitted');
+            
+            // Get document ID from hidden field or global variable
+            const docIdField = document.getElementById('return-document-id');
+            let docId = currentDocumentId; // Use global variable first (most reliable)
+            
+            // If hidden field has a value, prefer it
+            if (docIdField && docIdField.value) {
+                docId = docIdField.value;
+            }
+            
+            // Final fallback: if still no ID, show error
+            if (!docId) {
+                alert('No document selected. Please scan a document first.');
+                console.error('Return document error: currentDocumentId =', currentDocumentId, 'hidden field =', docIdField ? docIdField.value : 'not found');
+                return;
+            }
+            
+            console.log('Returning document ID:', docId);
+            
+            const remarksField = document.getElementById('return-remarks');
+            const remarks = remarksField ? remarksField.value.trim() : '';
+            
+            if (!remarks) {
+                alert('Please enter remarks for returning the document.');
+                remarksField.focus();
+                return;
+            }
+            
+            // Disable submit button to prevent double submission
+            const submitBtn = returnForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Returning...';
+            }
+            
+            const formData = new FormData();
+            formData.append('document_id', docId);
+            formData.append('remarks', remarks);
+            formData.append('_token', '{{ csrf_token() }}');
+            
+            fetch('{{ route("scan.return") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(response => {
+                // Parse JSON response
+                return response.json().then(data => {
+                    // If response is not ok, throw error with data
+                    if (!response.ok) {
+                        const error = new Error(data.message || 'Failed to return document');
+                        error.data = data;
+                        error.status = response.status;
+                        throw error;
+                    }
+                    return data;
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    // Close modal using multiple methods for compatibility
+                    const modalElement = document.getElementById('returnDocumentModal');
+                    if (modalElement) {
+                        // Try Bootstrap 5 method
+                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) {
+                                modal.hide();
+                            } else {
+                                // Create new instance if needed
+                                const newModal = new bootstrap.Modal(modalElement);
+                                newModal.hide();
+                            }
+                        } else {
+                            // Fallback: Use data attributes and classes
+                            modalElement.classList.remove('show');
+                            modalElement.style.display = 'none';
+                            document.body.classList.remove('modal-open');
+                            const backdrop = document.querySelector('.modal-backdrop');
+                            if (backdrop) {
+                                backdrop.remove();
+                            }
+                        }
+                    }
+                    
+                    // Clear form
+                    if (remarksField) {
+                        remarksField.value = '';
+                    }
+                    
+                    // Show success message
+                    alert('Document returned successfully!');
+                    
+                    // Reload page after a short delay to ensure modal is closed
+                    setTimeout(() => {
+                        location.reload();
+                    }, 300);
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to return document.'));
+                    // Re-enable submit button
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-arrow-return-left"></i> Return Document';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Handle validation errors (422)
+                if (error.status === 422 && error.data && error.data.errors) {
+                    let errorMessages = [];
+                    for (let field in error.data.errors) {
+                        errorMessages.push(error.data.errors[field].join(', '));
+                    }
+                    alert('Validation Error:\n' + errorMessages.join('\n'));
+                } else {
+                    // Handle other errors
+                    alert('An error occurred while returning the document: ' + (error.message || 'Unknown error'));
+                }
+                
+                // Re-enable submit button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-arrow-return-left"></i> Return Document';
+                }
+            });
+        });
+    }
+
+    // Reset return modal when closed
+    if (returnModal) {
+        returnModal.addEventListener('hidden.bs.modal', function () {
+            const remarksField = document.getElementById('return-remarks');
+            if (remarksField) {
+                remarksField.value = '';
+            }
+        });
+        
+        // Also handle when modal is closed via backdrop click or ESC
+        returnModal.addEventListener('hide.bs.modal', function () {
+            const remarksField = document.getElementById('return-remarks');
+            if (remarksField) {
+                remarksField.value = '';
+            }
+        });
+    }
+});
 
 // Display document information
 function displayDocument(doc, detailsUrl) {
+    // Store document ID for actions
+    currentDocumentId = doc.id;
+    
     // Populate document details
     document.getElementById('doc-title').textContent = doc.title;
     document.getElementById('doc-number').textContent = doc.document_number;
     document.getElementById('doc-type').textContent = doc.document_type || 'N/A';
     document.getElementById('doc-department').textContent = doc.department;
+    document.getElementById('doc-last-location').textContent = doc.last_location || 'N/A';
     document.getElementById('doc-creator').textContent = doc.created_by;
     document.getElementById('doc-created').textContent = doc.created_at;
     document.getElementById('doc-description').textContent = doc.description || 'No description provided';
@@ -598,6 +687,8 @@ function displayDocument(doc, detailsUrl) {
         'Under Review': 'info',
         'Forwarded': 'info',
         'Rejected': 'danger',
+        'Return': 'danger',
+        'Completed': 'primary',
         'Archived': 'secondary'
     };
     const statusColor = statusColors[doc.status] || 'secondary';
@@ -642,8 +733,6 @@ function resetScanner() {
     document.getElementById('document_number').value = '';
     document.getElementById('scanner_input').value = '';
     
-    // Reset manual entry flag
-    isManualEntryActive = false;
     
     // Reset status
     const statusDiv = document.getElementById('scanner-status');
@@ -658,95 +747,139 @@ function resetScanner() {
     // Reset processing flag
     isProcessing = false;
     
+    // Reset document ID
+    currentDocumentId = null;
+    
     // Refocus scanner input (after a short delay to ensure everything is reset)
     setTimeout(() => {
-        if (!isManualEntryActive) {
-            document.getElementById('scanner_input')?.focus();
-        }
+        document.getElementById('scanner_input')?.focus();
     }, 100);
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Initialize hardware scanner and manual form on page load
+// Scanner functionality
+let isProcessing = false;
+let enterKeyPressed = false;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize hardware scanner
-    initializeHardwareScanner();
-    console.log('Hardware Scanner initialized and ready');
-    
-    // Manual entry field focus management
-    const manualInput = document.getElementById('document_number');
-    if (manualInput) {
-        // Set flag when manual entry field gets focus
-        manualInput.addEventListener('focus', function() {
-            isManualEntryActive = true;
-            console.log('Manual entry active - scanner auto-focus disabled');
+    const scannerInput = document.getElementById('scanner_input');
+    const clearBtn = document.getElementById('clear-btn');
+    const statusDiv = document.getElementById('scanner-status');
+    const statusMsg = document.getElementById('status-message');
+    const scanningIndicator = document.getElementById('scanning-indicator');
+
+    if (scannerInput) {
+        scannerInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !isProcessing) {
+                e.preventDefault();
+                enterKeyPressed = true;
+                processScan();
+                // Reset flag after a short delay to allow blur event to check it
+                setTimeout(() => {
+                    enterKeyPressed = false;
+                }, 200);
+            }
         });
-        
-        // Clear flag when manual entry field loses focus (but only if not submitting)
-        manualInput.addEventListener('blur', function() {
-            // Delay clearing flag to allow form submission to proceed
-            setTimeout(() => {
-                // Only clear if the focus didn't move to the submit button or form elements
-                const activeElement = document.activeElement;
-                const isFormElement = activeElement && (
-                    activeElement.closest('#scanForm') || 
-                    activeElement.type === 'submit' || 
-                    activeElement.tagName === 'BUTTON'
-                );
-                
-                if (!isFormElement) {
-                    isManualEntryActive = false;
-                    console.log('Manual entry inactive - scanner auto-focus enabled');
-                }
-            }, 200);
-        });
-        
-        // Also handle clicks on the input field
-        manualInput.addEventListener('click', function() {
-            isManualEntryActive = true;
-            manualInput.focus();
+
+        scannerInput.addEventListener('blur', function() {
+            // Don't trigger scan if Enter was just pressed or if processing
+            if (scannerInput.value.trim() && !isProcessing && !enterKeyPressed) {
+                processScan();
+            }
         });
     }
-    
-    // Manual form submission handler
-    const scanForm = document.getElementById('scanForm');
-    if (scanForm) {
-        scanForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const documentNumberInput = document.getElementById('document_number');
-            const documentNumber = documentNumberInput.value.trim();
-            
-            // Validate input
-            if (!documentNumber) {
-                const statusDiv = document.getElementById('scanner-status');
-                const statusMsg = document.getElementById('status-message');
-                
-                statusDiv.style.display = 'block';
-                statusMsg.textContent = 'Please enter a document number';
-                statusDiv.className = 'alert alert-warning text-center';
-                
-                documentNumberInput.focus();
-                return;
-            }
-            
-            // Show processing indicator for manual entry
-            const statusDiv = document.getElementById('scanner-status');
-            const statusMsg = document.getElementById('status-message');
-            const scanningIndicator = document.getElementById('scanning-indicator');
-            
-            statusDiv.style.display = 'block';
-            statusMsg.textContent = 'Searching for document...';
-            statusDiv.className = 'alert alert-info text-center';
-            scanningIndicator.style.display = 'block';
-            
-            // Submit the document number
-            submitDocumentNumber(documentNumber);
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            scannerInput.value = '';
+            scannerInput.focus();
+            statusMsg.textContent = 'Scanner Ready - Point your device at a QR code';
         });
-        console.log('Manual entry form handler initialized');
+    }
+
+    function processScan() {
+        const documentNumber = scannerInput.value.trim();
+        
+        if (!documentNumber) {
+            return;
+        }
+
+        if (isProcessing) {
+            return;
+        }
+
+        isProcessing = true;
+        statusDiv.className = 'alert alert-info text-center';
+        statusMsg.textContent = 'Processing scan...';
+        scanningIndicator.style.display = 'block';
+
+        fetch('{{ route("scan.process") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                document_number: documentNumber
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || 'Failed to process scan');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Clear input after successful scan to prevent duplicate processing
+                scannerInput.value = '';
+                statusDiv.className = 'alert alert-success text-center';
+                statusMsg.textContent = data.message || 'Document scanned successfully!';
+                scanningIndicator.style.display = 'none';
+                
+                enterKeyPressed = false; // Reset flag on success
+                
+                // Display document information (include scanner info if available)
+                if (data.scanner) {
+                    data.document.scanner = data.scanner;
+                }
+                displayDocument(data.document, data.redirect_url);
+                
+                // Hide scanner interface
+                document.getElementById('scanner-interface').style.display = 'none';
+                statusDiv.style.display = 'none';
+                
+                // Reset processing flag
+                isProcessing = false;
+            } else {
+                throw new Error(data.message || 'Scan failed');
+            }
+        })
+        .catch(error => {
+            console.error('Scan error:', error);
+            statusDiv.className = 'alert alert-danger text-center';
+            statusMsg.textContent = 'Error: ' + (error.message || 'Failed to process scan');
+            scanningIndicator.style.display = 'none';
+            isProcessing = false;
+            enterKeyPressed = false; // Reset flag on error
+            
+            // Refocus input after error
+            setTimeout(() => {
+                scannerInput.focus();
+            }, 1000);
+        });
+    }
+
+    // Auto-focus scanner input on page load
+    if (scannerInput) {
+        setTimeout(() => {
+            scannerInput.focus();
+        }, 500);
     }
 });
 </script>
-@endsection
+@endpush
 
+@endsection

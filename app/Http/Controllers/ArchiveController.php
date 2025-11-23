@@ -18,10 +18,16 @@ class ArchiveController extends Controller
             ->archived();
 
         // Filter based on user role
-        if ($user->hasRole('LGU Staff')) {
-            $query->where('created_by', $user->id);
-        } elseif ($user->hasRole('Department Head')) {
-            $query->where('department_id', $user->department_id);
+        // LGU Staff and Department Head have identical privileges - can see their own archived documents 
+        // AND documents forwarded to their department
+        if ($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) {
+            $query->where(function($q) use ($user) {
+                $q->where('created_by', $user->id);
+            })->orWhere(function($q) use ($user) {
+                if ($user->department_id) {
+                    $q->where('department_id', $user->department_id);
+                }
+            });
         }
 
         // Apply search filter
@@ -61,11 +67,9 @@ class ArchiveController extends Controller
         // Check if user has permission to view this document
         $user = Auth::user();
         
-        // LGU Staff can view all archived documents (needed for tracking)
-        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff')) {
-            if ($user->hasRole('Department Head') && $document->department_id !== $user->department_id) {
-                abort(403, 'Unauthorized access to this document.');
-            }
+        // LGU Staff and Department Head have identical privileges - can view archived documents (needed for tracking)
+        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff') && !$user->hasRole('Department Head')) {
+            abort(403, 'Unauthorized access to this document.');
         }
 
         $document->load(['creator', 'department', 'statusLogs.updatedBy']);

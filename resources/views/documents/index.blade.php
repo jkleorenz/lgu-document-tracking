@@ -31,15 +31,13 @@
                         <input type="text" name="search" class="form-control" placeholder="Search documents..." value="{{ request('search') }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small">Status</label>
+                        <label class="form-label small">Current Status</label>
                         <select name="status" class="form-select">
                             <option value="">All Status</option>
-                            <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="Active" {{ request('status') == 'Active' ? 'selected' : '' }}>Active</option>
                             <option value="Received" {{ request('status') == 'Received' ? 'selected' : '' }}>Received</option>
-                            <option value="Under Review" {{ request('status') == 'Under Review' ? 'selected' : '' }}>Under Review</option>
-                            <option value="Forwarded" {{ request('status') == 'Forwarded' ? 'selected' : '' }}>Forwarded</option>
-                            <option value="Approved" {{ request('status') == 'Approved' ? 'selected' : '' }}>Approved</option>
-                            <option value="Rejected" {{ request('status') == 'Rejected' ? 'selected' : '' }}>Rejected</option>
+                            <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="Return" {{ request('status') == 'Return' ? 'selected' : '' }}>Return</option>
                         </select>
                     </div>
                     @role('Administrator|Mayor')
@@ -119,8 +117,8 @@
                             <th class="text-center" style="width: 12%; white-space: nowrap;">DOCUMENT #</th>
                             <th style="width: 18%; white-space: nowrap;">TITLE</th>
                             <th class="text-center" style="width: 8%; white-space: nowrap;">TYPE</th>
-                            <th class="text-center" style="width: 10%; white-space: nowrap;">DEPARTMENT</th>
-                            <th class="text-center" style="width: 10%; white-space: nowrap;">STATUS</th>
+                            <th class="text-center" style="width: 10%; white-space: nowrap;">CURRENT DEPARTMENT</th>
+                            <th class="text-center" style="width: 10%; white-space: nowrap;">CURRENT STATUS</th>
                             <th class="text-center" style="width: 10%; white-space: nowrap;">CREATED BY</th>
                             <th class="text-center" style="width: 12%; white-space: nowrap;">CURRENT HANDLER</th>
                             <th class="text-center" style="width: 8%; white-space: nowrap;">DATE</th>
@@ -143,13 +141,16 @@
                                     $iconStatus = $document->status;
                                     if ($document->status === 'Archived') {
                                         $preArchiveStatus = $document->getPreArchiveStatus();
-                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved')) {
+                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved' || $preArchiveStatus === 'Completed')) {
                                             $iconStatus = $preArchiveStatus;
                                         }
                                     }
                                 @endphp
                                 @if($iconStatus == 'Approved')
                                 <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
+                                @endif
+                                @if($iconStatus == 'Completed')
+                                <i class="bi bi-check-circle-fill text-primary" title="Completed" style="font-size: 0.9rem;"></i>
                                 @endif
                                 @if($iconStatus == 'Rejected')
                                 <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
@@ -164,12 +165,12 @@
                                     $preArchiveStatus = null;
                                     if ($document->status === 'Archived') {
                                         $preArchiveStatus = $document->getPreArchiveStatus();
-                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved')) {
+                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved' || $preArchiveStatus === 'Completed')) {
                                             $displayStatus = $preArchiveStatus;
                                         }
                                     }
                                 @endphp
-                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info'))) }}">
+                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Completed' ? 'primary' : ($displayStatus == 'Return' ? 'danger' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info'))))) }}">
                                     {{ $displayStatus }}
                                 </span>
                                 @if($document->status === 'Archived' && $preArchiveStatus && $preArchiveStatus !== 'Archived')
@@ -200,7 +201,7 @@
                                     <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-sm btn-secondary" title="Print QR" target="_blank">
                                         <i class="bi bi-qr-code"></i>
                                     </a>
-                                    @role('Administrator|Department Head')
+                                    @can('archive-documents')
                                     @if($document->status != 'Archived')
                                     <form method="POST" action="{{ route('documents.archive', $document) }}" class="d-inline">
                                         @csrf
@@ -209,7 +210,7 @@
                                         </button>
                                     </form>
                                     @endif
-                                    @endrole
+                                    @endcan
                                 </div>
                             </td>
                         </tr>

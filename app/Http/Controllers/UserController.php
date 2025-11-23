@@ -104,7 +104,7 @@ class UserController extends Controller
     {
         $this->authorize('verify-users');
 
-        $departments = Department::active()->get();
+        $departments = Department::active()->orderBy('name')->get();
         $roles = ['Administrator', 'LGU Staff', 'Department Head'];
 
         return view('users.create', compact('departments', 'roles'));
@@ -163,7 +163,7 @@ class UserController extends Controller
     {
         $this->authorize('verify-users');
 
-        $departments = Department::active()->get();
+        $departments = Department::active()->orderBy('name')->get();
         $roles = ['Administrator', 'LGU Staff', 'Department Head'];
 
         return view('users.edit', compact('user', 'departments', 'roles'));
