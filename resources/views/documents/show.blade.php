@@ -187,7 +187,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <th>Department:</th>
+                            <th>Current Department:</th>
                             <td>
                                 @if($document->department)
                                 {{ $document->department->display_name }}
@@ -195,6 +195,10 @@
                                 <span class="text-muted">Unassigned</span>
                                 @endif
                             </td>
+                        </tr>
+                        <tr>
+                            <th>Last Location:</th>
+                            <td>{{ $lastLocation ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>Created By:</th>

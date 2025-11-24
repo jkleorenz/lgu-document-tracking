@@ -797,7 +797,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function processScan() {
-        const documentNumber = scannerInput.value.trim();
+        let documentNumber = scannerInput.value.trim();
+        
+        // Extract document code from URL if scanned value is a URL
+        // Handles URLs like: http://127.0.0.1:8000/scan?document=DOC-202511-0009
+        if (documentNumber.includes('?document=') || documentNumber.includes('&document=')) {
+            try {
+                // Try to parse as URL
+                const url = new URL(documentNumber);
+                documentNumber = url.searchParams.get('document') || documentNumber;
+            } catch (e) {
+                // If URL parsing fails, try regex extraction
+                const match = documentNumber.match(/[?&]document=([^&]+)/);
+                if (match && match[1]) {
+                    documentNumber = decodeURIComponent(match[1]);
+                }
+            }
+        }
+        
+        // Also handle if the scanned value is just a URL path with query string
+        if (!documentNumber && scannerInput.value.trim().includes('document=')) {
+            const match = scannerInput.value.trim().match(/document=([^&\s]+)/);
+            if (match && match[1]) {
+                documentNumber = decodeURIComponent(match[1]);
+            }
+        }
         
         if (!documentNumber) {
             return;

@@ -72,7 +72,7 @@
     <div class="row">
         <div class="col-md-8">
             <div class="alert alert-dark">
-                <i class="bi bi-archive"></i> This document was archived on {{ $document->archived_at->format('F d, Y h:i A') }}
+                <i class="bi bi-archive"></i> This document was archived on {{ $document->archived_at ? $document->archived_at->format('F d, Y h:i A') : 'N/A' }}
             </div>
 
             <div class="card mb-4">
@@ -125,7 +125,7 @@
                         </tr>
                         <tr>
                             <th>Archived Date:</th>
-                            <td>{{ $document->archived_at->format('F d, Y h:i A') }}</td>
+                            <td>{{ $document->archived_at ? $document->archived_at->format('F d, Y h:i A') : 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>Description:</th>
@@ -221,11 +221,11 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <small class="text-muted">Archived</small>
-                        <div>{{ $document->archived_at->diffForHumans() }}</div>
+                        <div>{{ $document->archived_at ? $document->archived_at->diffForHumans() : 'N/A' }}</div>
                     </div>
                     <div class="mb-3">
                         <small class="text-muted">Total Processing Time</small>
-                        <div>{{ $document->created_at->diffInDays($document->archived_at) }} days</div>
+                        <div>{{ $document->archived_at ? $document->created_at->diffInDays($document->archived_at) : 'N/A' }} {{ $document->archived_at ? 'days' : '' }}</div>
                     </div>
                     <div class="mb-3">
                         <small class="text-muted">Status Changes</small>

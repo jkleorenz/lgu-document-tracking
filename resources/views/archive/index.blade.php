@@ -80,8 +80,12 @@
                             <td class="text-center">{{ $document->department->code }}</td>
                             <td class="text-center">{{ $document->creator->name }}</td>
                             <td class="text-center">
-                                <small>{{ $document->archived_at->format('M d, Y') }}</small><br>
-                                <small class="text-muted">{{ $document->archived_at->diffForHumans() }}</small>
+                                @if($document->archived_at)
+                                    <small>{{ $document->archived_at->format('M d, Y') }}</small><br>
+                                    <small class="text-muted">{{ $document->archived_at->diffForHumans() }}</small>
+                                @else
+                                    <small class="text-muted">N/A</small>
+                                @endif
                             </td>
                             <td class="text-center">
                                 <div class="d-flex gap-1 justify-content-center">
