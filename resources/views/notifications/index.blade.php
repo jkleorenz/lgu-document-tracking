@@ -194,23 +194,26 @@
 </div>
 
 <script>
-// Auto-refresh notification count every 30 seconds
+// Auto-refresh notification count every 10 seconds (more frequent)
+// This works in conjunction with the global script in app.blade.php
 setInterval(function() {
     fetch('{{ route("notifications.unread-count") }}')
         .then(response => response.json())
         .then(data => {
-            // Update badge in sidebar if exists
-            const badge = document.querySelector('.notification-badge');
+            // Update badge in sidebar (use ID selector for more reliable targeting)
+            const badge = document.getElementById('notification-badge');
             if (badge) {
                 if (data.count > 0) {
                     badge.textContent = data.count;
                     badge.style.display = 'inline';
                 } else {
+                    badge.textContent = '0';
                     badge.style.display = 'none';
                 }
             }
-        });
-}, 30000);
+        })
+        .catch(error => console.error('Error fetching notification count:', error));
+}, 10000);
 </script>
 @endsection
 

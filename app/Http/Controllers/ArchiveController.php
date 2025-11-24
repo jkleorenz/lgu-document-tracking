@@ -10,25 +10,35 @@ class ArchiveController extends Controller
 {
     /**
      * Display archived documents
+     * Archive page shows only archived-completed documents (status='Completed' with archived_at set)
      */
     public function index(Request $request)
     {
         $user = Auth::user();
+        
+        // Archive page shows only archived-completed documents
+        // These are documents with status='Completed' AND archived_at IS NOT NULL
         $query = Document::with(['creator', 'department'])
-            ->archived();
+            ->where('status', 'Completed')
+            ->whereNotNull('archived_at');
 
         // Filter based on user role
-        // LGU Staff and Department Head have identical privileges - can see their own archived documents 
-        // AND documents forwarded to their department
         if ($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) {
+            // LGU Staff and Department Head see:
+            // 1. Completed documents they created
+            // 2. Completed documents from their department (documents completed by their department)
             $query->where(function($q) use ($user) {
-                $q->where('created_by', $user->id);
-            })->orWhere(function($q) use ($user) {
-                if ($user->department_id) {
-                    $q->where('department_id', $user->department_id);
-                }
+                // Documents created by the user
+                $q->where('created_by', $user->id)
+                  // OR documents from their department
+                  ->orWhere(function($deptQ) use ($user) {
+                      if ($user->department_id) {
+                          $deptQ->where('department_id', $user->department_id);
+                      }
+                  });
             });
         }
+        // Administrators see all archived-completed documents (no additional filter)
 
         // Apply search filter
         if ($request->filled('search')) {

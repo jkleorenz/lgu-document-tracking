@@ -553,9 +553,7 @@
             <li class="nav-item">
                 <a class="nav-link position-relative {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
                     <i class="bi bi-bell"></i> Notifications
-                    @if(auth()->user()->unreadNotificationsCount() > 0)
-                    <span class="notification-badge">{{ auth()->user()->unreadNotificationsCount() }}</span>
-                    @endif
+                    <span class="notification-badge" id="notification-badge" style="display: {{ auth()->user()->unreadNotificationsCount() > 0 ? 'inline' : 'none' }};">{{ auth()->user()->unreadNotificationsCount() }}</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -667,6 +665,36 @@
     
     <!-- Scripts Stack -->
     @stack('scripts')
+    
+    <!-- Global Notification Badge Update Script -->
+    <script>
+    // Update notification badge on page load and periodically
+    (function() {
+        function updateNotificationBadge() {
+            fetch('{{ route("notifications.unread-count") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('notification-badge');
+                    if (badge) {
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.style.display = 'inline';
+                        } else {
+                            badge.textContent = '0';
+                            badge.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching notification count:', error));
+        }
+        
+        // Update immediately on page load
+        updateNotificationBadge();
+        
+        // Update every 10 seconds (more frequent than before)
+        setInterval(updateNotificationBadge, 10000);
+    })();
+    </script>
 </body>
 </html>
 

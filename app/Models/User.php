@@ -112,23 +112,26 @@ class User extends Authenticatable
      */
     public function pendingDocumentsCount()
     {
-        // For administrators: count all active documents
+        // For administrators: count all active documents (including Forwarded)
         if ($this->hasRole('Administrator')) {
-            return Document::active()->count();
+            return Document::active()
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
+                ->count();
         }
         
         // For department heads and LGU staff: count documents in their department needing action
+        // Forwarded documents are considered active even if not yet received
         if (($this->hasRole('Department Head') || $this->hasRole('LGU Staff')) && $this->department_id) {
             return Document::active()
                 ->where(function($query) {
-                    // Documents forwarded to their department
+                    // Documents forwarded to their department (including Forwarded status)
                     $query->where('department_id', $this->department_id)
-                          ->whereIn('status', ['Pending', 'Received', 'Under Review', 'Forwarded']);
+                          ->whereIn('status', ['Pending', 'Received', 'Under Review', 'Forwarded', 'Return']);
                 })
                 ->orWhere(function($query) {
                     // Documents created by the user
                     $query->where('created_by', $this->id)
-                          ->whereIn('status', ['Pending', 'Under Review']);
+                          ->whereIn('status', ['Pending', 'Under Review', 'Forwarded']);
                 })
                 ->count();
         }
@@ -173,10 +176,10 @@ class User extends Authenticatable
                 ->latest();
         }
         
-        // For Administrators: all active documents needing attention
+        // For Administrators: all active documents needing attention (including Forwarded)
         if ($this->hasRole('Administrator')) {
             return Document::active()
-                ->whereIn('status', ['Pending', 'Under Review'])
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
                 ->latest();
         }
         

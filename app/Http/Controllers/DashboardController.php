@@ -43,40 +43,31 @@ class DashboardController extends Controller
      */
     private function adminDashboard()
     {
-        // Count all completed documents, including archived ones (completed documents are auto-archived)
-        // Include documents with current status "Completed" AND archived documents that had "Completed" status before archiving
-        $completedCount = Document::where(function($q) {
-            // Documents with current status "Completed"
-            $q->where('status', 'Completed');
-            
-            // OR archived documents that had "Completed" status before archiving
-            // Get document IDs from status logs where the old_status is "Completed"
-            // and the new_status is "Archived"
-            $archivedDocIds = DB::table('document_status_logs')
-                ->where('old_status', 'Completed')
-                ->where('new_status', 'Archived')
-                ->distinct()
-                ->pluck('document_id');
-            
-            if ($archivedDocIds->isNotEmpty()) {
-                $q->orWhere(function($subQ) use ($archivedDocIds) {
-                    $subQ->where('status', 'Archived')
-                         ->whereIn('id', $archivedDocIds);
-                });
-            }
-        })->count();
+        // Count all completed documents, including archived-completed ones
+        // Completed documents have status='Completed' (may or may not have archived_at set)
+        $completedCount = Document::where('status', 'Completed')->count();
         
         $data = [
-            'activeDocuments' => Document::active()->count(),
+            // Active documents include Forwarded, Received, Under Review, Pending, Return
+            'activeDocuments' => Document::active()
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
+                ->count(),
             'completedDocuments' => $completedCount,
-            'priorityDocuments' => Document::priority()->active()->count(),
-            'archivedDocuments' => Document::archived()->count(),
+            'priorityDocuments' => Document::priority()
+                ->active()
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
+                ->count(),
+            // Count archived-completed documents (status='Completed' with archived_at set)
+            'archivedDocuments' => Document::where('status', 'Completed')
+                ->whereNotNull('archived_at')
+                ->count(),
             'pendingVerifications' => User::where('status', 'pending')->count(),
             'totalUsers' => User::where('status', 'verified')->count(),
             'totalDepartments' => Department::active()->count(),
             'departments' => Department::active()->orderBy('name')->get(),
             'recentDocuments' => Document::with(['creator', 'department', 'currentHandler'])
                 ->active()
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
                 ->latest()
                 ->take(10)
                 ->get(),
@@ -86,6 +77,7 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get(),
             'documentsByStatus' => Document::active()
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
                 ->selectRaw('status, count(*) as count')
                 ->groupBy('status')
                 ->pluck('count', 'status')
@@ -130,30 +122,19 @@ class DashboardController extends Controller
                     }
                 })
                 ->count(),
-            // Count all completed documents created by user, including archived ones (completed documents are auto-archived)
-            // Include documents with current status "Completed" AND archived documents that had "Completed" status before archiving
-            'completedDocuments' => Document::where('created_by', $user->id)
+            // Count completed documents:
+            // 1. Documents created by user with status='Completed' (includes archived-completed)
+            // 2. Documents completed by user's department with status='Completed' (includes archived-completed)
+            'completedDocuments' => Document::where('status', 'Completed')
                 ->where(function($q) use ($user) {
-                    // Documents with current status "Completed"
-                    $q->where('status', 'Completed');
-                    
-                    // OR archived documents that had "Completed" status before archiving
-                    // Get document IDs from status logs where the old_status is "Completed"
-                    // and the new_status is "Archived", but only for documents created by this user
-                    $archivedDocIds = DB::table('document_status_logs')
-                        ->join('documents', 'document_status_logs.document_id', '=', 'documents.id')
-                        ->where('documents.created_by', $user->id)
-                        ->where('document_status_logs.old_status', 'Completed')
-                        ->where('document_status_logs.new_status', 'Archived')
-                        ->distinct()
-                        ->pluck('document_status_logs.document_id');
-                    
-                    if ($archivedDocIds->isNotEmpty()) {
-                        $q->orWhere(function($subQ) use ($archivedDocIds) {
-                            $subQ->where('status', 'Archived')
-                                 ->whereIn('id', $archivedDocIds);
-                        });
-                    }
+                    // Documents created by the user
+                    $q->where('created_by', $user->id)
+                      // OR documents from user's department
+                      ->orWhere(function($deptQ) use ($user) {
+                          if ($user->department_id) {
+                              $deptQ->where('department_id', $user->department_id);
+                          }
+                      });
                 })
                 ->count(),
             'recentDocuments' => Document::with(['department', 'currentHandler'])

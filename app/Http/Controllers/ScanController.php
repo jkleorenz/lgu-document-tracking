@@ -134,27 +134,14 @@ class ScanController extends Controller
                     );
                 }
                 
-                // Notify document creator about the receipt
-                if ($document->created_by != $user->id) {
-                    Notification::createNotification(
-                        $document->created_by,
-                        'Document Received via QR Scan',
-                        "Document '{$document->title}' ({$document->document_number}) was received at {$scannerDepartment} via QR scan by {$scannerName}.",
-                        'success',
-                        $document->id
-                    );
-                }
-                
-                // Notify old department head if document was moved to a different department
-                if ($departmentChanged && $oldDepartment && $oldDepartment->head_id && $oldDepartment->head_id != $user->id) {
-                    Notification::createNotification(
-                        $oldDepartment->head_id,
-                        'Document Received at Different Department',
-                        "Document '{$document->title}' ({$document->document_number}) was received at {$scannerDepartment} via QR scan by {$scannerName}.",
-                        'info',
-                        $document->id
-                    );
-                }
+                // EVENT 2: Document Received via QR Scan
+                // Refresh document to get updated relationships
+                $document->refresh();
+                $this->notificationService->onDocumentReceivedViaQRScan(
+                    $document,
+                    $user,
+                    $scannerDepartment
+                );
             } else {
                 // Just location update or tracking scan - log without remarks
                 // Check if a duplicate log was just created (within last 2 seconds)
@@ -273,9 +260,17 @@ class ScanController extends Controller
         DB::beginTransaction();
         try {
             // Update document status
-            $document->update([
+            $updates = [
                 'status' => $validated['status'],
-            ]);
+            ];
+            
+            // If status is Completed, auto-archive (document is finished)
+            // Keep status as 'Completed' but set archived_at to mark it as archived-completed
+            if ($validated['status'] === 'Completed') {
+                $updates['archived_at'] = now();
+            }
+            
+            $document->update($updates);
 
             // Log the status change
             DocumentStatusLog::createLog(
@@ -286,12 +281,31 @@ class ScanController extends Controller
                 $validated['remarks'] ?? 'Updated via QR scan'
             );
 
-            // Notify document creator
-            $this->notificationService->notifyStatusUpdate(
-                $document,
-                $document->created_by,
-                $validated['status']
-            );
+            // EVENT 4: Document Completed / Archived-Completed
+            if ($validated['status'] === 'Completed') {
+                $document->refresh();
+                $this->notificationService->onDocumentCompleted(
+                    $document,
+                    Auth::user()
+                );
+            } else {
+                // For other status updates, notify creator and administrator
+                // (This is a general status update, not one of the 5 main events)
+                if ($document->created_by) {
+                    $this->notificationService->notifyCreator(
+                        $document,
+                        'Document Status Updated',
+                        "Document '{$document->title}' status has been updated to {$validated['status']}.",
+                        'info'
+                    );
+                }
+                $this->notificationService->notifyAdministrators(
+                    'Document Status Updated',
+                    "Document '{$document->title}' ({$document->document_number}) status has been updated to {$validated['status']}.",
+                    'info',
+                    $document->id
+                );
+            }
 
             DB::commit();
 
@@ -337,6 +351,7 @@ class ScanController extends Controller
         DB::beginTransaction();
         try {
             // Update document status to Completed and archive it
+            // Keep status as 'Completed' but set archived_at to mark it as archived-completed
             $document->status = 'Completed';
             $document->archived_at = now();
             $document->save();
@@ -350,16 +365,13 @@ class ScanController extends Controller
                 'Document completed and approved'
             );
 
-            // Notify document creator
-            if ($document->created_by != $user->id) {
-                Notification::createNotification(
-                    $document->created_by,
-                    'Document Completed and Approved',
-                    "Document '{$document->title}' ({$document->document_number}) has been marked as complete and approved by {$user->name}.",
-                    'success',
-                    $document->id
-                );
-            }
+            // EVENT 4: Document Completed / Archived-Completed
+            // Refresh document to get updated relationships
+            $document->refresh();
+            $this->notificationService->onDocumentCompleted(
+                $document,
+                $user
+            );
 
             DB::commit();
 
@@ -526,17 +538,18 @@ class ScanController extends Controller
                 $remarks
             );
 
-            // Notify all users in the department being returned to
+            // EVENT 3: Document Returned
+            // Refresh document to get updated relationships
+            $document->refresh();
             try {
-                $this->notificationService->notifyDepartmentUsers(
-                    $lastDepartmentId,
-                    'Document Returned to ' . $lastDepartmentName,
-                    "Document '{$document->title}' ({$document->document_number}) has been returned to {$lastDepartmentName} by {$user->name} from {$currentUserDepartment}.\n\nRemarks: {$validated['remarks']}",
-                    'warning',
-                    $document->id
+                $this->notificationService->onDocumentReturned(
+                    $document,
+                    $targetDepartment,
+                    $user,
+                    $validated['remarks']
                 );
             } catch (\Exception $notifError) {
-                \Log::warning('Failed to notify department users on return: ' . $notifError->getMessage());
+                \Log::warning('Failed to notify on document return: ' . $notifError->getMessage());
             }
 
             DB::commit();

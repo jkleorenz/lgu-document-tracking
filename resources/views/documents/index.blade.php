@@ -163,19 +163,28 @@
                                     // For archived documents, get the pre-archive status for display
                                     $displayStatus = $document->status;
                                     $preArchiveStatus = null;
+                                    $isArchived = false;
                                     if ($document->status === 'Archived') {
                                         $preArchiveStatus = $document->getPreArchiveStatus();
                                         if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved' || $preArchiveStatus === 'Completed')) {
                                             $displayStatus = $preArchiveStatus;
+                                            $isArchived = true;
                                         }
+                                    }
+                                    // Also check if document is completed and archived (has archived_at set)
+                                    if ($document->status === 'Completed' && $document->isArchived()) {
+                                        $isArchived = true;
                                     }
                                 @endphp
                                 <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Completed' ? 'primary' : ($displayStatus == 'Return' ? 'danger' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info'))))) }}">
-                                    {{ $displayStatus }}
+                                    @if($displayStatus == 'Completed' && $isArchived)
+                                        Completed (Archived)
+                                    @elseif($displayStatus == 'Approved' && $isArchived)
+                                        Approved (Archived)
+                                    @else
+                                        {{ $displayStatus }}
+                                    @endif
                                 </span>
-                                @if($document->status === 'Archived' && $preArchiveStatus && $preArchiveStatus !== 'Archived')
-                                <br><small class="text-muted">(Archived)</small>
-                                @endif
                             </td>
                             <td class="text-center">{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
                             <td class="text-center">

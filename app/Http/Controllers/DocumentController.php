@@ -34,156 +34,21 @@ class DocumentController extends Controller
         $user = Auth::user();
         $query = Document::with(['creator', 'department']);
 
-        // Exclude archived documents from documents page, EXCEPT when filtering by Completed or "All Status"
-        // When filtering by Completed or "All Status", include archived completed documents
-        // Archived documents have their own dedicated archive page
-        if ($request->filled('status') && $request->status === 'Completed') {
-            // When filtering by Completed, allow archived completed documents
-            // The role-based filters and status filter will handle the specific logic
-            // Just exclude non-completed archived documents
-            $query->where(function($q) {
-                $q->whereNull('archived_at')
-                  ->orWhere(function($subQ) {
-                      // Include archived documents that had Completed status
-                      $archivedDocIds = DB::table('document_status_logs')
-                          ->where('old_status', 'Completed')
-                          ->where('new_status', 'Archived')
-                          ->distinct()
-                          ->pluck('document_id');
-                      
-                      if ($archivedDocIds->isNotEmpty()) {
-                          $subQ->where('status', 'Archived')
-                               ->whereIn('id', $archivedDocIds);
-                      } else {
-                          $subQ->whereRaw('1 = 0');
-                      }
-                  });
-            });
-        } elseif (!$request->filled('status')) {
-            // "All Status" - allow archived completed documents
-            $query->where(function($q) {
-                $q->whereNull('archived_at')
-                  ->orWhere(function($subQ) {
-                      // Include archived documents that had Completed status
-                      $archivedDocIds = DB::table('document_status_logs')
-                          ->where('old_status', 'Completed')
-                          ->where('new_status', 'Archived')
-                          ->distinct()
-                          ->pluck('document_id');
-                      
-                      if ($archivedDocIds->isNotEmpty()) {
-                          $subQ->where('status', 'Archived')
-                               ->whereIn('id', $archivedDocIds);
-                      } else {
-                          $subQ->whereRaw('1 = 0');
-                      }
-                  });
-            });
-        } else {
-            // For other status filters, exclude all archived documents
-            $query->whereNull('archived_at')
-                  ->where('status', '!=', 'Archived');
-        }
-
-        // Filter based on user role
-        // LGU Staff and Department Head have identical privileges - can see their own documents 
-        // AND documents forwarded to their department
-        if ($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) {
-            $query->where(function($q) use ($user, $request) {
-                // Documents created by the user
-                $q->where('created_by', $user->id);
-                
-                // Exclude archived documents from user's created documents, EXCEPT when filtering by Completed
-                if (!$request->filled('status') || $request->status !== 'Completed') {
-                    $q->whereNull('archived_at')
-                      ->where('status', '!=', 'Archived');
-                }
-                
-                // When filtering by Active, exclude completed documents
-                if ($request->filled('status') && $request->status === 'Active') {
-                    $q->where('status', '!=', 'Completed')
-                      ->where(function($subQ) {
-                          $subQ->where('status', 'Received')
-                               ->orWhere('status', 'Return');
-                      });
-                }
-                // When filtering by Return, only show Return status
-                elseif ($request->filled('status') && $request->status === 'Return') {
-                    $q->where('status', 'Return');
-                }
-                // When filtering by Completed, explicitly include Completed status documents
-                // Include both active and archived completed documents
-                elseif ($request->filled('status') && $request->status === 'Completed') {
-                    $q->where(function($completedQ) {
-                        $completedQ->where('status', 'Completed')
-                            ->orWhere(function($archivedQ) {
-                                // Include archived documents that had Completed status
-                                $archivedDocIds = DB::table('document_status_logs')
-                                    ->where('old_status', 'Completed')
-                                    ->where('new_status', 'Archived')
-                                    ->distinct()
-                                    ->pluck('document_id');
-                                
-                                if ($archivedDocIds->isNotEmpty()) {
-                                    $archivedQ->where('status', 'Archived')
-                                             ->whereIn('id', $archivedDocIds);
-                                } else {
-                                    $archivedQ->whereRaw('1 = 0');
-                                }
-                            });
-                    });
-                }
-            })->orWhere(function($q) use ($user, $request) {
-                // Documents forwarded to their department (even if not created by them)
-                // Include Return status documents when filtering by Return or showing all
-                if ($user->department_id) {
-                    // When filtering by Return, only include Return status documents (non-archived)
-                    if ($request->filled('status') && $request->status === 'Return') {
-                        $q->where('department_id', $user->department_id)
-                          ->where('status', 'Return')
-                          ->whereNull('archived_at')
-                          ->where('status', '!=', 'Archived');
-                    } else {
-                        // For other filters or no filter
-                        if (!$request->filled('status')) {
-                            // When "All Status" is selected, only include: Received, Return, and Completed
-                            $q->where('department_id', $user->department_id)
-                              ->whereIn('status', ['Received', 'Return', 'Completed']);
-                        } elseif ($request->filled('status') && $request->status === 'Completed') {
-                            // When filtering by Completed, include Completed status documents in department
-                            // Include both active and archived completed documents
-                            $q->where('department_id', $user->department_id)
-                              ->where(function($completedQ) {
-                                  $completedQ->where('status', 'Completed')
-                                      ->orWhere(function($archivedQ) {
-                                          // Include archived documents that had Completed status
-                                          $archivedDocIds = DB::table('document_status_logs')
-                                              ->where('old_status', 'Completed')
-                                              ->where('new_status', 'Archived')
-                                              ->distinct()
-                                              ->pluck('document_id');
-                                          
-                                          if ($archivedDocIds->isNotEmpty()) {
-                                              $archivedQ->where('status', 'Archived')
-                                                       ->whereIn('id', $archivedDocIds);
-                                          } else {
-                                              $archivedQ->whereRaw('1 = 0');
-                                          }
-                                      });
-                              });
-                        } else {
-                            // For other specific status filters, include normal statuses
-                            $statuses = ['Forwarded', 'Received', 'Under Review'];
-                            $q->where('department_id', $user->department_id)
-                              ->whereIn('status', $statuses)
-                              ->whereNull('archived_at')
-                              ->where('status', '!=', 'Archived');
-                        }
-                    }
-                }
-            });
-        }
-        // Administrators and Mayor can see all documents (no filter applied)
+        // Documents page shows: Active, Received, Return, and Completed documents
+        // Completed documents include both active and archived-completed (status='Completed' with archived_at set)
+        // We exclude documents with status='Archived' (manually archived, not completed)
+        
+        // Base filter: Exclude manually archived documents (status='Archived')
+        // But include completed documents even if they have archived_at set
+        $query->where(function($q) {
+            // Include non-archived documents
+            $q->whereNull('archived_at')
+              // OR completed documents that are archived (archived-completed)
+              ->orWhere(function($completedQ) {
+                  $completedQ->where('status', 'Completed')
+                             ->whereNotNull('archived_at');
+              });
+        })->where('status', '!=', 'Archived');
 
         // Apply search filter
         if ($request->filled('search')) {
@@ -199,76 +64,73 @@ class DocumentController extends Controller
         if ($request->filled('status')) {
             $status = $request->status;
             
-            // Special handling for "Active" - show only non-archived, non-completed documents
-            // Active documents are those still in progress (Received or Return status, not completed)
             if ($status === 'Active') {
+                // Active: documents that are not yet completed, including Forwarded documents
+                // Forwarded documents are considered active even if not yet received
+                // For LGU Staff/Dept Head: Documents they created OR documents forwarded to their department
+                // For Admin: All documents not yet completed (including Forwarded)
                 $query->whereNull('archived_at')
                       ->where('status', '!=', 'Completed')
                       ->where('status', '!=', 'Archived')
-                      ->where(function($q) {
-                          // Include documents with Received or Return status (active documents)
-                          $q->where('status', 'Received')
-                            ->orWhere('status', 'Return');
-                      });
-            }
-            // Special handling for Completed: include both active and archived completed documents
-            // Completed documents may be archived, but we want to show them when filtering by Completed
-            elseif ($status === 'Completed') {
-                $query->where(function($q) use ($status) {
-                    // Documents with current status matching
-                    $q->where('status', $status);
-                    
-                    // OR archived documents that had this status before archiving
-                    // Get document IDs from status logs where the old_status matches
-                    // and the new_status is "Archived"
-                    $archivedDocIds = DB::table('document_status_logs')
-                        ->where('old_status', $status)
-                        ->where('new_status', 'Archived')
-                        ->distinct()
-                        ->pluck('document_id');
-                    
-                    if ($archivedDocIds->isNotEmpty()) {
-                        $q->orWhere(function($subQ) use ($archivedDocIds) {
-                            $subQ->where('status', 'Archived')
-                                 ->whereIn('id', $archivedDocIds);
-                        });
-                    }
+                      ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return']);
+                
+                // For LGU Staff and Department Head: Active = documents they created OR documents forwarded to their department
+                if ($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) {
+                    $query->where(function($q) use ($user) {
+                        // Documents created by the user
+                        $q->where('created_by', $user->id)
+                          // OR documents forwarded to their department (including Forwarded status)
+                          ->orWhere(function($deptQ) use ($user) {
+                              if ($user->department_id) {
+                                  $deptQ->where('department_id', $user->department_id);
+                              }
+                          });
+                    });
+                }
+                // Administrators see all non-completed documents including Forwarded (no additional filter)
+            } elseif ($status === 'Completed') {
+                // Completed: include both active and archived-completed documents
+                $query->where(function($q) {
+                    $q->where('status', 'Completed');
                 });
             } elseif ($status === 'Return') {
-                // For Return status, only show active (non-archived) documents with Return status
-                // Return documents should not be archived
+                // Return: only active (non-archived) Return documents
                 $query->where('status', 'Return')
                       ->whereNull('archived_at');
+            } elseif ($status === 'Received') {
+                // Received: only active (non-archived) Received documents
+                $query->where('status', 'Received')
+                      ->whereNull('archived_at');
             } else {
-                // For other statuses (Received, etc.), just filter by current status
-                $query->where('status', $status);
+                // For other statuses, filter by status and exclude archived
+                $query->where('status', $status)
+                      ->whereNull('archived_at');
             }
         } else {
-            // When "All Status" is selected (no status filter), only show: Received, Return, and Completed
-            // Include both active and archived completed documents
-            $query->where(function($q) {
-                // Include Received and Return status documents (active documents)
-                $q->where('status', 'Received')
-                  ->orWhere('status', 'Return')
-                  ->orWhere('status', 'Completed')
-                  // Also include archived documents that had Completed status before archiving
-                  ->orWhere(function($subQ) {
-                      $archivedDocIds = DB::table('document_status_logs')
-                          ->where('old_status', 'Completed')
-                          ->where('new_status', 'Archived')
-                          ->distinct()
-                          ->pluck('document_id');
-                      
-                      if ($archivedDocIds->isNotEmpty()) {
-                          $subQ->where('status', 'Archived')
-                               ->whereIn('id', $archivedDocIds);
-                      } else {
-                          // Ensure this condition never matches if no archived completed docs exist
-                          $subQ->whereRaw('1 = 0');
+            // "All Status": Show all non-archived documents (Active, Received, Return, Completed)
+            // Exclude only manually archived documents (status='Archived')
+            $query->where('status', '!=', 'Archived');
+        }
+
+        // Filter based on user role (applied after status filter for non-Active statuses)
+        // For Active filter, role filtering is already applied above
+        if (($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) && (!$request->filled('status') || $request->status !== 'Active')) {
+            // LGU Staff and Department Head can see:
+            // 1. Documents they created
+            // 2. Documents forwarded to their department
+            // (This applies to Received, Return, Completed, and "All Status" filters)
+            $query->where(function($q) use ($user) {
+                // Documents created by the user
+                $q->where('created_by', $user->id)
+                  // OR documents forwarded to their department
+                  ->orWhere(function($deptQ) use ($user) {
+                      if ($user->department_id) {
+                          $deptQ->where('department_id', $user->department_id);
                       }
                   });
             });
         }
+        // Administrators and Mayor can see all documents (no additional filter)
 
         // Apply department filter (for Administrators and Mayor)
         if ($request->filled('department') && ($user->hasRole('Administrator') || $user->hasRole('Mayor'))) {
@@ -280,9 +142,7 @@ class DocumentController extends Controller
             $query->where('is_priority', true);
         }
 
-
         // Order by latest and paginate
-        // Load status logs for archived documents to check pre-archive status
         $documents = $query->with('statusLogs')->latest()->paginate(15)->withQueryString();
         $departments = Department::active()->orderBy('name')->get();
 
@@ -377,17 +237,21 @@ class DocumentController extends Controller
                 "Document forwarded to {$department->name}"
             );
 
-            // Notify department users with specific details
-            $priorityText = $document->is_priority ? ' [PRIORITY]' : '';
-            $notificationType = $document->is_priority ? 'warning' : 'info';
-            $actionText = $document->is_priority ? 'This is a PRIORITY document. Please acknowledge receipt and take immediate action.' : 'Please acknowledge receipt and take action.';
+            // EVENT 1: Document Forwarded
+            // Get creator's department for old department (if creator has a department)
+            $oldDepartment = $creator->department ?? null;
+            if (!$oldDepartment) {
+                // If creator has no department, create a dummy department object for notification
+                $oldDepartment = (object)['id' => null, 'name' => 'System'];
+            }
             
-            $this->notificationService->notifyDepartmentUsers(
-                $document->department_id,
-                'New Document Forwarded - ' . $department->name . $priorityText,
-                "New document '{$document->title}' ({$document->document_number}) has been forwarded to {$department->name} by {$creator->name} ({$creatorRole}). {$actionText}",
-                $notificationType,
-                $document->id
+            // Notify using new notification system
+            // Note: Creator is not notified when they forward themselves (handled in onDocumentForwarded)
+            $this->notificationService->onDocumentForwarded(
+                $document,
+                $oldDepartment,
+                $department,
+                $creator
             );
 
             DB::commit();
@@ -535,15 +399,15 @@ class DocumentController extends Controller
                 
                 // Get current user info
                 $forwarder = Auth::user();
-                $forwarderRole = $forwarder->roles->first()->name ?? 'User';
                 
-                // Notify ALL users in the new department with specific details
-                $this->notificationService->notifyDepartmentUsers(
-                    $newDepartmentId,
-                    'Document Received - Forwarded to ' . $newDepartment->name,
-                    "Document '{$document->title}' ({$document->document_number}) was forwarded to {$newDepartment->name} by {$forwarder->name} ({$forwarderRole}) from {$oldDepartment->name}. Please review and take action.",
-                    'info',
-                    $document->id
+                // EVENT 1: Document Forwarded
+                // Refresh document to get updated relationships
+                $document->refresh();
+                $this->notificationService->onDocumentForwarded(
+                    $document,
+                    $oldDepartment,
+                    $newDepartment,
+                    $forwarder
                 );
                 
                 DB::commit();
@@ -610,12 +474,8 @@ class DocumentController extends Controller
                         $combinedRemarks
                     );
                     
-                    // Notify document creator about status change
-                    $this->notificationService->notifyStatusUpdate(
-                        $document,
-                        $document->created_by,
-                        $validated['status']
-                    );
+                    // Do NOT notify document creator about forwarding
+                    // Only notify the forwarded department
                 } else {
                     // Only forwarding, no status change
                     $forwardRemarks = "Forwarded from {$oldDepartment->name} to {$newDepartment->name}";
@@ -638,24 +498,14 @@ class DocumentController extends Controller
                     'department_id' => $newDepartmentId,
                 ]);
                 
-                // Notify document creator about forwarding
-                $this->notificationService->notifyStatusUpdate(
+                // EVENT 1: Document Forwarded
+                // Refresh document to get updated relationships
+                $document->refresh();
+                $this->notificationService->onDocumentForwarded(
                     $document,
-                    $document->created_by,
-                    'Forwarded'
-                );
-                
-                // Notify ALL users in the new department with specific details
-                $statusText = ($validated['status'] !== 'Forwarded' && $validated['status'] !== $oldStatus) 
-                    ? "Status changed to {$validated['status']} and " 
-                    : "";
-                    
-                $this->notificationService->notifyDepartmentUsers(
-                    $newDepartmentId,
-                    'Document Received - Forwarded to ' . $newDepartment->name,
-                    "Document '{$document->title}' ({$document->document_number}) was {$statusText}forwarded to {$newDepartment->name} by {$forwarder->name} ({$forwarderRole}) from {$oldDepartment->name}. Please review and take action.",
-                    'info',
-                    $document->id
+                    $oldDepartment,
+                    $newDepartment,
+                    $forwarder
                 );
                 
                 DB::commit();
@@ -676,6 +526,13 @@ class DocumentController extends Controller
             if ($validated['status'] === 'Approved') {
                 $updates['archived_at'] = now();
             }
+            
+            // If status is Completed, auto-archive (document is finished)
+            // Keep status as 'Completed' but set archived_at to mark it as archived-completed
+            // This allows it to appear in both Documents page and Archive page
+            if ($validated['status'] === 'Completed') {
+                $updates['archived_at'] = now();
+            }
 
             $document->update($updates);
 
@@ -688,18 +545,22 @@ class DocumentController extends Controller
                 $validated['remarks'] ?? null
             );
 
-            // Notify document creator
-            $this->notificationService->notifyStatusUpdate(
-                $document,
-                $document->created_by,
-                $validated['status']
-            );
+            // EVENT 4: Document Completed / Archived-Completed
+            if ($validated['status'] === 'Completed') {
+                $document->refresh();
+                $this->notificationService->onDocumentCompleted(
+                    $document,
+                    Auth::user()
+                );
+            }
 
             DB::commit();
 
             $message = $validated['status'] === 'Approved' 
                 ? 'Document approved and archived successfully!' 
-                : 'Document status updated successfully!';
+                : ($validated['status'] === 'Completed'
+                    ? 'Document completed and archived successfully!'
+                    : 'Document status updated successfully!');
 
             return back()->with('success', $message);
 
@@ -765,10 +626,12 @@ class DocumentController extends Controller
                 'Document archived'
             );
 
-            // Notify document creator
-            $this->notificationService->notifyDocumentArchived(
+            // EVENT 5: Document Archived-Not Completed
+            // Refresh document to get updated relationships
+            $document->refresh();
+            $this->notificationService->onDocumentArchivedNotCompleted(
                 $document,
-                $document->created_by
+                Auth::user()
             );
 
             DB::commit();
@@ -811,11 +674,12 @@ class DocumentController extends Controller
                 'Document approved and archived by administrator'
             );
 
-            // Notify document creator
-            $this->notificationService->notifyStatusUpdate(
+            // EVENT 4: Document Completed / Archived-Completed
+            // Approved status with archived_at = completed/archived-completed
+            $document->refresh();
+            $this->notificationService->onDocumentCompleted(
                 $document,
-                $document->created_by,
-                'Approved'
+                Auth::user()
             );
 
             DB::commit();
@@ -860,10 +724,17 @@ class DocumentController extends Controller
             );
 
             // Notify document creator
-            Notification::createNotification(
-                $document->created_by,
+            $this->notificationService->notifyCreator(
+                $document,
                 'Document Rejected',
                 "Your document '{$document->title}' was rejected. Reason: " . $validated['rejection_reason'],
+                'danger'
+            );
+            
+            // Also notify administrators about rejection
+            $this->notificationService->notifyAdministrators(
+                'Document Rejected',
+                "Document '{$document->title}' ({$document->document_number}) was rejected. Reason: " . $validated['rejection_reason'],
                 'danger',
                 $document->id
             );
