@@ -553,7 +553,14 @@
             <li class="nav-item">
                 <a class="nav-link position-relative {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
                     <i class="bi bi-bell"></i> Notifications
-                    <span class="notification-badge" id="notification-badge" style="display: {{ auth()->user()->unreadNotificationsCount() > 0 ? 'inline' : 'none' }};">{{ auth()->user()->unreadNotificationsCount() }}</span>
+                    @php
+                        try {
+                            $unreadCount = auth()->user() ? auth()->user()->unreadNotificationsCount() : 0;
+                        } catch (\Exception $e) {
+                            $unreadCount = 0;
+                        }
+                    @endphp
+                    <span class="notification-badge" id="notification-badge" style="display: {{ $unreadCount > 0 ? 'inline' : 'none' }};">{{ $unreadCount }}</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -671,11 +678,30 @@
     // Update notification badge on page load and periodically
     (function() {
         function updateNotificationBadge() {
-            fetch('{{ route("notifications.unread-count") }}')
-                .then(response => response.json())
+            // Only run if user is authenticated (check if badge element exists)
+            const badge = document.getElementById('notification-badge');
+            if (!badge) {
+                return; // User not authenticated, skip
+            }
+            
+            fetch('{{ route("notifications.unread-count") }}', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            })
+                .then(response => {
+                    // Check if response is OK
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    const badge = document.getElementById('notification-badge');
-                    if (badge) {
+                    if (badge && data && typeof data.count !== 'undefined') {
                         if (data.count > 0) {
                             badge.textContent = data.count;
                             badge.style.display = 'inline';
@@ -685,14 +711,32 @@
                         }
                     }
                 })
-                .catch(error => console.error('Error fetching notification count:', error));
+                .catch(error => {
+                    // Silently fail - don't show errors to user
+                    // Just hide the badge if there's an error
+                    if (badge) {
+                        badge.style.display = 'none';
+                    }
+                    console.error('Error fetching notification count:', error);
+                });
         }
         
-        // Update immediately on page load
-        updateNotificationBadge();
+        // Only update if user is authenticated (badge element exists)
+        // Update immediately on page load (with small delay to ensure DOM is ready)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(updateNotificationBadge, 100);
+            });
+        } else {
+            setTimeout(updateNotificationBadge, 100);
+        }
         
-        // Update every 10 seconds (more frequent than before)
-        setInterval(updateNotificationBadge, 10000);
+        // Update every 10 seconds (only if badge exists)
+        setInterval(function() {
+            if (document.getElementById('notification-badge')) {
+                updateNotificationBadge();
+            }
+        }, 10000);
     })();
     </script>
 </body>

@@ -104,7 +104,13 @@ class User extends Authenticatable
      */
     public function unreadNotificationsCount()
     {
-        return $this->notifications()->where('is_read', false)->count();
+        try {
+            return $this->notifications()->where('is_read', false)->count();
+        } catch (\Exception $e) {
+            // Log error and return safe default
+            \Log::error('Error counting unread notifications for user ' . $this->id . ': ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
