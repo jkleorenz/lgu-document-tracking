@@ -37,7 +37,7 @@
                             <option value="Active" {{ request('status') == 'Active' ? 'selected' : '' }}>Active</option>
                             <option value="Received" {{ request('status') == 'Received' ? 'selected' : '' }}>Received</option>
                             <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
-                            <option value="Return" {{ request('status') == 'Return' ? 'selected' : '' }}>Return</option>
+                            <option value="Return" {{ request('status') == 'Return' ? 'selected' : '' }}>Returned</option>
                         </select>
                     </div>
                     @role('Administrator|Mayor')

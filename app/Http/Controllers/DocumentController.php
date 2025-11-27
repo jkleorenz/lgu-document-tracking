@@ -627,8 +627,23 @@ class DocumentController extends Controller
             );
 
             // EVENT 5: Document Archived-Not Completed
-            // Refresh document to get updated relationships
+            // Refresh document and ensure creator relationship is loaded
+            // This is critical to ensure created_by is available for creator notifications
             $document->refresh();
+            
+            // Explicitly load creator relationship to ensure created_by is preserved
+            // Even if document was forwarded, created_by should remain the original creator
+            if (!$document->relationLoaded('creator')) {
+                $document->load('creator');
+            }
+            
+            // Double-check: Ensure created_by field is set in memory (should never be null, but be defensive)
+            // Note: We don't save here as the document is already updated and we're in a transaction
+            if (!$document->created_by && $document->creator) {
+                // This should never happen, but if it does, set it in memory for notification purposes
+                $document->setAttribute('created_by', $document->creator->id);
+            }
+            
             $this->notificationService->onDocumentArchivedNotCompleted(
                 $document,
                 Auth::user()

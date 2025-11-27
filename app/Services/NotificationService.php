@@ -6,6 +6,7 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Models\Department;
 use App\Models\DocumentStatusLog;
+use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
@@ -164,13 +165,44 @@ class NotificationService
     public function notifyCreator($document, $title, $message, $type = 'info')
     {
         if ($document->created_by) {
-            Notification::createNotification(
-                $document->created_by,
-                $title,
-                $message,
-                $type,
-                $document->id
-            );
+            try {
+                // Use createNotification which handles duplicates, but ensure it's called
+                $notification = Notification::createNotification(
+                    $document->created_by,
+                    $title,
+                    $message,
+                    $type,
+                    $document->id
+                );
+                
+                // Log to verify notification was created
+                if ($notification) {
+                    Log::debug('Creator notification created successfully', [
+                        'notification_id' => $notification->id,
+                        'user_id' => $document->created_by,
+                        'document_id' => $document->id,
+                        'title' => $title
+                    ]);
+                } else {
+                    Log::warning('Creator notification creation returned null', [
+                        'user_id' => $document->created_by,
+                        'document_id' => $document->id,
+                        'title' => $title
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Exception in notifyCreator: ' . $e->getMessage(), [
+                    'user_id' => $document->created_by,
+                    'document_id' => $document->id,
+                    'title' => $title,
+                    'exception' => $e->getTraceAsString()
+                ]);
+                throw $e; // Re-throw to be caught by caller
+            }
+        } else {
+            Log::warning('notifyCreator called but document has no created_by', [
+                'document_id' => $document->id ?? 'unknown'
+            ]);
         }
     }
 
@@ -410,7 +442,7 @@ class NotificationService
     /**
      * EVENT 4: Document Completed / Archived-Completed
      * Rules:
-     * - Notify: Creator, Administrator
+     * - Notify: Creator (always, if not the completer), Administrator (always)
      * - Status: 'Completed' with archived_at set
      */
     public function onDocumentCompleted($document, $completedBy)
@@ -427,9 +459,9 @@ class NotificationService
             $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
         }
         
-        // A. Notify Creator (if completed by someone else AND creator is not an admin)
-        // If creator is an admin, they'll get notified as admin below, so skip creator notification to avoid duplicate
-        if ($document->created_by && $document->created_by != $completedBy->id && !$creatorIsAdmin) {
+        // A. Notify Creator (always notify if creator is not the one completing)
+        // This ensures the creator is always aware when their document is completed and archived by someone else
+        if ($document->created_by && $document->created_by != $completedBy->id) {
             $this->notifyCreator(
                 $document,
                 'Document Completed',
@@ -440,11 +472,12 @@ class NotificationService
         
         // B. Notify Administrator (all events)
         // Exclude the completer if they're an admin, and exclude creator if they're also an admin
+        // (to avoid duplicate notifications since creator already got notified above)
         $excludeUserIds = [];
         if ($completedBy->hasRole('Administrator')) {
             $excludeUserIds[] = $completedBy->id;
         }
-        if ($creatorIsAdmin) {
+        if ($creatorIsAdmin && $document->created_by) {
             $excludeUserIds[] = $document->created_by;
         }
         $excludeUserIds = array_unique($excludeUserIds);
@@ -460,12 +493,26 @@ class NotificationService
     /**
      * EVENT 5: Document Archived-Not Completed
      * Rules:
-     * - Notify: Creator (optional), Administrator
+     * - Notify: Creator (always, if not the archiver), Administrator (always)
      * - Status: 'Archived' with archived_at set (manually archived, not completed)
      */
     public function onDocumentArchivedNotCompleted($document, $archivedBy)
     {
-        // Load creator efficiently
+        // Ensure document has created_by field - this is critical for creator notifications
+        // If created_by is missing, try to load it from the creator relationship
+        if (!$document->created_by) {
+            if ($document->relationLoaded('creator') && $document->creator) {
+                $document->created_by = $document->creator->id;
+            } else {
+                // Try to reload the document with creator relationship
+                $document->load('creator');
+                if ($document->creator) {
+                    $document->created_by = $document->creator->id;
+                }
+            }
+        }
+        
+        // Load creator efficiently for admin check
         $creator = null;
         $creatorIsAdmin = false;
         if ($document->created_by) {
@@ -474,27 +521,89 @@ class NotificationService
             } else {
                 $creator = User::find($document->created_by);
             }
-            $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
+            if ($creator) {
+                $creatorIsAdmin = $creator->hasRole('Administrator');
+            }
         }
         
-        // A. Notify Creator (optional awareness, but exclude if creator is an admin)
-        // If creator is an admin, they'll get notified as admin below, so skip creator notification to avoid duplicate
-        if ($document->created_by && $document->created_by != $archivedBy->id && !$creatorIsAdmin) {
-            $this->notifyCreator(
-                $document,
-                'Document Archived',
-                "{$document->title} ({$document->document_number}) archived by {$archivedBy->name}.",
-                'info'
-            );
+        // A. Notify Creator (ALWAYS notify if creator exists and is not the one archiving)
+        // This is critical: The creator must be notified when their document is archived by another department
+        if ($document->created_by && $document->created_by != $archivedBy->id) {
+            try {
+                // Verify the creator user exists before sending notification
+                if (!$creator) {
+                    $creator = User::find($document->created_by);
+                }
+                
+                if ($creator) {
+                    // Create notification message
+                    $message = "{$document->title} ({$document->document_number}) archived by {$archivedBy->name}.";
+                    
+                    // Log before attempting to notify
+                    Log::info('Attempting to notify creator of archived document', [
+                        'document_id' => $document->id,
+                        'document_number' => $document->document_number,
+                        'creator_id' => $document->created_by,
+                        'creator_name' => $creator->name,
+                        'archiver_id' => $archivedBy->id,
+                        'archiver_name' => $archivedBy->name,
+                        'message' => $message
+                    ]);
+                    
+                    // Call notifyCreator - this will handle the notification creation
+                    $this->notifyCreator(
+                        $document,
+                        'Document Archived',
+                        $message,
+                        'info'
+                    );
+                    
+                    // Log successful notification attempt
+                    Log::info('Creator notification attempt completed', [
+                        'document_id' => $document->id,
+                        'document_number' => $document->document_number,
+                        'creator_id' => $document->created_by,
+                        'creator_name' => $creator->name
+                    ]);
+                } else {
+                    // Log warning if creator user not found
+                    Log::warning('Creator user not found for archived document notification', [
+                        'document_id' => $document->id,
+                        'created_by' => $document->created_by
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail the archive operation
+                Log::error('Failed to notify creator of archived document: ' . $e->getMessage(), [
+                    'document_id' => $document->id,
+                    'document_number' => $document->document_number ?? 'N/A',
+                    'creator_id' => $document->created_by,
+                    'archiver_id' => $archivedBy->id,
+                    'exception' => $e->getTraceAsString()
+                ]);
+            }
+        } else {
+            // Log if creator notification was skipped
+            if (!$document->created_by) {
+                Log::warning('Skipped creator notification: document has no created_by field', [
+                    'document_id' => $document->id
+                ]);
+            } elseif ($document->created_by == $archivedBy->id) {
+                Log::info('Skipped creator notification: creator is the same as archiver', [
+                    'document_id' => $document->id,
+                    'user_id' => $archivedBy->id
+                ]);
+            }
         }
         
         // B. Notify Administrator (all events)
         // Exclude the archiver if they're an admin, and exclude creator if they're also an admin
+        // (to avoid duplicate notifications since creator already got notified above)
         $excludeUserIds = [];
         if ($archivedBy->hasRole('Administrator')) {
             $excludeUserIds[] = $archivedBy->id;
         }
-        if ($creatorIsAdmin) {
+        if ($creatorIsAdmin && $document->created_by) {
             $excludeUserIds[] = $document->created_by;
         }
         $excludeUserIds = array_unique($excludeUserIds);

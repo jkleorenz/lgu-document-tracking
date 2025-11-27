@@ -1,0 +1,824 @@
+================================================================================
+                    LGU DOCUMENT TRACKING SYSTEM
+                           USER GUIDE
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Introduction
+2. Getting Started
+3. User Roles and Permissions
+4. Dashboard Overview
+5. Document Management
+6. QR Code Scanning
+7. Notifications
+8. Archive System
+9. User Management (Administrators Only)
+10. Profile Management
+11. Reports and Printing
+12. Troubleshooting
+13. Frequently Asked Questions
+
+================================================================================
+1. INTRODUCTION
+================================================================================
+
+The LGU Document Tracking System is a web-based platform designed to track
+and manage physical documents within Local Government Units (LGUs). The system
+provides real-time tracking, QR code integration, status updates, and complete
+audit trails for all document movements.
+
+Key Features:
+- Document creation and tracking
+- QR code generation and scanning
+- Real-time notifications
+- Status management
+- Priority flagging
+- Archive system
+- Complete document history
+- Role-based access control
+
+================================================================================
+2. GETTING STARTED
+================================================================================
+
+2.1 LOGGING IN
+--------------
+1. Open your web browser and navigate to the system URL
+2. Enter your email address and password
+3. Click the "Login" button
+4. If your account is pending verification, you will see a message
+   indicating that an administrator needs to verify your account
+
+2.2 REGISTERING A NEW ACCOUNT
+------------------------------
+1. Click on "Register" or "Sign Up" link
+2. Fill in the registration form:
+   - Full Name
+   - Email Address
+   - Password (must be at least 8 characters)
+   - Confirm Password
+   - Phone Number (optional)
+   - Select your Role (LGU Staff, Department Head)
+   - Select your Department
+3. Click "Register"
+4. Your account will be set to "Pending" status
+5. Wait for an administrator to verify your account
+6. Once verified, you will receive a notification and can log in
+
+2.3 FIRST TIME LOGIN
+--------------------
+- After logging in, you will be redirected to your role-specific dashboard
+- Take a moment to familiarize yourself with the navigation menu
+- Check your notifications (bell icon in the top right)
+- Update your profile information if needed
+
+================================================================================
+3. USER ROLES AND PERMISSIONS
+================================================================================
+
+3.1 ADMINISTRATOR
+-----------------
+Full system access - can see and do everything:
+- View ALL documents in the system (not limited to department)
+- Create, edit, and delete documents
+- Verify and manage user accounts
+- Set document priority levels
+- Archive and restore documents
+- Generate reports (PDF/DOCX)
+- Scan QR codes (automatically receives documents)
+- Complete documents with remarks
+- Return documents with remarks
+- Manage departments
+- View comprehensive system statistics
+
+3.2 MAYOR
+---------
+Similar to Administrator:
+- View ALL documents
+- Create and manage documents
+- Set document priority
+- Archive documents
+- Generate reports (PDF/DOCX)
+- Scan QR codes (automatically receives documents)
+- Complete documents with remarks
+- Return documents with remarks
+
+Note: Mayor cannot manage users (only Administrator can).
+
+3.3 DEPARTMENT HEAD
+-------------------
+Department-specific access (SAME as LGU Staff):
+- View documents in their department
+- View documents they created
+- Create new documents
+- Update document status
+- Scan QR codes (automatically receives documents)
+- Complete documents with remarks
+- Return documents with remarks
+- Archive documents (any document they can access)
+- Generate reports (PDF/DOCX)
+- Receive notifications
+
+3.4 LGU STAFF
+-------------
+Staff-level access (SAME as Department Head):
+- View documents in their department
+- View documents they created
+- Create new documents
+- Update document status
+- Scan QR codes (automatically receives documents)
+- Complete documents with remarks
+- Return documents with remarks
+- Archive documents (any document they can access)
+- Generate reports (PDF/DOCX)
+- Receive notifications
+
+IMPORTANT NOTES:
+- Department Head and LGU Staff have IDENTICAL privileges. They can do the
+  same things and see the same documents. The only difference is their job
+  title, not their system permissions.
+
+- Archive permissions are based on your ROLE, not who created the document.
+  If you are Administrator, Mayor, Department Head, or LGU Staff, you can
+  archive any document you can access, even if you didn't create it.
+
+- Only Administrator can see ALL documents and manage users. All other
+  roles see only documents in their department or documents they created.
+
+================================================================================
+4. DASHBOARD OVERVIEW
+================================================================================
+
+4.1 ADMINISTRATOR DASHBOARD
+----------------------------
+Displays:
+- Total documents count
+- Pending verifications count
+- Priority documents count
+- System statistics
+- Document status distribution chart
+- Recent documents list
+- Quick action buttons
+
+4.2 DEPARTMENT HEAD DASHBOARD
+------------------------------
+Displays:
+- Department documents overview
+- Documents for review
+- Priority documents
+- Currently handling documents
+- Recent department documents
+- Quick action buttons
+
+4.3 LGU STAFF DASHBOARD
+-----------------------
+Displays:
+- Personal documents count
+- Pending/Approved documents
+- Recent documents
+- Create document button
+- Quick action buttons
+
+================================================================================
+5. DOCUMENT MANAGEMENT
+================================================================================
+
+5.1 CREATING A DOCUMENT
+-----------------------
+1. Navigate to "Documents" in the main menu
+2. Click the "Create Document" button (green button)
+3. Fill in the document form:
+   - Title (required): Enter a clear, descriptive title
+   - Description (optional): Add any relevant details
+   - Document Type (required): Select from:
+     * Certification
+     * Disbursement Voucher
+     * Leave Form
+     * Obligation Request
+     * Program of the Work
+     * SEF
+     * Service Record
+     * Others (if selected, enter custom type)
+   - Department (required): Select the target department
+   - Priority (optional): Check if this is a priority document
+4. Click "Create Document"
+5. The system will:
+   - Generate a unique document number (e.g., DOC-202410-0001)
+   - Create a QR code automatically
+   - Set status to "Forwarded"
+   - Notify the target department
+   - Log the creation in document history
+
+5.2 VIEWING DOCUMENTS
+---------------------
+1. Go to "Documents" from the main menu
+2. Use filters to find documents:
+   - Search: Enter document number, title, or description
+   - Status: Filter by Active, Received, Return, Completed, or All Status
+   - Department: Filter by department (Administrators/Mayor only)
+   - Priority: Show only priority documents
+3. Click on a document title or "View" to see details
+4. Document details page shows:
+   - Document information
+   - Current status
+   - Current location (department)
+   - Last location
+   - QR code
+   - Document history/timeline
+   - Action buttons
+
+5.3 UPDATING DOCUMENT STATUS
+-----------------------------
+1. Open the document you want to update
+2. Scroll to the "Update Status" section
+3. Select the new status from the dropdown:
+   - Forwarded: Document is being sent to another department
+   - Received: Document has been received
+   - Under Review: Document is being reviewed
+   - Pending: Waiting for action
+   - Return: Document is being returned (requires remarks)
+   - Completed: Document processing is finished
+   - Approved: Document is approved (auto-archives)
+4. If forwarding, select the target department
+5. Add remarks (optional but recommended)
+6. Click "Update Status"
+7. The system will:
+   - Update the document status
+   - Log the change in history
+   - Notify relevant users
+   - Auto-archive if status is "Approved" or "Completed"
+
+5.4 EDITING A DOCUMENT
+----------------------
+1. Open the document you want to edit
+2. Click "Edit Document" button
+3. Modify the fields:
+   - Title
+   - Description
+   - Document Type
+   - Department
+   - Forward to Department (optional)
+4. Click "Update Document"
+5. If you selected "Forward to Department", the document will be
+   forwarded to the new department automatically
+
+5.5 SETTING PRIORITY
+--------------------
+(Administrators and Mayor only)
+1. Open the document
+2. Click "Set Priority" or "Remove Priority" button
+3. Priority documents will:
+   - Display with a priority badge
+   - Show in priority filters
+   - Send notifications to relevant users
+   - Appear in priority sections on dashboards
+
+5.6 ARCHIVING A DOCUMENT
+------------------------
+(Who can archive: Administrator, Mayor, Department Head, and LGU Staff)
+
+1. Open the document you want to archive
+2. Click "Archive Document" button
+3. Confirm the action
+4. The document will be:
+   - Marked as "Archived"
+   - Moved to the archive section
+   - Removed from active documents list
+   - Still searchable in archive
+
+Note: You can archive documents based on your ROLE, not because you created
+them. If you have one of the roles listed above, you can archive any document
+you can access, even if someone else created it.
+
+5.7 DELETING A DOCUMENT
+-----------------------
+(Administrators only)
+1. Open the document
+2. Click "Delete Document" button
+3. Confirm the deletion
+4. Warning: This action is permanent and cannot be undone
+5. The document and its QR code will be permanently deleted
+
+5.8 DOCUMENT STATUSES EXPLAINED
+--------------------------------
+- Forwarded: Document has been sent to a department
+- Received: Document has been received by the department
+- Under Review: Document is currently being reviewed
+- Pending: Document is waiting for action
+- Return: Document is being returned to previous department
+- Completed: Document processing is finished (auto-archived)
+- Approved: Document is approved (auto-archived)
+- Rejected: Document was rejected
+- Archived: Document has been manually archived
+
+5.9 DOCUMENT FILTERING
+----------------------
+The Documents page supports multiple filters:
+- Search: Search by document number, title, or description
+- Status Filter:
+  * All Status: Shows all non-archived documents
+  * Active: Shows documents not yet completed
+  * Received: Shows documents with "Received" status
+  * Return: Shows documents with "Return" status
+  * Completed: Shows completed documents
+- Department Filter: Filter by department (Admin/Mayor only)
+- Priority Filter: Show only priority documents
+
+================================================================================
+6. QR CODE SCANNING
+================================================================================
+
+6.1 ACCESSING THE SCANNER
+--------------------------
+1. Click "Scan" in the main navigation menu
+2. The scanner page will open with an input field
+3. The input field is optimized for hardware scanners (auto-focus)
+
+6.2 SCANNING A DOCUMENT
+-----------------------
+Method 1: Hardware Scanner (Recommended)
+1. Connect your USB or wireless 2D barcode scanner
+2. Navigate to the Scan page
+3. Click in the "Document Number" input field
+4. Scan the QR code on the document
+5. The scanner will automatically input the document number
+6. The system will process the scan automatically
+
+Method 2: Manual Entry
+1. Go to the Scan page
+2. Type or paste the document number
+3. Press Enter or click "Scan"
+
+6.3 WHAT HAPPENS WHEN YOU SCAN
+------------------------------
+When you scan a document (for ALL roles):
+1. The system finds the document
+2. The document is AUTOMATICALLY RECEIVED:
+   - Status automatically changes to "Received"
+   - Document location updates to your department
+   - Tracking information is logged
+3. Document details are shown immediately
+4. You will see action buttons to:
+   - Complete Document (with remarks)
+   - Return Document (with remarks)
+   - View Full Details
+5. Relevant users are notified
+
+Note: The document is automatically received when scanned. You don't need to
+manually change the status to "Received" - it happens automatically.
+
+6.4 QUICK ACTIONS AFTER SCANNING
+--------------------------------
+After scanning, the document is automatically received. Then you can:
+
+1. COMPLETE DOCUMENT (all roles can do this):
+   - Click "Complete Document" button
+   - Add remarks (optional but recommended)
+   - Document becomes "Completed" and is automatically archived
+   - Notifications sent to creator and administrators
+
+2. RETURN DOCUMENT (all roles can do this):
+   - Click "Return Document" button
+   - Enter remarks explaining why it's being returned (required)
+   - Document returns to the previous department
+   - Notifications sent to receiving department
+
+3. VIEW FULL DETAILS:
+   - Click "View Details" to see complete document information
+   - Access all document management features
+   - View complete document history
+
+Note: All roles (Administrator, Mayor, Department Head, and LGU Staff) can
+complete or return documents after scanning.
+
+6.5 RETURNING A DOCUMENT
+------------------------
+(All roles can return documents)
+
+1. Scan the document (it will be automatically received)
+2. Click "Return Document" button
+3. Enter remarks explaining why it's being returned (required)
+4. Click "Return"
+5. The document will:
+   - Status changes to "Return"
+   - Returns to the previous department that handled it
+   - Logs the return with your remarks
+   - Notifies the receiving department
+
+6.6 COMPLETING A DOCUMENT
+-------------------------
+(All roles can complete documents)
+
+1. Scan the document (it will be automatically received)
+2. Click "Complete Document" button
+3. Add remarks (optional but recommended)
+4. Click "Complete"
+5. The document will:
+   - Status changes to "Completed"
+   - Automatically archived
+   - Notifications sent to creator and administrators
+   - Logged in document history
+
+6.7 PRINTING QR CODES
+---------------------
+1. Open the document
+2. Click "Print QR Code" button
+3. A print-friendly page will open
+4. Use your browser's print function (Ctrl+P or Cmd+P)
+5. The QR code can be printed and attached to the physical document
+
+================================================================================
+7. NOTIFICATIONS
+================================================================================
+
+7.1 VIEWING NOTIFICATIONS
+--------------------------
+1. Click the bell icon in the top navigation bar
+2. A dropdown will show recent notifications
+3. Click "View All Notifications" to see the full list
+4. Unread notifications are highlighted
+
+7.2 NOTIFICATION TYPES
+----------------------
+The system sends notifications for:
+- New document created
+- Document forwarded to your department
+- Document received via QR scan
+- Document status updated
+- Document returned
+- Document completed
+- Document archived
+- Priority document flagged
+- User verification status
+
+7.3 MARKING NOTIFICATIONS AS READ
+---------------------------------
+1. Click on a notification to mark it as read
+2. Or click "Mark All as Read" to mark all notifications as read
+3. Read notifications will no longer show the unread badge
+
+7.4 DELETING NOTIFICATIONS
+--------------------------
+1. Go to the Notifications page
+2. Click the delete icon (trash) next to a notification
+3. Confirm deletion if prompted
+
+7.5 NOTIFICATION AUTO-REFRESH
+------------------------------
+- Notifications automatically refresh every 30 seconds
+- The unread count badge updates automatically
+- No need to manually refresh the page
+
+================================================================================
+8. ARCHIVE SYSTEM
+================================================================================
+
+8.1 ACCESSING THE ARCHIVE
+-------------------------
+1. Click "Archive" in the main navigation menu
+2. Only completed documents (status="Completed") are shown in archive
+3. Archived documents are searchable and viewable
+
+8.2 VIEWING ARCHIVED DOCUMENTS
+------------------------------
+1. Go to the Archive page
+2. Use search to find specific documents
+3. Use date filters to narrow results:
+   - From Date: Start date
+   - To Date: End date
+4. Click on a document to view full details
+5. Archived documents show complete history
+
+8.3 RESTORING ARCHIVED DOCUMENTS
+---------------------------------
+1. Open the archived document
+2. Click "Restore Document" button
+3. Confirm the restoration
+4. The document will:
+   - Status changes to "Under Review"
+   - Removed from archive
+   - Added back to active documents
+   - Logged in document history
+
+8.4 PERMANENTLY DELETING ARCHIVED DOCUMENTS
+-------------------------------------------
+(Administrators only)
+1. Open the archived document
+2. Click "Delete Permanently" button
+3. Confirm the deletion
+4. Warning: This action cannot be undone
+5. The document and all associated data will be permanently removed
+
+8.5 ARCHIVE VS ACTIVE DOCUMENTS
+-------------------------------
+- Active Documents Page: Shows Forwarded, Received, Return, and Completed
+  documents that are not manually archived
+- Archive Page: Shows only Completed documents (status="Completed" with
+  archived_at set)
+- Manually archived documents (status="Archived") are excluded from both
+  pages but can be restored
+
+================================================================================
+9. USER MANAGEMENT (ADMINISTRATORS ONLY)
+================================================================================
+
+9.1 VIEWING USERS
+-----------------
+1. Click "Users" in the main navigation menu
+2. View list of all registered users
+3. See user status: Verified, Pending, or Rejected
+
+9.2 VERIFYING PENDING USERS
+----------------------------
+1. Click "Pending Verifications" in the Users menu
+2. Review pending user accounts
+3. Click "Verify" to approve the account
+4. Or click "Reject" to deny the account (requires reason)
+5. User will be notified of the decision
+
+9.3 CREATING A NEW USER
+-----------------------
+1. Go to Users page
+2. Click "Create User" button
+3. Fill in user details:
+   - Name
+   - Email
+   - Password
+   - Phone (optional)
+   - Role
+   - Department
+   - Status (Verified/Pending)
+4. Click "Create User"
+
+9.4 EDITING A USER
+------------------
+1. Open the user from the Users list
+2. Click "Edit User" button
+3. Modify user information
+4. Click "Update User"
+
+9.5 DELETING A USER
+-------------------
+1. Open the user
+2. Click "Delete User" button
+3. Confirm deletion
+4. Warning: This will remove the user and their associated data
+
+================================================================================
+10. PROFILE MANAGEMENT
+================================================================================
+
+10.1 VIEWING YOUR PROFILE
+-------------------------
+1. Click your name or profile picture in the top right
+2. Select "Profile" from the dropdown
+3. View your profile information
+
+10.2 EDITING YOUR PROFILE
+--------------------------
+1. Go to your Profile page
+2. Click "Edit Profile" button
+3. Update your information:
+   - Name
+   - Email
+   - Phone
+   - Department (if you have permission)
+4. Click "Update Profile"
+
+10.3 UPDATING PROFILE PICTURE
+------------------------------
+1. Go to your Profile page
+2. Click "Change Picture" or "Upload Picture"
+3. Select an image file (JPG, PNG, recommended size: 200x200px)
+4. Click "Upload"
+5. To remove picture: Click "Remove Picture"
+
+10.4 CHANGING PASSWORD
+----------------------
+1. Go to Settings (from profile dropdown or menu)
+2. Click on "Change Password" section
+3. Enter:
+   - Current Password
+   - New Password (minimum 8 characters)
+   - Confirm New Password
+4. Click "Update Password"
+
+10.5 ACCOUNT SETTINGS
+---------------------
+Access account settings from:
+- Profile dropdown menu > Settings
+- Or navigate to /settings
+
+Available settings:
+- Change Password
+- Profile Picture Management
+- Account Information
+
+================================================================================
+11. REPORTS AND PRINTING
+================================================================================
+
+11.1 GENERATING DOCUMENT REPORTS
+--------------------------------
+(All roles can generate reports: Administrator, Mayor, Department Head, LGU Staff)
+
+1. Open the document you want to report on
+2. Click "Generate Report" button
+3. Select format:
+   - PDF: For viewing and printing
+   - DOCX: For editing in Microsoft Word
+4. The report will download automatically
+
+Note: All users can generate reports for documents they have access to view.
+This feature is available to all roles, not just administrators.
+
+11.2 REPORT CONTENTS
+--------------------
+Document reports include:
+- Document Information:
+  * Document Title
+  * Document Number
+  * Current Location Department
+  * Document Type
+  * Created By
+  * Status
+  * Created Date
+- Complete Document History:
+  * Date & Time of each action
+  * Old Status
+  * New Status
+  * Updated By
+  * Remarks
+
+11.3 PRINTING QR CODES
+----------------------
+1. Open the document
+2. Click "Print QR Code" button
+3. A print-friendly page opens
+4. Use browser print function (Ctrl+P or Cmd+P)
+5. Adjust print settings as needed
+6. Print and attach to physical document
+
+================================================================================
+12. TROUBLESHOOTING
+================================================================================
+
+12.1 CANNOT LOG IN
+------------------
+- Verify your email and password are correct
+- Check if your account is verified (contact administrator)
+- Clear browser cache and cookies
+- Try a different browser
+- Contact system administrator
+
+12.2 DOCUMENT NOT FOUND WHEN SCANNING
+-------------------------------------
+- Verify the document number is correct
+- Check if document exists in the system
+- Ensure you have permission to view the document
+- Try searching for the document manually
+
+12.3 NOTIFICATIONS NOT APPEARING
+---------------------------------
+- Check if notifications are enabled for your account
+- Refresh the page
+- Clear browser cache
+- Check if you have the correct permissions
+- Verify your account status is "Verified"
+
+12.4 CANNOT UPDATE DOCUMENT STATUS
+----------------------------------
+- Verify you have permission to update documents
+- Check if document is archived (archived documents cannot be updated)
+- Ensure you selected a valid status
+- Try refreshing the page
+
+12.5 QR CODE NOT PRINTING
+-------------------------
+- Check printer connection
+- Verify print settings in browser
+- Try printing from a different browser
+- Ensure pop-ups are not blocked
+
+12.6 PAGE NOT LOADING
+---------------------
+- Check internet connection
+- Clear browser cache
+- Try a different browser
+- Contact system administrator if problem persists
+
+================================================================================
+13. FREQUENTLY ASKED QUESTIONS
+================================================================================
+
+Q: How do I know if a document is priority?
+A: Priority documents display a priority badge and appear in priority filters.
+
+Q: Can I edit a document after creating it?
+A: Yes, if you are the creator, an administrator, or mayor. Click "Edit
+   Document" on the document page.
+
+Q: What happens when I scan a QR code?
+A: The document is AUTOMATICALLY received (status changes to "Received" and
+   location updates to your department). Then you can immediately choose to
+   complete the document or return it with remarks. No manual status update
+   to "Received" is needed.
+
+Q: Who can complete or return documents after scanning?
+A: ALL roles (Administrator, Mayor, Department Head, and LGU Staff) can
+   complete or return documents after scanning. The document is automatically
+   received when scanned, then you can choose to complete or return it.
+
+Q: How do I return a document?
+A: Scan the document (it will be automatically received), click "Return
+   Document", enter required remarks, and click "Return". The document will
+   return to the previous department.
+
+Q: Who can archive documents?
+A: Users with roles Administrator, Mayor, Department Head, or LGU Staff can
+   archive documents. Archive permission is based on your ROLE, not whether
+   you created the document. If you have one of these roles, you can archive
+   any document you can access.
+
+Q: Can LGU Staff and Department Head do the same things?
+A: Yes, LGU Staff and Department Head have IDENTICAL privileges. They can do
+   the same actions and see the same documents. Only Administrators have
+   additional privileges like viewing all documents and managing users.
+
+Q: Can I generate reports for documents?
+A: Yes, all roles can generate reports (PDF or DOCX format) for documents
+   they have access to view. Simply open the document and click "Generate
+   Report". This feature is available to Administrator, Mayor, Department
+   Head, and LGU Staff.
+
+Q: What's the difference between Archive and Completed?
+A: Completed documents (status="Completed") are automatically archived and
+   appear in the Archive page. Manually archived documents (status="Archived")
+   are excluded from both pages until restored.
+
+Q: Can I delete a document?
+A: Only administrators can delete documents. Regular users can archive documents
+   but not delete them.
+
+Q: How do I know which documents are assigned to me?
+A: Check your dashboard or filter documents by status. Documents forwarded to
+   your department will appear in your department's document list.
+
+Q: What should I do if I receive a document by mistake?
+A: Use the "Return Document" feature to send it back to the previous
+   department with remarks explaining the issue.
+
+Q: How long are documents kept in the archive?
+A: Documents remain in the archive indefinitely unless permanently deleted by
+   an administrator.
+
+Q: Can I change my role?
+A: No, only administrators can change user roles. Contact your administrator if
+   you need a role change.
+
+Q: What document types are available?
+A: Certification, Disbursement Voucher, Leave Form, Obligation Request,
+   Program of the Work, SEF, Service Record, and Others (custom type).
+
+Q: How do I know when a document status changes?
+A: You will receive a notification when documents you created or documents in
+   your department have status changes.
+
+Q: Can I forward a document to multiple departments?
+A: No, a document can only be in one department at a time. You can forward it
+   to different departments sequentially.
+
+Q: What happens if I archive a document by mistake?
+A: You can restore archived documents by opening them and clicking "Restore
+   Document".
+
+================================================================================
+ADDITIONAL TIPS
+================================================================================
+
+- Always add remarks when updating document status for better tracking
+- Use the search function to quickly find documents
+- Check notifications regularly to stay updated
+- Print QR codes immediately after creating documents
+- Use priority flag for urgent documents
+- Review document history to understand document flow
+- Keep your profile information up to date
+- Contact your system administrator for role-specific questions
+
+================================================================================
+SUPPORT AND CONTACT
+================================================================================
+
+For technical support or questions:
+- Contact your system administrator
+- Check system documentation
+- Review this user guide
+
+System Version: 1.0
+Last Updated: 2024
+
+================================================================================
+END OF USER GUIDE
+================================================================================
+

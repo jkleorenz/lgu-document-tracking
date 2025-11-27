@@ -80,30 +80,10 @@ class Notification extends Model
             ->where('document_id', $documentId)
             ->where('created_at', '>=', now()->subSeconds(30))
             ->where(function($query) use ($title, $message) {
-                // Check for exact match (title and message)
-                $query->where(function($q) use ($title, $message) {
-                    $q->where('title', $title)
+                // Check for exact match (title AND message must match exactly)
+                // This is the strictest check - only block true duplicates
+                $query->where('title', $title)
                       ->where('message', $message);
-                })
-                // OR check for similar notifications (same document, similar event)
-                // Extract document number and event keywords from message
-                ->orWhere(function($q) use ($message) {
-                    if (preg_match('/\(DOC-[^)]+\)/', $message, $matches)) {
-                        $docNumber = $matches[0];
-                        // Check for common event keywords
-                        $eventKeywords = ['received', 'forwarded', 'returned', 'completed', 'archived'];
-                        $hasEventKeyword = false;
-                        foreach ($eventKeywords as $keyword) {
-                            if (stripos($message, $keyword) !== false) {
-                                $hasEventKeyword = true;
-                                break;
-                            }
-                        }
-                        if ($hasEventKeyword) {
-                            $q->where('message', 'like', "%{$docNumber}%");
-                        }
-                    }
-                });
             })
             ->first();
         

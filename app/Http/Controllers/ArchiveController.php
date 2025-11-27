@@ -10,27 +10,29 @@ class ArchiveController extends Controller
 {
     /**
      * Display archived documents
-     * Archive page shows only archived-completed documents (status='Completed' with archived_at set)
+     * Archive page shows all archived documents (both 'Completed' and 'Archived' status with archived_at set)
      */
     public function index(Request $request)
     {
         $user = Auth::user();
         
-        // Archive page shows only archived-completed documents
-        // These are documents with status='Completed' AND archived_at IS NOT NULL
+        // Archive page shows all archived documents
+        // These are documents with (status='Completed' OR status='Archived') AND archived_at IS NOT NULL
         $query = Document::with(['creator', 'department'])
-            ->where('status', 'Completed')
+            ->whereIn('status', ['Completed', 'Archived'])
             ->whereNotNull('archived_at');
 
         // Filter based on user role
         if ($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) {
             // LGU Staff and Department Head see:
-            // 1. Completed documents they created
-            // 2. Completed documents from their department (documents completed by their department)
+            // 1. Archived documents they created (regardless of current department_id)
+            // 2. Archived documents from their department (documents archived by their department)
+            // This ensures that when a document is forwarded and archived by the receiving department,
+            // it appears in both the creator's archive list and the receiving department's archive list
             $query->where(function($q) use ($user) {
-                // Documents created by the user
+                // Documents created by the user (creator can always see their archived documents)
                 $q->where('created_by', $user->id)
-                  // OR documents from their department
+                  // OR documents from their department (receiving department can see documents they archived)
                   ->orWhere(function($deptQ) use ($user) {
                       if ($user->department_id) {
                           $deptQ->where('department_id', $user->department_id);
@@ -38,7 +40,7 @@ class ArchiveController extends Controller
                   });
             });
         }
-        // Administrators see all archived-completed documents (no additional filter)
+        // Administrators see all archived documents (no additional filter)
 
         // Apply search filter
         if ($request->filled('search')) {
@@ -77,14 +79,38 @@ class ArchiveController extends Controller
         // Check if user has permission to view this document
         $user = Auth::user();
         
-        // LGU Staff and Department Head have identical privileges - can view archived documents (needed for tracking)
-        if (!$user->hasRole('Administrator') && !$user->hasRole('LGU Staff') && !$user->hasRole('Department Head')) {
-            abort(403, 'Unauthorized access to this document.');
+        // Administrators can view all archived documents
+        if ($user->hasRole('Administrator')) {
+            $document->load(['creator', 'department', 'statusLogs.updatedBy']);
+            return view('archive.show', compact('document'));
         }
-
-        $document->load(['creator', 'department', 'statusLogs.updatedBy']);
-
-        return view('archive.show', compact('document'));
+        
+        // LGU Staff and Department Head can view archived documents if:
+        // 1. They created the document, OR
+        // 2. The document is in their department
+        if ($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) {
+            $canView = false;
+            
+            // Check if user created the document
+            if ($document->created_by === $user->id) {
+                $canView = true;
+            }
+            
+            // Check if document is in user's department
+            if (!$canView && $user->department_id && $document->department_id === $user->department_id) {
+                $canView = true;
+            }
+            
+            if (!$canView) {
+                abort(403, 'Unauthorized access to this document.');
+            }
+            
+            $document->load(['creator', 'department', 'statusLogs.updatedBy']);
+            return view('archive.show', compact('document'));
+        }
+        
+        // Other roles cannot view archived documents
+        abort(403, 'Unauthorized access to this document.');
     }
 
     /**
