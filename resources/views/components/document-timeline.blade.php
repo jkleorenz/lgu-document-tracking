@@ -349,6 +349,7 @@
                         'Received' => 'bi-inbox-fill',
                         'Under Review' => 'bi-search',
                         'Forwarded' => 'bi-arrow-right-circle-fill',
+                        'Retrieved' => 'bi-arrow-counterclockwise',
                         'Approved' => 'bi-check-circle-fill',
                         'Rejected' => 'bi-x-circle-fill',
                         'Archived' => 'bi-archive-fill'
@@ -377,6 +378,8 @@
                                         $badgeColor = 'primary';
                                     } elseif ($log->new_status == 'Received') {
                                         $badgeColor = 'success';
+                                    } elseif ($log->new_status == 'Retrieved') {
+                                        $badgeColor = 'info';
                                     } elseif ($log->new_status == 'Pending' || $log->new_status == 'Pending Verification') {
                                         $badgeColor = 'warning';
                                     } elseif ($log->new_status == 'Rejected') {
@@ -434,7 +437,7 @@
                             </div>
                             <div class="timeline-date">
                                 Status: 
-                                <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' || $document->status == 'Pending Verification' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info'))) }}">
+                                <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Received' ? 'success' : ($document->status == 'Retrieved' ? 'info' : ($document->status == 'Pending' || $document->status == 'Pending Verification' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')))) }}">
                                     {{ $document->status }}
                                 </span>
                             </div>

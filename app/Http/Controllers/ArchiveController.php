@@ -3,11 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ArchiveController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
     /**
      * Display archived documents
      * Archive page shows all archived documents (both 'Completed' and 'Archived' status with archived_at set)
@@ -114,7 +122,7 @@ class ArchiveController extends Controller
     }
 
     /**
-     * Restore archived document
+     * Retrieve archived document
      */
     public function restore(Document $document)
     {
@@ -124,28 +132,47 @@ class ArchiveController extends Controller
             return back()->withErrors(['error' => 'Document is not archived.']);
         }
 
-        // Load department relationship
-        $document->load('department.head');
-        
-        $oldStatus = $document->status;
-        
-        // Restore the document
-        $document->update([
-            'status' => 'Under Review',
-            'archived_at' => null,
-        ]);
+        DB::beginTransaction();
+        try {
+            // Load department relationship and creator
+            $document->load(['department.head', 'creator']);
+            
+            $oldStatus = $document->status;
+            $retrievedBy = Auth::user();
+            
+            // Retrieve the document to 'Retrieved' status so it can be received by scanning department
+            // This ensures retrieved documents are fully receivable and processed normally
+            $document->update([
+                'status' => 'Retrieved',
+                'archived_at' => null,
+            ]);
 
-        // Log the restoration
-        \App\Models\DocumentStatusLog::createLog(
-            $document->id,
-            Auth::id(),
-            $oldStatus,
-            'Under Review',
-            'Document restored from archive'
-        );
+            // Log the retrieval
+            \App\Models\DocumentStatusLog::createLog(
+                $document->id,
+                Auth::id(),
+                $oldStatus,
+                'Retrieved',
+                'Document retrieved from archive'
+            );
 
-        return redirect()->route('documents.show', $document)
-            ->with('success', 'Document restored from archive successfully!');
+            // EVENT 6: Document Retrieved from Archive
+            // Refresh document to get updated relationships
+            $document->refresh();
+            $this->notificationService->onDocumentRetrieved(
+                $document,
+                $retrievedBy
+            );
+
+            DB::commit();
+
+            return redirect()->route('documents.show', $document)
+                ->with('success', 'Document retrieved from archive successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to retrieve document: ' . $e->getMessage()]);
+        }
     }
 
     /**

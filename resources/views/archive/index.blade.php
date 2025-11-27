@@ -95,7 +95,7 @@
                                     @can('archive-documents')
                                     <form method="POST" action="{{ route('archive.restore', $document) }}" class="d-inline">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-success" title="Restore" onclick="return confirm('Restore this document from archive?')">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Retrieve" onclick="return confirm('Retrieve this document from archive?')">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
                                     </form>

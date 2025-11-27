@@ -615,5 +615,134 @@ class NotificationService
             !empty($excludeUserIds) ? $excludeUserIds : null
         );
     }
+
+    /**
+     * EVENT 6: Document Retrieved from Archive
+     * Rules:
+     * - Notify: Creator (always, if not the retriever), Administrator (always)
+     * - Status: 'Retrieved' with archived_at cleared
+     */
+    public function onDocumentRetrieved($document, $retrievedBy)
+    {
+        // Ensure document has created_by field - this is critical for creator notifications
+        // If created_by is missing, try to load it from the creator relationship
+        if (!$document->created_by) {
+            if ($document->relationLoaded('creator') && $document->creator) {
+                $document->created_by = $document->creator->id;
+            } else {
+                // Try to reload the document with creator relationship
+                $document->load('creator');
+                if ($document->creator) {
+                    $document->created_by = $document->creator->id;
+                }
+            }
+        }
+        
+        // Load creator efficiently for admin check
+        $creator = null;
+        $creatorIsAdmin = false;
+        if ($document->created_by) {
+            if ($document->relationLoaded('creator')) {
+                $creator = $document->creator;
+            } else {
+                $creator = User::find($document->created_by);
+            }
+            if ($creator) {
+                $creatorIsAdmin = $creator->hasRole('Administrator');
+            }
+        }
+        
+        // Get retrieving department name for notification message
+        $retrievingDepartment = $retrievedBy->department ? $retrievedBy->department->name : 'Unknown Department';
+        
+        // A. Notify Creator (ALWAYS notify if creator exists and is not the one retrieving)
+        // This is critical: The creator must be notified when their document is retrieved by another department
+        if ($document->created_by && $document->created_by != $retrievedBy->id) {
+            try {
+                // Verify the creator user exists before sending notification
+                if (!$creator) {
+                    $creator = User::find($document->created_by);
+                }
+                
+                if ($creator) {
+                    // Create notification message mentioning 'Retrieved' status
+                    $message = "{$document->title} ({$document->document_number}) retrieved from archive by {$retrievedBy->name} from {$retrievingDepartment}. Status changed to 'Retrieved'.";
+                    
+                    // Log before attempting to notify
+                    Log::info('Attempting to notify creator of retrieved document', [
+                        'document_id' => $document->id,
+                        'document_number' => $document->document_number,
+                        'creator_id' => $document->created_by,
+                        'creator_name' => $creator->name,
+                        'retriever_id' => $retrievedBy->id,
+                        'retriever_name' => $retrievedBy->name,
+                        'message' => $message
+                    ]);
+                    
+                    // Call notifyCreator - this will handle the notification creation
+                    $this->notifyCreator(
+                        $document,
+                        'Document Retrieved from Archive',
+                        $message,
+                        'info'
+                    );
+                    
+                    // Log successful notification attempt
+                    Log::info('Creator notification attempt completed', [
+                        'document_id' => $document->id,
+                        'document_number' => $document->document_number,
+                        'creator_id' => $document->created_by,
+                        'creator_name' => $creator->name
+                    ]);
+                } else {
+                    // Log warning if creator user not found
+                    Log::warning('Creator user not found for retrieved document notification', [
+                        'document_id' => $document->id,
+                        'created_by' => $document->created_by
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail the retrieve operation
+                Log::error('Failed to notify creator of retrieved document: ' . $e->getMessage(), [
+                    'document_id' => $document->id,
+                    'document_number' => $document->document_number ?? 'N/A',
+                    'creator_id' => $document->created_by,
+                    'retriever_id' => $retrievedBy->id,
+                    'exception' => $e->getTraceAsString()
+                ]);
+            }
+        } else {
+            // Log if creator notification was skipped
+            if (!$document->created_by) {
+                Log::warning('Skipped creator notification: document has no created_by field', [
+                    'document_id' => $document->id
+                ]);
+            } elseif ($document->created_by == $retrievedBy->id) {
+                Log::info('Skipped creator notification: creator is the same as retriever', [
+                    'document_id' => $document->id,
+                    'user_id' => $retrievedBy->id
+                ]);
+            }
+        }
+        
+        // B. Notify Administrator (all events)
+        // Exclude the retriever if they're an admin, and exclude creator if they're also an admin
+        // (to avoid duplicate notifications since creator already got notified above)
+        $excludeUserIds = [];
+        if ($retrievedBy->hasRole('Administrator')) {
+            $excludeUserIds[] = $retrievedBy->id;
+        }
+        if ($creatorIsAdmin && $document->created_by) {
+            $excludeUserIds[] = $document->created_by;
+        }
+        $excludeUserIds = array_unique($excludeUserIds);
+        $this->notifyAdministrators(
+            'Document Retrieved from Archive',
+            "{$document->title} ({$document->document_number}) retrieved from archive by {$retrievedBy->name} from {$retrievingDepartment}. Status changed to 'Retrieved'.",
+            'info',
+            $document->id,
+            !empty($excludeUserIds) ? $excludeUserIds : null
+        );
+    }
 }
 

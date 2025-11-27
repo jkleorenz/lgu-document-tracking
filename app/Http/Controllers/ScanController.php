@@ -91,10 +91,11 @@ class ScanController extends Controller
                 }
             }
             
-            // Auto-receive document if it's in Forwarded, Pending, or Return status
+            // Auto-receive document if it's in Forwarded, Pending, Return, Under Review, or Retrieved status
             // IMPORTANT: Scanning should NEVER set status to 'Return' - only the Return action button does that
-            // If document is in 'Return' status and gets scanned, change it to 'Received'
-            if (in_array($document->status, ['Forwarded', 'Pending', 'Return']) && !$document->isArchived()) {
+            // If document is in 'Return', 'Under Review', or 'Retrieved' status and gets scanned, change it to 'Received'
+            // This handles retrieved documents that need to be received by scanning department
+            if (in_array($document->status, ['Forwarded', 'Pending', 'Return', 'Under Review', 'Retrieved']) && !$document->isArchived()) {
                 // Update status to Received (never to Return)
                 $document->status = 'Received';
                 $statusChanged = true;

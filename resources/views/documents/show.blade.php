@@ -153,7 +153,7 @@
                                     // If status is 'Approved' and archived_at is set, it's auto-archived - show 'Approved'
                                     // This case doesn't need special handling as status is already 'Approved'
                                 @endphp
-                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Completed' ? 'primary' : ($displayStatus == 'Return' ? 'danger' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Pending Verification' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info')))))) }}">
+                                <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Completed' ? 'primary' : ($displayStatus == 'Return' ? 'danger' : ($displayStatus == 'Received' ? 'success' : ($displayStatus == 'Retrieved' ? 'info' : ($displayStatus == 'Pending' ? 'warning' : ($displayStatus == 'Pending Verification' ? 'warning' : ($displayStatus == 'Rejected' ? 'danger' : 'info'))))))) }}">
                                     {{ $displayStatus }}
                                 </span>
                                 @if($displayStatus == 'Pending Verification')
@@ -260,6 +260,8 @@
                                             $badgeColor = 'primary';
                                         } elseif ($log->new_status == 'Received') {
                                             $badgeColor = 'success';
+                                        } elseif ($log->new_status == 'Retrieved') {
+                                            $badgeColor = 'info';
                                         } elseif ($log->new_status == 'Pending') {
                                             $badgeColor = 'warning';
                                         } elseif ($log->new_status == 'Rejected') {

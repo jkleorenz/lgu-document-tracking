@@ -51,8 +51,8 @@
                 @can('archive-documents')
                 <form method="POST" action="{{ route('archive.restore', $document) }}">
                     @csrf
-                    <button type="submit" class="btn btn-success btn-archive-action" onclick="return confirm('Restore this document from archive?')">
-                        <i class="bi bi-arrow-counterclockwise"></i> Restore Document
+                    <button type="submit" class="btn btn-success btn-archive-action" onclick="return confirm('Retrieve this document from archive?')">
+                        <i class="bi bi-arrow-counterclockwise"></i> Retrieve Document
                     </button>
                 </form>
                 @endcan
@@ -162,6 +162,8 @@
                                             $badgeColor = 'primary';
                                         } elseif ($log->new_status == 'Received') {
                                             $badgeColor = 'success';
+                                        } elseif ($log->new_status == 'Retrieved') {
+                                            $badgeColor = 'info';
                                         } elseif ($log->new_status == 'Pending') {
                                             $badgeColor = 'warning';
                                         } elseif ($log->new_status == 'Rejected') {
