@@ -135,7 +135,7 @@ class ScanController extends Controller
                     );
                 }
                 
-                // EVENT 2: Document Received via QR Scan
+                // EVENT 2: Document Received via QR Scan (Status Changed)
                 // Refresh document to get updated relationships
                 $document->refresh();
                 $this->notificationService->onDocumentReceivedViaQRScan(
@@ -163,6 +163,17 @@ class ScanController extends Controller
                         null
                     );
                 }
+                
+                // EVENT 2B: Document Scanned via QR (Tracking/Location Update - No Status Change)
+                // ALWAYS notify creator and administrator on every scan, even if status doesn't change
+                // Refresh document to get updated relationships
+                $document->refresh();
+                $this->notificationService->onDocumentScannedViaQR(
+                    $document,
+                    $user,
+                    $scannerDepartment,
+                    false
+                );
             }
 
             DB::commit();

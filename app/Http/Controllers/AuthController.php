@@ -47,7 +47,28 @@ class AuthController extends Controller
                 ])->withInput($request->only('email'));
             }
             
-            return redirect()->intended(route('dashboard'));
+            // Clear any stale intended URL and redirect to dashboard
+            $intendedUrl = $request->session()->pull('url.intended');
+            
+            // Only use intended URL if it's a valid web route (not an API endpoint)
+            // Check if the intended URL is an API endpoint or invalid
+            $isApiEndpoint = false;
+            if ($intendedUrl) {
+                // Normalize the URL for checking
+                $urlPath = parse_url($intendedUrl, PHP_URL_PATH) ?? $intendedUrl;
+                // Check if it starts with /api/ or contains /api/notifications/unread-count
+                $isApiEndpoint = strpos($urlPath, '/api/') === 0 || 
+                                strpos($urlPath, '/api/notifications/unread-count') !== false ||
+                                strpos($intendedUrl, '/api/') !== false;
+            }
+            
+            // Only redirect to intended URL if it's a valid web route (not an API endpoint)
+            if ($intendedUrl && !$isApiEndpoint) {
+                return redirect($intendedUrl);
+            }
+            
+            // Always redirect to dashboard as fallback
+            return redirect()->route('dashboard');
         }
 
         return back()->withErrors([

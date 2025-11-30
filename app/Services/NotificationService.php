@@ -312,9 +312,9 @@ class NotificationService
     }
 
     /**
-     * EVENT 2: Document Received via QR Scan
+     * EVENT 2: Document Received via QR Scan (Status Changed)
      * Rules:
-     * - Notify: Creator, Administrator
+     * - Notify: Creator (ALWAYS, unless they are the scanner), Administrator (ALWAYS)
      * - Do NOT notify: Receiving Department (they already know - they scanned it)
      */
     public function onDocumentReceivedViaQRScan($document, $scanner, $scannerDepartment)
@@ -323,7 +323,7 @@ class NotificationService
         $scannerIsCreator = $document->created_by == $scanner->id;
         
         // Build the message once
-        $message = "{$document->title} ({$document->document_number}) received at {$scannerDepartment} by {$scanner->name}.";
+        $message = "{$document->title} ({$document->document_number}) received at {$scannerDepartment} by {$scanner->name}. Status changed to 'Received'.";
         
         // Load creator efficiently (check if already loaded, otherwise load it)
         $creator = null;
@@ -337,34 +337,90 @@ class NotificationService
             $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
         }
         
-        // A. Notify Creator (if scanner is not the creator AND creator is not an admin)
-        // If creator is an admin, they'll get notified as admin below, so skip creator notification to avoid duplicate
-        if ($document->created_by && !$scannerIsCreator && !$creatorIsAdmin) {
+        // A. Notify Creator (ALWAYS notify if creator exists and is not the scanner)
+        // Even if creator is an admin, they should get a creator notification for tracking
+        // They will also get an admin notification below, but that's acceptable for important events
+        if ($document->created_by && !$scannerIsCreator) {
             $this->notifyCreator(
                 $document,
-                'Document Received',
+                'Document Received via QR Scan',
                 $message,
                 'info'
             );
         }
         
         // B. Notify Administrator (all events)
-        // Exclude users who already received notifications:
-        // 1. Scanner if they're an admin (they already know - they scanned it)
-        // 2. Creator if they're an admin (they already got notified above, or will get notified here)
+        // Exclude only the scanner if they're an admin (they already know - they scanned it)
+        // Do NOT exclude creator even if they're an admin - they should get both notifications
         $excludeUserIds = [];
         if ($scannerIsAdmin) {
             $excludeUserIds[] = $scanner->id;
-        }
-        // If creator is admin and not the scanner, exclude them (they'll get admin notification)
-        if ($creatorIsAdmin && !$scannerIsCreator) {
-            $excludeUserIds[] = $document->created_by;
         }
         // Remove duplicates
         $excludeUserIds = array_unique($excludeUserIds);
         
         $this->notifyAdministrators(
             'Document Received via QR Scan',
+            $message,
+            'info',
+            $document->id,
+            !empty($excludeUserIds) ? $excludeUserIds : null
+        );
+    }
+
+    /**
+     * EVENT 2B: Document Scanned via QR (Tracking/Location Update - No Status Change)
+     * Rules:
+     * - Notify: Creator (ALWAYS, unless they are the scanner), Administrator (ALWAYS)
+     * - This handles scans where status doesn't change but location/tracking is updated
+     */
+    public function onDocumentScannedViaQR($document, $scanner, $scannerDepartment, $statusChanged = false)
+    {
+        $scannerIsAdmin = $scanner->hasRole('Administrator');
+        $scannerIsCreator = $document->created_by == $scanner->id;
+        
+        // Build appropriate message based on what changed
+        if ($statusChanged) {
+            $message = "{$document->title} ({$document->document_number}) scanned at {$scannerDepartment} by {$scanner->name}. Status changed to '{$document->status}'.";
+        } else {
+            $message = "{$document->title} ({$document->document_number}) scanned at {$scannerDepartment} by {$scanner->name}. Location updated.";
+        }
+        
+        // Load creator efficiently (check if already loaded, otherwise load it)
+        $creator = null;
+        $creatorIsAdmin = false;
+        if ($document->created_by) {
+            if ($document->relationLoaded('creator')) {
+                $creator = $document->creator;
+            } else {
+                $creator = User::find($document->created_by);
+            }
+            $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
+        }
+        
+        // A. Notify Creator (ALWAYS notify if creator exists and is not the scanner)
+        // Even if creator is an admin, they should get a creator notification for tracking
+        if ($document->created_by && !$scannerIsCreator) {
+            $this->notifyCreator(
+                $document,
+                'Document Scanned via QR Code',
+                $message,
+                'info'
+            );
+        }
+        
+        // B. Notify Administrator (all events)
+        // Exclude only the scanner if they're an admin (they already know - they scanned it)
+        // Do NOT exclude creator even if they're an admin - they should get both notifications
+        $excludeUserIds = [];
+        if ($scannerIsAdmin) {
+            $excludeUserIds[] = $scanner->id;
+        }
+        // Remove duplicates
+        $excludeUserIds = array_unique($excludeUserIds);
+        
+        $this->notifyAdministrators(
+            'Document Scanned via QR Code',
             $message,
             'info',
             $document->id,
