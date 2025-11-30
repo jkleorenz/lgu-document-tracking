@@ -332,3 +332,4 @@ For issues or questions, refer to:
 - `USER_GUIDE.txt` - Application user guide
 - `INSTALLATION.md` - Manual installation guide
 
+

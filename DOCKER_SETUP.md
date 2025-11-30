@@ -174,3 +174,4 @@ For production deployment:
 - `nginx.conf` - Nginx web server configuration
 - `.dockerignore` - Files excluded from Docker build context
 
+

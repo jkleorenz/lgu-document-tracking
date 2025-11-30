@@ -221,3 +221,4 @@ For application issues:
 - Check `storage/logs/laravel.log`
 - Review application documentation
 
+

@@ -63,18 +63,25 @@ RUN sed -i 's/fastcgi_pass app:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/sit
     rm -rf /etc/nginx/sites-enabled/default.bak && \
     rm -f /etc/nginx/sites-enabled/default.bak
 
+# Copy PHP-FPM pool configuration for graceful shutdown
+# Remove default pool config if it exists to avoid conflicts
+RUN rm -f /usr/local/etc/php-fpm.d/www.conf.default /usr/local/etc/php-fpm.d/zz-docker.conf 2>/dev/null || true
+COPY www.conf /usr/local/etc/php-fpm.d/www.conf
+
 # Copy supervisor configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Set proper permissions
-RUN chown -R www-data:www-data /var/www \
+# Create supervisor socket directory and set proper permissions
+RUN mkdir -p /var/run/supervisor /var/log/supervisor \
+    && chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage \
     && chmod -R 755 /var/www/bootstrap/cache \
-    && mkdir -p /var/log/supervisor
+    && chmod 755 /var/run/supervisor \
+    && chmod 755 /var/log/supervisor
 
 # Expose port 80 for Render
 EXPOSE 80
 
-# Start supervisor to manage both PHP-FPM and Nginx
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Use exec form for proper signal handling
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]
 
