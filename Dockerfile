@@ -76,9 +76,17 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create supervisor socket directory and set proper permissions
+# Also ensure storage directories exist with proper structure
 RUN mkdir -p /var/run/supervisor /var/log/supervisor \
     && chmod 755 /var/run/supervisor \
-    && chmod 755 /var/log/supervisor
+    && chmod 755 /var/log/supervisor \
+    && mkdir -p /var/www/storage/framework/cache/data \
+    && mkdir -p /var/www/storage/framework/sessions \
+    && mkdir -p /var/www/storage/framework/views \
+    && mkdir -p /var/www/storage/logs \
+    && mkdir -p /var/www/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Expose port 80 for Render
 EXPOSE 80

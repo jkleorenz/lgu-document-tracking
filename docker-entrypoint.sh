@@ -9,39 +9,62 @@ if [ -z "$APP_KEY" ]; then
     echo "You can generate one with: php artisan key:generate"
 fi
 
-# Set proper permissions
+# Create storage directories if they don't exist
+echo "Creating storage directories..."
+mkdir -p /var/www/storage/framework/cache/data
+mkdir -p /var/www/storage/framework/sessions
+mkdir -p /var/www/storage/framework/views
+mkdir -p /var/www/storage/logs
+mkdir -p /var/www/bootstrap/cache
+
+# Set proper permissions (run as root, then switch to www-data)
 echo "Setting permissions..."
 chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+chmod -R 775 /var/www/storage
+chmod -R 775 /var/www/bootstrap/cache
+
+# Ensure specific directories are writable
+chmod -R 777 /var/www/storage/framework/cache
+chmod -R 777 /var/www/storage/framework/sessions
+chmod -R 777 /var/www/storage/framework/views
+chmod -R 777 /var/www/storage/logs
 
 # Create storage link if it doesn't exist
 if [ ! -L /var/www/public/storage ]; then
     echo "Creating storage symlink..."
-    php artisan storage:link || echo "Warning: Could not create storage link"
+    php artisan storage:link 2>&1 || echo "Warning: Could not create storage link (may already exist)"
 fi
 
-# Clear caches (helps with 500 errors)
+# Clear caches (non-blocking - don't fail if this doesn't work)
 echo "Clearing caches..."
-php artisan config:clear || true
-php artisan cache:clear || true
-php artisan route:clear || true
-php artisan view:clear || true
+php artisan config:clear 2>&1 || echo "Note: Config clear had issues (continuing anyway)"
+php artisan cache:clear 2>&1 || echo "Note: Cache clear had issues (continuing anyway)"
+php artisan route:clear 2>&1 || echo "Note: Route clear had issues (continuing anyway)"
+php artisan view:clear 2>&1 || echo "Note: View clear had issues (continuing anyway)"
 
-# Test if Laravel can bootstrap
+# Fix permissions again after cache clear (in case files were created)
+chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache 2>/dev/null || true
+chmod -R 775 /var/www/storage /var/www/bootstrap/cache 2>/dev/null || true
+
+# Test if Laravel can bootstrap (non-blocking)
 echo "Testing Laravel bootstrap..."
-php artisan about 2>&1 | head -20 || echo "Warning: Laravel bootstrap test failed"
+php artisan about 2>&1 | head -20 || echo "Warning: Laravel bootstrap test had issues (continuing anyway)"
 
-# Optimize for production (only if APP_KEY is set)
+# Optimize for production (only if APP_KEY is set, and non-blocking)
 if [ ! -z "$APP_KEY" ]; then
     echo "Caching configuration..."
-    php artisan config:cache || echo "Warning: Config cache failed"
-    php artisan route:cache || echo "Warning: Route cache failed"
-    php artisan view:cache || echo "Warning: View cache failed"
+    php artisan config:cache 2>&1 || echo "Warning: Config cache failed (app will still work)"
+    php artisan route:cache 2>&1 || echo "Warning: Route cache failed (app will still work)"
+    php artisan view:cache 2>&1 || echo "Warning: View cache failed (app will still work)"
+    
+    # Fix permissions after caching
+    chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache 2>/dev/null || true
+    chmod -R 775 /var/www/storage /var/www/bootstrap/cache 2>/dev/null || true
 else
     echo "Skipping cache optimization (APP_KEY not set)"
 fi
 
 echo "=== Starting Supervisor ==="
-# Start supervisor
+# Start supervisor (this should never fail)
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf -n
 
