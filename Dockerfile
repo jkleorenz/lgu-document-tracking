@@ -71,17 +71,18 @@ COPY www.conf /usr/local/etc/php-fpm.d/www.conf
 # Copy supervisor configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Create supervisor socket directory and set proper permissions
 RUN mkdir -p /var/run/supervisor /var/log/supervisor \
-    && chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache \
     && chmod 755 /var/run/supervisor \
     && chmod 755 /var/log/supervisor
 
 # Expose port 80 for Render
 EXPOSE 80
 
-# Use exec form for proper signal handling
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]
+# Use entrypoint script for proper Laravel initialization
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
