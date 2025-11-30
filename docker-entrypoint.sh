@@ -17,17 +17,26 @@ mkdir -p /var/www/storage/framework/views
 mkdir -p /var/www/storage/logs
 mkdir -p /var/www/bootstrap/cache
 
+# Ensure sessions directory is writable (critical for login)
+touch /var/www/storage/framework/sessions/.gitkeep 2>/dev/null || true
+
 # Set proper permissions (run as root, then switch to www-data)
 echo "Setting permissions..."
 chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 chmod -R 775 /var/www/storage
 chmod -R 775 /var/www/bootstrap/cache
 
-# Ensure specific directories are writable
+# Ensure specific directories are writable (critical for sessions and cache)
 chmod -R 777 /var/www/storage/framework/cache
 chmod -R 777 /var/www/storage/framework/sessions
 chmod -R 777 /var/www/storage/framework/views
 chmod -R 777 /var/www/storage/logs
+
+# Verify sessions directory is writable
+if [ ! -w /var/www/storage/framework/sessions ]; then
+    echo "ERROR: Sessions directory is not writable!"
+    chmod 777 /var/www/storage/framework/sessions
+fi
 
 # Create storage link if it doesn't exist
 if [ ! -L /var/www/public/storage ]; then
@@ -45,6 +54,10 @@ php artisan view:clear 2>&1 || echo "Note: View clear had issues (continuing any
 # Fix permissions again after cache clear (in case files were created)
 chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache 2>/dev/null || true
 chmod -R 775 /var/www/storage /var/www/bootstrap/cache 2>/dev/null || true
+
+# Test database connection and check if migrations are needed
+echo "Checking database connection..."
+php artisan migrate:status 2>&1 | head -10 || echo "Note: Could not check migration status (database may not be set up)"
 
 # Test if Laravel can bootstrap (non-blocking)
 echo "Testing Laravel bootstrap..."
