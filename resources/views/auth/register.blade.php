@@ -58,17 +58,27 @@
 
                         <div class="mb-3">
                             <label for="department_id" class="form-label">Department</label>
-                            <select class="form-select @error('department_id') is-invalid @enderror" 
-                                    id="department_id" 
-                                    name="department_id" 
-                                    required>
-                                <option value="">Select Department</option>
-                                @foreach($departments as $department)
-                                <option value="{{ $department->id }}" {{ old('department_id') == $department->id ? 'selected' : '' }}>
-                                    {{ $department->display_name }}
-                                </option>
-                                @endforeach
-                            </select>
+                            @if($departments->isEmpty())
+                                <div class="alert alert-warning">
+                                    <strong>Database not initialized!</strong> Please run migrations and seeders first.
+                                    <br><small>Contact your administrator or run: <code>php artisan migrate --seed</code></small>
+                                </div>
+                                <select class="form-select" id="department_id" name="department_id" disabled>
+                                    <option value="">No departments available</option>
+                                </select>
+                            @else
+                                <select class="form-select @error('department_id') is-invalid @enderror" 
+                                        id="department_id" 
+                                        name="department_id" 
+                                        required>
+                                    <option value="">Select Department</option>
+                                    @foreach($departments as $department)
+                                    <option value="{{ $department->id }}" {{ old('department_id') == $department->id ? 'selected' : '' }}>
+                                        {{ $department->display_name }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            @endif
                             @error('department_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

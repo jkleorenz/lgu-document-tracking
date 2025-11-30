@@ -85,7 +85,15 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
         
-        $departments = Department::active()->orderBy('name')->get();
+        // Try to get departments, but handle case where table doesn't exist yet
+        try {
+            $departments = Department::active()->orderBy('name')->get();
+        } catch (\Exception $e) {
+            // If departments table doesn't exist (migrations not run), return empty collection
+            // This allows the page to load but registration won't work until migrations are run
+            $departments = collect([]);
+        }
+        
         return view('auth.register', compact('departments'));
     }
 
