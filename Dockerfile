@@ -41,14 +41,18 @@ WORKDIR /var/www
 # Copy composer files first for better caching
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies (before copying all files for better caching)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Install PHP dependencies without scripts (artisan not available yet)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
 
 # Copy built frontend from Stage 1
 COPY --from=frontend /app/public/build ./public/build
 
-# Copy remaining app files
+# Copy remaining app files (including artisan)
 COPY . .
+
+# Run composer scripts now that artisan is available
+RUN composer dump-autoload --optimize --no-dev && \
+    php artisan package:discover --ansi
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www \
