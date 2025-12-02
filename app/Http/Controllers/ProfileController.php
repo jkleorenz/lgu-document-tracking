@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -24,7 +25,8 @@ class ProfileController extends Controller
      */
     public function edit()
     {
-        $user = Auth::user();
+        // Get fresh user data from database to ensure profile picture is up to date
+        $user = Auth::user()->fresh();
         return view('profile.edit', compact('user'));
     }
 
@@ -49,15 +51,21 @@ class ProfileController extends Controller
                 Storage::disk('public')->delete($user->profile_picture);
             }
 
-            // Store new profile picture
-            $path = $request->file('profile_picture')->store('profile-pictures', 'public');
+            // Store new profile picture with random name for security
+            $filename = uniqid() . '_' . time() . '.' . $request->file('profile_picture')->getClientOriginalExtension();
+            $path = $request->file('profile_picture')->storeAs('profile-pictures', $filename, 'public');
             $validated['profile_picture'] = $path;
         } else {
             // Keep existing profile picture if no new one uploaded
             unset($validated['profile_picture']);
         }
 
+        $oldValues = $user->only(['name', 'email', 'phone']);
         $user->update($validated);
+        $newValues = $user->fresh()->only(['name', 'email', 'phone']);
+
+        // Audit log
+        AuditLog::log('profile.updated', $user->id, null, null, 'User updated profile', $oldValues, $newValues, $request->ip(), $request->userAgent());
 
         return redirect()->route('profile.show')
             ->with('success', 'Profile updated successfully!');
@@ -79,11 +87,38 @@ class ProfileController extends Controller
             Storage::disk('public')->delete($user->profile_picture);
         }
 
-        // Store new profile picture
-        $path = $request->file('profile_picture')->store('profile-pictures', 'public');
+        // Store new profile picture with random name for security
+        $filename = uniqid() . '_' . time() . '.' . $request->file('profile_picture')->getClientOriginalExtension();
+        $path = $request->file('profile_picture')->storeAs('profile-pictures', $filename, 'public');
+        
+        // Verify the file was stored successfully
+        if (!Storage::disk('public')->exists($path)) {
+            return back()->withErrors(['profile_picture' => 'Failed to upload profile picture. Please try again.']);
+        }
+        
         $user->update(['profile_picture' => $path]);
 
-        return back()->with('success', 'Profile picture updated successfully!');
+        // Refresh user model to get updated profile picture
+        $user->refresh();
+        
+        // Verify the update was successful
+        if ($user->profile_picture !== $path) {
+            \Log::error('Profile picture path mismatch', [
+                'expected' => $path,
+                'actual' => $user->profile_picture,
+            ]);
+        }
+
+        // Audit log
+        AuditLog::log('profile.picture.updated', $user->id, null, null, 'User updated profile picture', null, null, $request->ip(), $request->userAgent());
+
+        // Refresh the authenticated user instance to ensure fresh data
+        $user->refresh();
+        Auth::setUser($user);
+        
+        return redirect()->route('profile.edit')
+            ->with('success', 'Profile picture updated successfully!')
+            ->with('picture_updated', true);
     }
 
     /**
@@ -98,8 +133,9 @@ class ProfileController extends Controller
         }
 
         $user->update(['profile_picture' => null]);
+        $user->refresh();
 
-        return back()->with('success', 'Profile picture removed successfully!');
+        return redirect()->route('profile.edit')->with('success', 'Profile picture removed successfully!');
     }
 
     /**
@@ -118,12 +154,16 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
-        Auth::user()->update([
+        $user = Auth::user();
+        $user->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        // Audit log
+        AuditLog::log('password.changed', $user->id, null, null, 'User changed password', null, null, $request->ip(), $request->userAgent());
 
         return back()->with('success', 'Password updated successfully!');
     }

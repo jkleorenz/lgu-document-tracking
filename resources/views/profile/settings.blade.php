@@ -22,18 +22,18 @@
                     <h5 class="mb-0"><i class="bi bi-image"></i> Profile Picture</h5>
                 </div>
                 <div class="card-body text-center">
-                    <div class="mb-3">
-                        @if($user->profile_picture)
-                            <img src="{{ Storage::disk('public')->url($user->profile_picture) }}" 
-                                 alt="Profile Picture" 
-                                 class="rounded-circle" 
-                                 style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #dee2e6;">
-                        @else
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
-                                 style="width: 150px; height: 150px; border: 3px solid #dee2e6;">
-                                <i class="bi bi-person" style="font-size: 4rem; color: white;"></i>
-                            </div>
-                        @endif
+                    <div class="mb-3" style="position: relative; display: inline-block; width: 150px; height: 150px;">
+                        <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : '' }}" 
+                             alt="Profile Picture" 
+                             id="profile-picture-img"
+                             class="rounded-circle" 
+                             style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #dee2e6; position: absolute; top: 0; left: 0; {{ $user->profile_picture ? 'display: block;' : 'display: none;' }} z-index: 2;"
+                             onerror="this.style.display='none'; document.getElementById('profile-picture-placeholder').style.display='flex';">
+                        <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                             id="profile-picture-placeholder"
+                             style="width: 150px; height: 150px; border: 3px solid #dee2e6; position: absolute; top: 0; left: 0; {{ $user->profile_picture ? 'display: none;' : 'display: flex;' }} z-index: 1;">
+                            <i class="bi bi-person" style="font-size: 4rem; color: white;"></i>
+                        </div>
                     </div>
                     <form method="POST" action="{{ route('profile.picture') }}" enctype="multipart/form-data" class="mb-2">
                         @csrf

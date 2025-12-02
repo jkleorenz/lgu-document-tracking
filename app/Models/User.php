@@ -27,6 +27,10 @@ class User extends Authenticatable
         'department_id',
         'status',
         'profile_picture',
+        'failed_login_attempts',
+        'locked_until',
+        'last_login_at',
+        'last_login_ip',
     ];
 
     /**
@@ -47,6 +51,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'locked_until' => 'datetime',
+        'last_login_at' => 'datetime',
     ];
 
     /**
@@ -79,7 +85,7 @@ class User extends Authenticatable
     public function getProfilePictureUrlAttribute()
     {
         if ($this->profile_picture) {
-            return Storage::disk('public')->url($this->profile_picture);
+            return asset('storage/' . $this->profile_picture);
         }
         return null;
     }
@@ -192,6 +198,61 @@ class User extends Authenticatable
         
         // Default: empty collection
         return Document::whereRaw('1 = 0');
+    }
+
+    /**
+     * Check if account is locked
+     */
+    public function isLocked(): bool
+    {
+        return $this->locked_until && $this->locked_until->isFuture();
+    }
+
+    /**
+     * Lock the account for specified minutes
+     */
+    public function lock(int $minutes = 30): void
+    {
+        $this->update([
+            'locked_until' => now()->addMinutes($minutes),
+        ]);
+    }
+
+    /**
+     * Unlock the account
+     */
+    public function unlock(): void
+    {
+        $this->update([
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+        ]);
+    }
+
+    /**
+     * Increment failed login attempts
+     */
+    public function incrementFailedAttempts(): void
+    {
+        $this->increment('failed_login_attempts');
+        
+        // Lock account after 5 failed attempts
+        if ($this->failed_login_attempts >= 5) {
+            $this->lock(30); // Lock for 30 minutes
+        }
+    }
+
+    /**
+     * Reset failed login attempts on successful login
+     */
+    public function resetFailedAttempts(): void
+    {
+        $this->update([
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+            'last_login_at' => now(),
+            'last_login_ip' => request()->ip(),
+        ]);
     }
 }
 

@@ -15,6 +15,13 @@
         <h2 class="fw-bold"><i class="bi bi-pencil-square"></i> Edit Profile</h2>
     </div>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-md-8">
             <!-- Profile Picture -->
@@ -23,20 +30,20 @@
                     <h5 class="mb-0"><i class="bi bi-image"></i> Profile Picture</h5>
                 </div>
                 <div class="card-body text-center">
-                    <div class="mb-3">
-                        @if($user->profile_picture)
-                            <img src="{{ Storage::disk('public')->url($user->profile_picture) }}" 
-                                 alt="Profile Picture" 
-                                 class="rounded-circle" 
-                                 style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #dee2e6;">
-                        @else
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
-                                 style="width: 150px; height: 150px; border: 3px solid #dee2e6;">
-                                <i class="bi bi-person" style="font-size: 4rem; color: white;"></i>
-                            </div>
-                        @endif
+                    <div class="mb-3" id="profile-picture-container" style="position: relative; display: inline-block; width: 150px; height: 150px;">
+                        <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) . '?v=' . time() : '' }}" 
+                             alt="Profile Picture" 
+                             id="profile-picture-img"
+                             class="rounded-circle" 
+                             style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #dee2e6; position: absolute; top: 0; left: 0; {{ $user->profile_picture ? 'display: block;' : 'display: none;' }} z-index: 2;"
+                             onerror="handleImageError();">
+                        <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                             id="profile-picture-placeholder"
+                             style="width: 150px; height: 150px; border: 3px solid #dee2e6; position: absolute; top: 0; left: 0; {{ $user->profile_picture ? 'display: none;' : 'display: flex;' }} z-index: 1;">
+                            <i class="bi bi-person" style="font-size: 4rem; color: white;"></i>
+                        </div>
                     </div>
-                    <form method="POST" action="{{ route('profile.picture') }}" enctype="multipart/form-data" class="mb-2">
+                    <form method="POST" action="{{ route('profile.picture') }}" enctype="multipart/form-data" class="mb-2" id="profile-picture-form">
                         @csrf
                         <div class="mb-3">
                             <input type="file" 
@@ -54,7 +61,7 @@
                                 <i class="bi bi-upload"></i> Upload Picture
                             </button>
                             @if($user->profile_picture)
-                            <form method="POST" action="{{ route('profile.picture.remove') }}" class="d-inline">
+                            <form method="POST" action="{{ route('profile.picture.remove') }}" class="d-inline" id="remove-picture-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove your profile picture?')">
@@ -180,5 +187,134 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function handleImageError() {
+    const img = document.getElementById('profile-picture-img');
+    const placeholder = document.getElementById('profile-picture-placeholder');
+    if (img) {
+        img.style.display = 'none';
+    }
+    if (placeholder) {
+        placeholder.style.display = 'flex';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const profilePictureInput = document.getElementById('profile_picture');
+    const profilePictureContainer = document.getElementById('profile-picture-container');
+    const profilePictureImg = document.getElementById('profile-picture-img');
+    const profilePicturePlaceholder = document.getElementById('profile-picture-placeholder');
+    
+    // Show preview when file is selected
+    if (profilePictureInput) {
+        profilePictureInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please select a valid image file (JPG, PNG, or GIF)');
+                    this.value = '';
+                    return;
+                }
+                
+                // Validate file size (2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size must be less than 2MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    // Ensure image element exists
+                    let img = profilePictureImg;
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.id = 'profile-picture-img';
+                        img.className = 'rounded-circle';
+                        img.alt = 'Profile Picture';
+                        img.style.cssText = 'width: 150px; height: 150px; object-fit: cover; border: 3px solid #dee2e6; position: absolute; top: 0; left: 0; display: block; z-index: 2;';
+                        img.onerror = handleImageError;
+                        if (profilePictureContainer) {
+                            profilePictureContainer.appendChild(img);
+                        }
+                    }
+                    
+                    // Hide placeholder first (ensure only one is visible)
+                    if (profilePicturePlaceholder) {
+                        profilePicturePlaceholder.style.display = 'none';
+                    }
+                    
+                    // Update and show image (centered in the same position as placeholder)
+                    img.src = event.target.result;
+                    img.style.display = 'block';
+                    img.style.position = 'absolute';
+                    img.style.top = '0';
+                    img.style.left = '0';
+                    img.style.zIndex = '2';
+                };
+                reader.onerror = function() {
+                    alert('Error reading file. Please try again.');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // If no file selected, restore original state
+                if (profilePictureImg && !profilePictureImg.src) {
+                    profilePictureImg.style.display = 'none';
+                    if (profilePicturePlaceholder) {
+                        profilePicturePlaceholder.style.display = 'flex';
+                    }
+                }
+            }
+        });
+    }
+    
+    // Handle form submission with AJAX for better UX
+    const profilePictureForm = document.getElementById('profile-picture-form');
+    if (profilePictureForm) {
+        profilePictureForm.addEventListener('submit', function(e) {
+            const submitButton = profilePictureForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
+            }
+        });
+    }
+    
+    // Refresh image after successful upload
+    @if(session('success') && session('picture_updated'))
+        // Force reload the page to show the new image with cache busting
+        setTimeout(function() {
+            // Add cache busting parameter to force reload
+            window.location.href = window.location.href.split('?')[0] + '?v=' + new Date().getTime();
+        }, 300);
+    @endif
+    
+    // Ensure image loads properly on page load
+    if (profilePictureImg && profilePictureImg.src) {
+        profilePictureImg.onload = function() {
+            if (profilePicturePlaceholder) {
+                profilePicturePlaceholder.style.display = 'none';
+            }
+            this.style.display = 'block';
+        };
+        profilePictureImg.onerror = function() {
+            handleImageError();
+        };
+        
+        // If image has a src, ensure it's visible and placeholder is hidden
+        if (profilePictureImg.src && profilePictureImg.src !== window.location.href) {
+            profilePictureImg.style.display = 'block';
+            if (profilePicturePlaceholder) {
+                profilePicturePlaceholder.style.display = 'none';
+            }
+        }
+    }
+});
+</script>
+@endpush
 @endsection
 

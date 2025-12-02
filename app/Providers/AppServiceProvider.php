@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,6 +42,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('set-priority', function ($user) {
             return $user->hasAnyRole(['Administrator', 'Mayor']);
         });
+
+        // Force HTTPS in production
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }
 

@@ -24,18 +24,18 @@
             <!-- Profile Card -->
             <div class="card">
                 <div class="card-body text-center">
-                    <div class="mb-3">
-                        @if($user->profile_picture)
-                            <img src="{{ Storage::disk('public')->url($user->profile_picture) }}" 
-                                 alt="Profile Picture" 
-                                 class="rounded-circle" 
-                                 style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #dee2e6;">
-                        @else
-                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" 
-                                 style="width: 120px; height: 120px; font-size: 3rem; border: 3px solid #dee2e6;">
-                                <i class="bi bi-person-fill"></i>
-                            </div>
-                        @endif
+                    <div class="mb-3" style="position: relative; display: inline-block; width: 120px; height: 120px;">
+                        <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : '' }}" 
+                             alt="Profile Picture" 
+                             id="profile-picture-img"
+                             class="rounded-circle" 
+                             style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #dee2e6; position: absolute; top: 0; left: 0; {{ $user->profile_picture ? 'display: block;' : 'display: none;' }} z-index: 2;"
+                             onerror="this.style.display='none'; document.getElementById('profile-picture-placeholder').style.display='flex';">
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" 
+                             id="profile-picture-placeholder"
+                             style="width: 120px; height: 120px; font-size: 3rem; border: 3px solid #dee2e6; position: absolute; top: 0; left: 0; {{ $user->profile_picture ? 'display: none;' : 'display: flex;' }} z-index: 1;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
                     </div>
                     <h4 class="mb-1">{{ $user->name }}</h4>
                     <p class="text-muted mb-3">{{ $user->roles->first()->name ?? 'No Role' }}</p>

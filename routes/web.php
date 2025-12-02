@@ -29,9 +29,9 @@ Route::get('/', function () {
 // Authentication Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 });
 
 // Protected Routes (Require Authentication and Verified Account)
@@ -46,6 +46,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/picture', [ProfileController::class, 'updateProfilePicture'])->name('profile.picture');
     Route::delete('/profile/picture', [ProfileController::class, 'removeProfilePicture'])->name('profile.picture.remove');
+    Route::get('/profile/picture/{path}', [ProfileController::class, 'serveProfilePicture'])->where('path', '.*')->name('profile.picture.serve');
     Route::get('/settings', [ProfileController::class, 'settings'])->name('settings');
     Route::put('/settings/password', [ProfileController::class, 'updatePassword'])->name('settings.password');
     
@@ -106,10 +107,12 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('users', UserController::class);
         Route::get('/users-pending', [UserController::class, 'pendingVerifications'])
             ->name('users.pending');
-        Route::post('/users/{user}/verify', [UserController::class, 'verify'])
-            ->name('users.verify');
-        Route::post('/users/{user}/reject', [UserController::class, 'reject'])
-            ->name('users.reject');
+    Route::post('/users/{user}/verify', [UserController::class, 'verify'])
+        ->name('users.verify')
+        ->middleware('signed');
+    Route::post('/users/{user}/reject', [UserController::class, 'reject'])
+        ->name('users.reject')
+        ->middleware('signed');
     });
 });
 
