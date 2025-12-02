@@ -279,6 +279,36 @@
     </div>
 </div>
 
+<!-- Complete Document Modal -->
+<div class="modal fade" id="completeDocumentModal" tabindex="-1" aria-labelledby="completeDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="completeDocumentModalLabel">
+                    <i class="bi bi-check-circle"></i> Complete Document
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="completeDocumentForm">
+                @csrf
+                <div class="modal-body">
+                    <input type="hidden" id="complete-document-id" name="document_id" value="">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Note:</strong> This will mark the document as completed and automatically archive it.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Complete Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Return Document Modal -->
 <div class="modal fade" id="returnDocumentModal" tabindex="-1" aria-labelledby="returnDocumentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -310,6 +340,54 @@
     </div>
 </div>
 
+<!-- Complete Document Success Modal -->
+<div class="modal fade" id="completeSuccessModal" tabindex="-1" aria-labelledby="completeSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="completeSuccessModalLabel">
+                    <i class="bi bi-check-circle-fill"></i> Success
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                <h5 class="mt-3 mb-2">Document Completed Successfully!</h5>
+                <p class="text-muted mb-0">The document has been marked as completed and automatically archived.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="bi bi-check-circle"></i> OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Return Document Success Modal -->
+<div class="modal fade" id="returnSuccessModal" tabindex="-1" aria-labelledby="returnSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="returnSuccessModalLabel">
+                    <i class="bi bi-check-circle-fill"></i> Success
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                <h5 class="mt-3 mb-2">Document Returned Successfully!</h5>
+                <p class="text-muted mb-0">The document has been returned to the previous department.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="bi bi-check-circle"></i> OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 // Store document ID globally for actions
@@ -331,9 +409,11 @@ document.addEventListener('click', function(e) {
             return false;
         }
         
-        // Confirm action
-        if (!confirm('Are you sure you want to mark this document as complete and approve it?\n\nThis will mark the document as completed and automatically archive it.')) {
-            return false;
+        // Set the document ID in the hidden field
+        const docIdField = document.getElementById('complete-document-id');
+        if (docIdField) {
+            docIdField.value = currentDocumentId;
+            console.log('Document ID set in hidden field:', currentDocumentId);
         }
         
         // Close dropdown if open
@@ -348,50 +428,41 @@ document.addEventListener('click', function(e) {
             }
         }
         
-        // Disable button to prevent double submission
-        completeBtn.style.pointerEvents = 'none';
-        const originalText = completeBtn.innerHTML;
-        completeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
-        
-        const formData = new FormData();
-        formData.append('document_id', currentDocumentId);
-        formData.append('_token', '{{ csrf_token() }}');
-        
-        fetch('{{ route("scan.complete") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-            },
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => {
-                    throw new Error(err.message || 'Failed to complete document');
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
-                // Reload the page to show updated status
-                location.reload();
+        // Open the modal
+        const modalElement = document.getElementById('completeDocumentModal');
+        if (modalElement) {
+            console.log('Opening complete modal');
+            // Use Bootstrap 5 modal
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                let modal = bootstrap.Modal.getInstance(modalElement);
+                if (!modal) {
+                    modal = new bootstrap.Modal(modalElement);
+                }
+                modal.show();
             } else {
-                alert('Error: ' + (data.message || 'Failed to complete document.'));
-                // Re-enable button
-                completeBtn.style.pointerEvents = 'auto';
-                completeBtn.innerHTML = originalText;
+                // Fallback: show modal manually
+                console.log('Bootstrap not available, using fallback');
+                modalElement.classList.add('show');
+                modalElement.style.display = 'block';
+                modalElement.setAttribute('aria-hidden', 'false');
+                modalElement.setAttribute('aria-modal', 'true');
+                document.body.classList.add('modal-open');
+                
+                // Remove existing backdrop if any
+                const existingBackdrop = document.querySelector('.modal-backdrop');
+                if (existingBackdrop) {
+                    existingBackdrop.remove();
+                }
+                
+                // Create backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while completing the document: ' + (error.message || 'Unknown error'));
-            // Re-enable button
-            completeBtn.style.pointerEvents = 'auto';
-            completeBtn.innerHTML = originalText;
-        });
+        } else {
+            console.error('Complete modal element not found!');
+            alert('Error: Complete modal not found. Please refresh the page.');
+        }
     }
 });
 
@@ -478,6 +549,203 @@ document.addEventListener('click', function(e) {
 
 // Wait for DOM to be ready for modal initialization
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle complete modal show event to ensure document ID is set
+    const completeModal = document.getElementById('completeDocumentModal');
+    if (completeModal) {
+        completeModal.addEventListener('show.bs.modal', function () {
+            // Ensure document ID is set when modal opens
+            const docIdField = document.getElementById('complete-document-id');
+            if (docIdField && currentDocumentId) {
+                docIdField.value = currentDocumentId;
+            }
+        });
+        
+    }
+
+    // Complete document form handler
+    const completeForm = document.getElementById('completeDocumentForm');
+    if (completeForm) {
+        completeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Complete form submitted');
+            
+            // Get document ID from hidden field or global variable
+            const docIdField = document.getElementById('complete-document-id');
+            let docId = currentDocumentId; // Use global variable first (most reliable)
+            
+            // If hidden field has a value, prefer it
+            if (docIdField && docIdField.value) {
+                docId = docIdField.value;
+            }
+            
+            // Final fallback: if still no ID, show error
+            if (!docId) {
+                alert('No document selected. Please scan a document first.');
+                console.error('Complete document error: currentDocumentId =', currentDocumentId, 'hidden field =', docIdField ? docIdField.value : 'not found');
+                return;
+            }
+            
+            console.log('Completing document ID:', docId);
+            
+            // Disable submit button to prevent double submission
+            const submitBtn = completeForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Completing...';
+            }
+            
+            const formData = new FormData();
+            formData.append('document_id', docId);
+            formData.append('_token', '{{ csrf_token() }}');
+            
+            fetch('{{ route("scan.complete") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(response => {
+                // Parse JSON response
+                return response.json().then(data => {
+                    // If response is not ok, throw error with data
+                    if (!response.ok) {
+                        const error = new Error(data.message || 'Failed to complete document');
+                        error.data = data;
+                        error.status = response.status;
+                        throw error;
+                    }
+                    return data;
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    // Close the complete modal first, then show success modal when it's fully closed
+                    const completeModalElement = document.getElementById('completeDocumentModal');
+                    const successModalElement = document.getElementById('completeSuccessModal');
+                    
+                    if (completeModalElement && successModalElement) {
+                        let successModalShown = false;
+                        
+                        // Function to show success modal
+                        const showSuccessModal = () => {
+                            if (successModalShown) return; // Prevent double-showing
+                            successModalShown = true;
+                            
+                            console.log('Showing complete success modal');
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                try {
+                                    const successModal = new bootstrap.Modal(successModalElement);
+                                    successModal.show();
+                                } catch (e) {
+                                    console.error('Error showing success modal:', e);
+                                    // Fallback to alert
+                                    alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
+                                    setTimeout(() => location.reload(), 500);
+                                }
+                            } else {
+                                // Fallback to alert if Bootstrap not available
+                                alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
+                                setTimeout(() => location.reload(), 500);
+                            }
+                        };
+                        
+                        // Check if modal is already open and visible
+                        const isModalVisible = completeModalElement.classList.contains('show') || 
+                                             completeModalElement.style.display === 'block';
+                        
+                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal && isModalVisible) {
+                            const completeModal = bootstrap.Modal.getInstance(completeModalElement);
+                            if (completeModal) {
+                                // Listen for when modal is fully hidden
+                                completeModalElement.addEventListener('hidden.bs.modal', showSuccessModal, { once: true });
+                                completeModal.hide();
+                                // Fallback timeout in case event doesn't fire (will be ignored if event already fired)
+                                setTimeout(showSuccessModal, 1000);
+                            } else {
+                                // Modal instance not found, show success modal after short delay
+                                setTimeout(showSuccessModal, 300);
+                            }
+                        } else {
+                            // Modal not visible or Bootstrap not available, show success modal directly
+                            setTimeout(showSuccessModal, 300);
+                        }
+                    } else {
+                        // Fallback: if elements not found, use alert
+                        console.error('Modal elements not found');
+                        alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
+                        setTimeout(() => location.reload(), 500);
+                    }
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to complete document.'));
+                    // Re-enable submit button
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Complete Document';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Handle validation errors (422)
+                if (error.status === 422 && error.data && error.data.errors) {
+                    let errorMessages = [];
+                    for (let field in error.data.errors) {
+                        errorMessages.push(error.data.errors[field].join(', '));
+                    }
+                    alert('Validation Error:\n' + errorMessages.join('\n'));
+                } else {
+                    // Handle other errors
+                    alert('An error occurred while completing the document: ' + (error.message || 'Unknown error'));
+                }
+                
+                // Re-enable submit button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Complete Document';
+                }
+            });
+        });
+    }
+
+    // Handle Cancel button click explicitly for complete modal
+    const cancelCompleteBtn = completeForm ? completeForm.querySelector('button[data-bs-dismiss="modal"]') : null;
+    if (cancelCompleteBtn) {
+        cancelCompleteBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Close modal using Bootstrap API
+            const modalElement = document.getElementById('completeDocumentModal');
+            if (modalElement) {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    } else {
+                        const newModal = new bootstrap.Modal(modalElement);
+                        newModal.hide();
+                    }
+                } else {
+                    // Fallback: Use data attributes and classes
+                    modalElement.classList.remove('show');
+                    modalElement.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            }
+            
+            return false;
+        });
+    }
+
+    // Reset complete modal when closed (no fields to clear)
+
     // Handle modal show event to ensure document ID is set
     const returnModal = document.getElementById('returnDocumentModal');
     if (returnModal) {
@@ -568,43 +836,67 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 if (data.success) {
-                    // Close modal using multiple methods for compatibility
-                    const modalElement = document.getElementById('returnDocumentModal');
-                    if (modalElement) {
-                        // Try Bootstrap 5 method
-                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                            const modal = bootstrap.Modal.getInstance(modalElement);
-                            if (modal) {
-                                modal.hide();
-                            } else {
-                                // Create new instance if needed
-                                const newModal = new bootstrap.Modal(modalElement);
-                                newModal.hide();
-                            }
-                        } else {
-                            // Fallback: Use data attributes and classes
-                            modalElement.classList.remove('show');
-                            modalElement.style.display = 'none';
-                            document.body.classList.remove('modal-open');
-                            const backdrop = document.querySelector('.modal-backdrop');
-                            if (backdrop) {
-                                backdrop.remove();
-                            }
-                        }
-                    }
-                    
                     // Clear form
                     if (remarksField) {
                         remarksField.value = '';
                     }
                     
-                    // Show success message
-                    alert('Document returned successfully!');
+                    // Close the return modal first, then show success modal when it's fully closed
+                    const returnModalElement = document.getElementById('returnDocumentModal');
+                    const successModalElement = document.getElementById('returnSuccessModal');
                     
-                    // Reload page after a short delay to ensure modal is closed
-                    setTimeout(() => {
-                        location.reload();
-                    }, 300);
+                    if (returnModalElement && successModalElement) {
+                        let successModalShown = false;
+                        
+                        // Function to show success modal
+                        const showSuccessModal = () => {
+                            if (successModalShown) return; // Prevent double-showing
+                            successModalShown = true;
+                            
+                            console.log('Showing return success modal');
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                try {
+                                    const successModal = new bootstrap.Modal(successModalElement);
+                                    successModal.show();
+                                } catch (e) {
+                                    console.error('Error showing success modal:', e);
+                                    // Fallback to alert
+                                    alert('Document returned successfully!');
+                                    setTimeout(() => location.reload(), 500);
+                                }
+                            } else {
+                                // Fallback to alert if Bootstrap not available
+                                alert('Document returned successfully!');
+                                setTimeout(() => location.reload(), 500);
+                            }
+                        };
+                        
+                        // Check if modal is already open and visible
+                        const isModalVisible = returnModalElement.classList.contains('show') || 
+                                             returnModalElement.style.display === 'block';
+                        
+                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal && isModalVisible) {
+                            const returnModal = bootstrap.Modal.getInstance(returnModalElement);
+                            if (returnModal) {
+                                // Listen for when modal is fully hidden
+                                returnModalElement.addEventListener('hidden.bs.modal', showSuccessModal, { once: true });
+                                returnModal.hide();
+                                // Fallback timeout in case event doesn't fire (will be ignored if event already fired)
+                                setTimeout(showSuccessModal, 1000);
+                            } else {
+                                // Modal instance not found, show success modal after short delay
+                                setTimeout(showSuccessModal, 300);
+                            }
+                        } else {
+                            // Modal not visible or Bootstrap not available, show success modal directly
+                            setTimeout(showSuccessModal, 300);
+                        }
+                    } else {
+                        // Fallback: if elements not found, use alert
+                        console.error('Modal elements not found');
+                        alert('Document returned successfully!');
+                        setTimeout(() => location.reload(), 500);
+                    }
                 } else {
                     alert('Error: ' + (data.message || 'Failed to return document.'));
                     // Re-enable submit button
@@ -638,6 +930,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Handle Cancel button click explicitly
+    const cancelReturnBtn = returnForm ? returnForm.querySelector('button[data-bs-dismiss="modal"]') : null;
+    if (cancelReturnBtn) {
+        cancelReturnBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Close modal using Bootstrap API
+            const modalElement = document.getElementById('returnDocumentModal');
+            if (modalElement) {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    } else {
+                        const newModal = new bootstrap.Modal(modalElement);
+                        newModal.hide();
+                    }
+                } else {
+                    // Fallback: Use data attributes and classes
+                    modalElement.classList.remove('show');
+                    modalElement.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            }
+            
+            // Clear form fields
+            const remarksField = document.getElementById('return-remarks');
+            if (remarksField) {
+                remarksField.value = '';
+            }
+            
+            return false;
+        });
+    }
+
     // Reset return modal when closed
     if (returnModal) {
         returnModal.addEventListener('hidden.bs.modal', function () {
@@ -653,6 +985,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (remarksField) {
                 remarksField.value = '';
             }
+        });
+    }
+
+    // Auto-reload on success modal close
+    const completeSuccessModal = document.getElementById('completeSuccessModal');
+    if (completeSuccessModal) {
+        completeSuccessModal.addEventListener('hidden.bs.modal', function () {
+            location.reload();
+        });
+    }
+
+    const returnSuccessModal = document.getElementById('returnSuccessModal');
+    if (returnSuccessModal) {
+        returnSuccessModal.addEventListener('hidden.bs.modal', function () {
+            location.reload();
         });
     }
 });

@@ -3,6 +3,52 @@
 @section('title', 'Documents')
 
 @section('content')
+<style>
+    /* Custom Pagination - No Arrows, Text Only */
+    .pagination {
+        font-size: 0.875rem;
+        gap: 4px;
+    }
+    
+    .pagination .page-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        min-width: 40px;
+        text-align: center;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+    
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+        color: #212529;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Previous/Next text styling */
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:last-child .page-link {
+        padding: 0.5rem 1rem;
+    }
+</style>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold"><i class="bi bi-file-earmark-text"></i> Documents</h2>
@@ -235,8 +281,48 @@
                 </table>
             </div>
 
-            <div class="mt-3">
-                {{ $documents->links() }}
+            <div class="mt-3 d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    Showing {{ $documents->firstItem() ?? 0 }} to {{ $documents->lastItem() ?? 0 }} of {{ $documents->total() }} results
+                </div>
+                <nav aria-label="Document pagination">
+                    <ul class="pagination mb-0">
+                        {{-- Previous Page Link --}}
+                        @if ($documents->onFirstPage())
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                        @else
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $documents->previousPageUrl() }}" rel="prev">Previous</a>
+                            </li>
+                        @endif
+
+                        {{-- Page Numbers --}}
+                        @foreach ($documents->getUrlRange(1, $documents->lastPage()) as $page => $url)
+                            @if ($page == $documents->currentPage())
+                                <li class="page-item active" aria-current="page">
+                                    <span class="page-link">{{ $page }}</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                </li>
+                            @endif
+                        @endforeach
+
+                        {{-- Next Page Link --}}
+                        @if ($documents->hasMorePages())
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $documents->nextPageUrl() }}" rel="next">Next</a>
+                            </li>
+                        @else
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
+                            </li>
+                        @endif
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>

@@ -25,7 +25,7 @@
                 <div class="card-body text-center">
                     <div class="mb-3">
                         @if($user->profile_picture)
-                            <img src="{{ asset('storage/' . $user->profile_picture) }}" 
+                            <img src="{{ Storage::disk('public')->url($user->profile_picture) }}" 
                                  alt="Profile Picture" 
                                  class="rounded-circle" 
                                  style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #dee2e6;">
