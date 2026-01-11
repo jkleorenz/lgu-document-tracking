@@ -89,7 +89,7 @@
 
                 <!-- Document Review Action Buttons -->
                 @if($document->status != 'Pending Verification' && $document->status != 'Rejected' && $document->status != 'Archived' && $document->status != 'Approved')
-                @if($document->status != 'Completed' && $document->status != 'Forwarded')
+                @if(in_array($document->status, ['Received', 'Under Review']))
                 <form method="POST" action="{{ route('documents.updateStatus', $document) }}" style="display: inline-block; margin: 0;">
                     @csrf
                     <input type="hidden" name="status" value="Completed">
@@ -98,7 +98,7 @@
                     </button>
                 </form>
                 @endif
-                @if($document->status != 'Completed')
+                @if(in_array($document->status, ['Received', 'Under Review']))
                 <button type="button" class="btn btn-warning btn-uniform" title="Return Document" data-bs-toggle="modal" data-bs-target="#returnModal">
                     <i class="bi bi-arrow-return-left"></i>
                 </button>
@@ -207,7 +207,9 @@
                         <tr>
                             <th>Current Department:</th>
                             <td>
-                                @if($document->department)
+                                @if(in_array($document->status, ['Forwarded', 'Pending']))
+                                <span class="text-muted">N/A</span>
+                                @elseif($document->department)
                                 {{ $document->department->display_name }}
                                 @else
                                 <span class="text-muted">Unassigned</span>

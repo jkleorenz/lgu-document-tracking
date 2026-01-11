@@ -233,7 +233,7 @@ class ScanController extends Controller
                     'document_type' => $document->document_type,
                     'status' => $document->status,
                     'is_priority' => $document->is_priority,
-                    'department' => $document->department ? $document->department->name : 'N/A',
+                    'department' => (in_array($document->status, ['Forwarded', 'Pending'])) ? 'N/A' : ($document->department ? $document->department->name : 'N/A'),
                     'last_location' => $lastLocation,
                     'created_by' => $document->creator ? $document->creator->name : 'Unknown',
                     'created_at' => $document->created_at->format('M d, Y h:i A'),
@@ -363,6 +363,14 @@ class ScanController extends Controller
             ], 400);
         }
 
+        // Validate that document must be received before it can be completed
+        if (!in_array($document->status, ['Received', 'Under Review'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document must be received before it can be completed.',
+            ], 400);
+        }
+
         DB::beginTransaction();
         try {
             // Update document status to Completed and archive it
@@ -402,7 +410,7 @@ class ScanController extends Controller
                     'document_number' => $document->document_number,
                     'title' => $document->title,
                     'status' => $document->status,
-                    'department' => $document->department ? $document->department->name : 'N/A',
+                    'department' => (in_array($document->status, ['Forwarded', 'Pending'])) ? 'N/A' : ($document->department ? $document->department->name : 'N/A'),
                     'created_by' => $document->creator ? $document->creator->name : 'Unknown',
                     'updated_at' => $document->updated_at->format('M d, Y h:i A'),
                 ],
@@ -455,6 +463,14 @@ class ScanController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot return an archived document.',
+            ], 400);
+        }
+
+        // Validate that document must be received before it can be returned
+        if (!in_array($document->status, ['Received', 'Under Review'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document must be received before it can be returned.',
             ], 400);
         }
 
@@ -599,7 +615,7 @@ class ScanController extends Controller
                     'document_type' => $document->document_type ?? 'N/A',
                     'status' => $document->status,
                     'is_priority' => $document->is_priority ?? false,
-                    'department' => $document->department ? $document->department->name : 'N/A',
+                    'department' => (in_array($document->status, ['Forwarded', 'Pending'])) ? 'N/A' : ($document->department ? $document->department->name : 'N/A'),
                     'created_by' => $document->creator ? $document->creator->name : 'Unknown',
                     'created_at' => $document->created_at ? $document->created_at->format('M d, Y h:i A') : 'N/A',
                 ],

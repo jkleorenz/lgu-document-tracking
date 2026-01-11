@@ -425,7 +425,9 @@
                             </div>
                             <div class="timeline-meta">
                                 <span>
-                                    @if($document->department)
+                                    @if(in_array($document->status, ['Forwarded', 'Pending']))
+                                    <strong class="text-muted">N/A</strong>
+                                    @elseif($document->department)
                                     <strong>{{ $document->department->name }}</strong>
                                     @else
                                     <strong>Unassigned</strong>

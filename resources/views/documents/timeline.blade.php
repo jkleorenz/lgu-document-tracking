@@ -56,7 +56,15 @@
                         </div>
                         <div class="col-md-3">
                             <h6 class="text-muted mb-2">Current Department</h6>
-                            <p class="mb-0">{{ $document->department->code }}</p>
+                            <p class="mb-0">
+                                @if(in_array($document->status, ['Forwarded', 'Pending']))
+                                <span class="text-muted">N/A</span>
+                                @elseif($document->department)
+                                {{ $document->department->code }}
+                                @else
+                                <span class="text-muted">N/A</span>
+                                @endif
+                            </p>
                         </div>
                         <div class="col-md-3">
                             <h6 class="text-muted mb-2">Current Handler</h6>

@@ -176,7 +176,13 @@
                 </tr>
                 <tr>
                     <th>Department</th>
-                    <td>{{ $document->department ? $document->department->name : 'N/A' }}</td>
+                    <td>
+                        @if(in_array($document->status, ['Forwarded', 'Pending']))
+                        N/A
+                        @else
+                        {{ $document->department ? $document->department->name : 'N/A' }}
+                        @endif
+                    </td>
                 </tr>
                 <tr>
                     <th>Document Type</th>

@@ -142,8 +142,8 @@ class DocumentController extends Controller
             $query->where('is_priority', true);
         }
 
-        // Order by latest and paginate
-        $documents = $query->with('statusLogs')->latest()->paginate(15)->withQueryString();
+        // Order by priority first, then by latest
+        $documents = $query->with('statusLogs')->orderBy('is_priority', 'desc')->latest()->paginate(15)->withQueryString();
         $departments = Department::active()->orderBy('name')->get();
 
         return view('documents.index', compact('documents', 'departments'));
@@ -452,6 +452,13 @@ class DocumentController extends Controller
 
         $oldStatus = $document->status;
         $oldDepartment = $document->department;
+
+        // Validate that Complete and Return actions can only be performed on received documents
+        if (in_array($validated['status'], ['Completed', 'Return'])) {
+            if (!in_array($document->status, ['Received', 'Under Review'])) {
+                return back()->withErrors(['error' => 'Document must be received before it can be completed or returned.']);
+            }
+        }
 
         DB::beginTransaction();
         try {

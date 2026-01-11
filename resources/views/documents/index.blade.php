@@ -203,7 +203,13 @@
                                 @endif
                             </td>
                             <td class="text-center"><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
-                            <td class="text-center">{{ $document->department ? $document->department->code : 'N/A' }}</td>
+                            <td class="text-center">
+                                @if(in_array($document->status, ['Forwarded', 'Pending']))
+                                <span class="text-muted">N/A</span>
+                                @else
+                                {{ $document->department ? $document->department->code : 'N/A' }}
+                                @endif
+                            </td>
                             <td class="text-center">
                                 @php
                                     // For archived documents, get the pre-archive status for display

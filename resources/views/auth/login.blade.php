@@ -291,13 +291,20 @@
                                         @enderror
                                     </div>
 
-                                    <div class="form-floating">
+                                    <div class="form-floating position-relative">
                                         <input type="password" 
                                                class="form-control @error('password') is-invalid @enderror" 
                                                id="password" 
                                                name="password"
                                                placeholder="Password" 
                                                required>
+                                        <button type="button" 
+                                                class="btn btn-link position-absolute end-0 top-50 translate-middle-y pe-3" 
+                                                id="togglePassword" 
+                                                aria-label="Show password"
+                                                style="border: none; background: none; padding: 0; z-index: 10;">
+                                            <i class="bi bi-eye" id="passwordToggleIcon"></i>
+                                        </button>
                                         <label for="password"><i class="bi bi-lock"></i> Password</label>
                                         @error('password')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -325,5 +332,38 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+(function() {
+    'use strict';
+    
+    const passwordInput = document.getElementById('password');
+    const togglePasswordBtn = document.getElementById('togglePassword');
+    const passwordToggleIcon = document.getElementById('passwordToggleIcon');
+    
+    if (!passwordInput || !togglePasswordBtn) return;
+    
+    // Toggle password visibility
+    function togglePasswordVisibility(input, icon) {
+        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+        input.setAttribute('type', type);
+        
+        if (type === 'password') {
+            icon.className = 'bi bi-eye';
+            icon.parentElement.setAttribute('aria-label', 'Show password');
+        } else {
+            icon.className = 'bi bi-eye-slash';
+            icon.parentElement.setAttribute('aria-label', 'Hide password');
+        }
+    }
+    
+    togglePasswordBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        togglePasswordVisibility(passwordInput, passwordToggleIcon);
+    });
+})();
+</script>
+@endpush
 @endsection
 
