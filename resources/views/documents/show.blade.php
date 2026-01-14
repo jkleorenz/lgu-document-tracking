@@ -319,8 +319,22 @@
                     <h5 class="mb-0"><i class="bi bi-qr-code"></i> QR Code</h5>
                 </div>
                 <div class="card-body text-center">
-                    @if($document->qr_code_path)
-                    <img src="{{ asset($document->qr_code_path) }}" alt="QR Code" id="qr-code-image" class="img-fluid mb-3" style="max-width: 250px;">
+                    @php
+                        $qrCodeExists = $document->qr_code_path && file_exists(public_path($document->qr_code_path));
+                    @endphp
+
+                    @if($qrCodeExists)
+                    <img 
+                        src="{{ asset($document->qr_code_path) }}" 
+                        alt="QR Code" 
+                        id="qr-code-image" 
+                        class="img-fluid mb-3" 
+                        style="max-width: 250px;"
+                        onerror="this.style.display='none'; document.getElementById('qr-code-error').style.display='block';"
+                    >
+                    <div id="qr-code-error" class="alert alert-warning" style="display: none;">
+                        <i class="bi bi-exclamation-triangle"></i> QR Code image failed to load. Please refresh the page.
+                    </div>
                     <div class="d-grid gap-2">
                         <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-primary" target="_blank">
                             <i class="bi bi-printer"></i> Print QR Code
@@ -330,7 +344,9 @@
                         </button>
                     </div>
                     @else
-                    <p class="text-muted">QR Code not available</p>
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> QR Code not available. The QR file is missing.
+                    </div>
                     @endif
                 </div>
             </div>

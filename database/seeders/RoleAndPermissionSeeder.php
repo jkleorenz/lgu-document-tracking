@@ -33,6 +33,8 @@ class RoleAndPermissionSeeder extends Seeder
             'view own documents',
             'view department documents',
             'receive notifications',
+            'reset user passwords',
+            'view user passwords',
         ];
 
         foreach ($permissions as $permission) {

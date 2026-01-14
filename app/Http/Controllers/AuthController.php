@@ -73,8 +73,9 @@ class AuthController extends Controller
             ])->withInput($request->only('email'));
         }
 
-        // Attempt to authenticate user
-        if (Auth::attempt($credentials, $request->filled('remember'))) {
+        // Attempt to authenticate user with remember me functionality
+        $remember = $request->boolean('remember', false);
+        if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
             
             $user = Auth::user();

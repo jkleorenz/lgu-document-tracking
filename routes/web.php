@@ -109,12 +109,19 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('users', UserController::class);
         Route::get('/users-pending', [UserController::class, 'pendingVerifications'])
             ->name('users.pending');
-    Route::post('/users/{user}/verify', [UserController::class, 'verify'])
-        ->name('users.verify')
-        ->middleware('signed');
-    Route::post('/users/{user}/reject', [UserController::class, 'reject'])
-        ->name('users.reject')
-        ->middleware('signed');
+        Route::post('/users/{user}/verify', [UserController::class, 'verify'])
+            ->name('users.verify')
+            ->middleware('signed');
+        Route::post('/users/{user}/reject', [UserController::class, 'reject'])
+            ->name('users.reject')
+            ->middleware('signed');
+        // Password Management
+        Route::get('/users/{user}/password/reset', [UserController::class, 'showPasswordResetForm'])
+            ->name('users.password.reset');
+        Route::post('/users/{user}/password/reset', [UserController::class, 'resetPassword'])
+            ->name('users.password.reset.store');
+        Route::get('/users/{user}/password/view', [UserController::class, 'viewPassword'])
+            ->name('users.password.view');
     });
 });
 

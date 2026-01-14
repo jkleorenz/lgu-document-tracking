@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Document extends Model
 {
@@ -54,7 +55,7 @@ class Document extends Model
     ];
 
     /**
-     * Generate a unique document number
+     * Generate a unique document number with pessimistic locking to prevent race conditions
      */
     public static function generateDocumentNumber(): string
     {
@@ -62,28 +63,41 @@ class Document extends Model
         $month = date('m');
         $prefix = 'DOC-' . $year . $month;
         
-        // Include soft-deleted documents to avoid duplicate numbers
-        $lastDoc = self::withTrashed()
-            ->where('document_number', 'like', $prefix . '%')
-            ->orderBy('document_number', 'desc')
-            ->first();
-        
-        if ($lastDoc) {
-            $lastNumber = (int) substr($lastDoc->document_number, -4);
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
-        }
-        
-        // Ensure uniqueness by checking if the generated number already exists
-        $documentNumber = $prefix . '-' . $newNumber;
-        while (self::withTrashed()->where('document_number', $documentNumber)->exists()) {
-            $lastNumber++;
-            $newNumber = str_pad($lastNumber, 4, '0', STR_PAD_LEFT);
+        // Use pessimistic locking to prevent race conditions
+        // Lock the last document with this prefix to ensure atomic number generation
+        DB::beginTransaction();
+        try {
+            // Lock the documents table for reading the last number
+            $lastDoc = self::withTrashed()
+                ->where('document_number', 'like', $prefix . '%')
+                ->orderBy('document_number', 'desc')
+                ->lockForUpdate()  // Pessimistic lock - prevents other processes from reading/writing
+                ->first();
+            
+            if ($lastDoc) {
+                $lastNumber = (int) substr($lastDoc->document_number, -4);
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $newNumber = '0001';
+            }
+            
             $documentNumber = $prefix . '-' . $newNumber;
+            
+            // Verify it doesn't exist (double-check with lock held)
+            if (self::withTrashed()->where('document_number', $documentNumber)->exists()) {
+                // If it somehow exists, increment and try again
+                $lastNumber++;
+                $newNumber = str_pad($lastNumber, 4, '0', STR_PAD_LEFT);
+                $documentNumber = $prefix . '-' . $newNumber;
+            }
+            
+            DB::commit();
+            return $documentNumber;
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \RuntimeException("Failed to generate document number: " . $e->getMessage());
         }
-        
-        return $documentNumber;
     }
 
     /**

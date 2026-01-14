@@ -43,6 +43,14 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasAnyRole(['Administrator', 'Mayor']);
         });
 
+        Gate::define('reset user passwords', function ($user) {
+            return $user->hasRole('Administrator');
+        });
+
+        Gate::define('view user passwords', function ($user) {
+            return $user->hasRole('Administrator');
+        });
+
         // Force HTTPS in production
         if (app()->environment('production')) {
             URL::forceScheme('https');

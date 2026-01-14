@@ -17,9 +17,17 @@
                 <h2 class="fw-bold"><i class="bi bi-person-circle"></i> {{ $user->name }}</h2>
                 <p class="text-muted">{{ $user->email }}</p>
             </div>
-            <a href="{{ route('users.edit', $user) }}" class="btn btn-warning">
-                <i class="bi bi-pencil"></i> Edit User
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('users.password.reset', $user) }}" class="btn btn-info">
+                    <i class="bi bi-key"></i> Reset Password
+                </a>
+                <a href="{{ route('users.password.view', $user) }}" class="btn btn-secondary">
+                    <i class="bi bi-eye"></i> View Password
+                </a>
+                <a href="{{ route('users.edit', $user) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Edit User
+                </a>
+            </div>
         </div>
     </div>
 

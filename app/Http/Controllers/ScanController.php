@@ -83,6 +83,195 @@ class ScanController extends Controller
         $statusChanged = false;
         $departmentChanged = false;
 
+        // Check if document is completed or archived (prevent scanning completed documents)
+        if ($document->isArchived() || $document->status === 'Completed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This document has been completed and archived. Completed documents cannot be scanned or modified.',
+                'document' => [
+                    'id' => $document->id,
+                    'document_number' => $document->document_number,
+                    'title' => $document->title,
+                    'status' => $document->status,
+                    'department' => $document->department ? $document->department->name : 'N/A',
+                ],
+            ], 400);
+        }
+
+        // Check if document was already received by the same department (prevent duplicate receives)
+        // Only block if the LAST "Received" status log was from the same department as the scanner
+        
+        // #region agent log
+        $logPath = base_path('.cursor/debug.log');
+        if (!is_dir(dirname($logPath))) {
+            mkdir(dirname($logPath), 0755, true);
+        }
+        file_put_contents($logPath, json_encode([
+            'id' => 'log_' . time() . '_entry',
+            'timestamp' => time() * 1000,
+            'location' => 'ScanController.php:103',
+            'message' => 'Duplicate receive check entry',
+            'data' => [
+                'document_id' => $document->id,
+                'document_status' => $document->status,
+                'user_department_id' => $user->department_id,
+                'document_department_id' => $document->department_id,
+                'is_archived' => $document->isArchived(),
+                'hypothesisId' => 'D'
+            ],
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'D'
+        ]) . "\n", FILE_APPEND);
+        // #endregion
+        
+        if ($user->department_id && !$document->isArchived()) {
+            // Get the most recent "Received" status log
+            $lastReceivedLog = DocumentStatusLog::where('document_id', $document->id)
+                ->where('new_status', 'Received')
+                ->with('updatedBy.department')
+                ->orderBy('action_date', 'desc')
+                ->first();
+            
+            // #region agent log
+            file_put_contents($logPath, json_encode([
+                'id' => 'log_' . time() . '_query',
+                'timestamp' => time() * 1000,
+                'location' => 'ScanController.php:110',
+                'message' => 'Last received log query result',
+                'data' => [
+                    'document_id' => $document->id,
+                    'last_received_log_found' => $lastReceivedLog ? true : false,
+                    'last_received_log_id' => $lastReceivedLog ? $lastReceivedLog->id : null,
+                    'last_received_log_updated_by' => $lastReceivedLog ? $lastReceivedLog->updated_by : null,
+                    'hypothesisId' => 'A'
+                ],
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'A'
+            ]) . "\n", FILE_APPEND);
+            // #endregion
+            
+            // If there's a "Received" log, check if it was from the same department
+            if ($lastReceivedLog && $lastReceivedLog->updatedBy) {
+                // Ensure department relationship is loaded
+                if (!$lastReceivedLog->updatedBy->relationLoaded('department')) {
+                    $lastReceivedLog->updatedBy->load('department');
+                }
+                
+                // #region agent log
+                file_put_contents($logPath, json_encode([
+                    'id' => 'log_' . time() . '_dept_check',
+                    'timestamp' => time() * 1000,
+                    'location' => 'ScanController.php:120',
+                    'message' => 'Department comparison check',
+                    'data' => [
+                        'last_received_user_id' => $lastReceivedLog->updatedBy->id,
+                        'last_received_user_dept_id' => $lastReceivedLog->updatedBy->department_id,
+                        'last_received_user_dept_id_type' => gettype($lastReceivedLog->updatedBy->department_id),
+                        'scanner_user_dept_id' => $user->department_id,
+                        'scanner_user_dept_id_type' => gettype($user->department_id),
+                        'departments_match' => $lastReceivedLog->updatedBy->department_id == $user->department_id,
+                        'strict_match' => $lastReceivedLog->updatedBy->department_id === $user->department_id,
+                        'hypothesisId' => 'B,C'
+                    ],
+                    'sessionId' => 'debug-session',
+                    'runId' => 'run1',
+                    'hypothesisId' => 'B,C'
+                ]) . "\n", FILE_APPEND);
+                // #endregion
+                
+                // Block only if the last "Received" was from the same department as the scanner
+                if ($lastReceivedLog->updatedBy->department_id == $user->department_id) {
+                    // Load department relationship for response
+                    if (!$user->relationLoaded('department')) {
+                        $user->load('department');
+                    }
+                    
+                    // #region agent log
+                    file_put_contents($logPath, json_encode([
+                        'id' => 'log_' . time() . '_blocked',
+                        'timestamp' => time() * 1000,
+                        'location' => 'ScanController.php:135',
+                        'message' => 'Duplicate receive BLOCKED',
+                        'data' => [
+                            'blocked' => true,
+                            'department_name' => $user->department ? $user->department->name : 'N/A',
+                            'hypothesisId' => 'E'
+                        ],
+                        'sessionId' => 'debug-session',
+                        'runId' => 'run1',
+                        'hypothesisId' => 'E'
+                    ]) . "\n", FILE_APPEND);
+                    // #endregion
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This document has already been received by ' . ($user->department ? $user->department->name : 'your department') . '. The same department cannot receive it twice in a row.',
+                        'document' => [
+                            'id' => $document->id,
+                            'document_number' => $document->document_number,
+                            'title' => $document->title,
+                            'status' => $document->status,
+                            'department' => $document->department ? $document->department->name : 'N/A',
+                        ],
+                    ], 400);
+                } else {
+                    // #region agent log
+                    file_put_contents($logPath, json_encode([
+                        'id' => 'log_' . time() . '_allowed',
+                        'timestamp' => time() * 1000,
+                        'location' => 'ScanController.php:150',
+                        'message' => 'Different department - scan ALLOWED',
+                        'data' => [
+                            'blocked' => false,
+                            'last_dept_id' => $lastReceivedLog->updatedBy->department_id,
+                            'scanner_dept_id' => $user->department_id,
+                            'hypothesisId' => 'E'
+                        ],
+                        'sessionId' => 'debug-session',
+                        'runId' => 'run1',
+                        'hypothesisId' => 'E'
+                    ]) . "\n", FILE_APPEND);
+                    // #endregion
+                }
+            } else {
+                // #region agent log
+                file_put_contents($logPath, json_encode([
+                    'id' => 'log_' . time() . '_no_log',
+                    'timestamp' => time() * 1000,
+                    'location' => 'ScanController.php:155',
+                    'message' => 'No last received log or updatedBy is null',
+                    'data' => [
+                        'last_received_log_exists' => $lastReceivedLog ? true : false,
+                        'updated_by_exists' => $lastReceivedLog && $lastReceivedLog->updatedBy ? true : false,
+                        'hypothesisId' => 'B'
+                    ],
+                    'sessionId' => 'debug-session',
+                    'runId' => 'run1',
+                    'hypothesisId' => 'B'
+                ]) . "\n", FILE_APPEND);
+                // #endregion
+            }
+        } else {
+            // #region agent log
+            file_put_contents($logPath, json_encode([
+                'id' => 'log_' . time() . '_skip',
+                'timestamp' => time() * 1000,
+                'location' => 'ScanController.php:165',
+                'message' => 'Duplicate check SKIPPED - early condition failed',
+                'data' => [
+                    'user_has_dept' => $user->department_id ? true : false,
+                    'doc_is_archived' => $document->isArchived(),
+                    'hypothesisId' => 'D'
+                ],
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'D'
+            ]) . "\n", FILE_APPEND);
+            // #endregion
+        }
+
         DB::beginTransaction();
         try {
             // Always update location to scanner's department if scanner has a department

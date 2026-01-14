@@ -4,18 +4,28 @@
 
 @section('content')
 <style>
-    /* Scanner Input Field Styling */
+    /* Scanner Input Field Styling - Enhanced Visual Hierarchy */
     #scanner_input {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         font-weight: 600;
-        border: 2px solid #0d6efd;
+        border: 3px solid #0d6efd;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
         transition: all 0.3s ease;
+        background-color: #ffffff;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
     }
     
     #scanner_input:focus {
         border-color: #0d6efd;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        transform: scale(1.02);
+        box-shadow: 0 0 0 0.3rem rgba(13, 110, 253, 0.25), 0 4px 12px rgba(13, 110, 253, 0.15);
+        transform: scale(1.01);
+        outline: none;
+    }
+    
+    #scanner_input::placeholder {
+        color: #6c757d;
+        font-weight: 400;
     }
     
     /* Scanner Ready Animation */
@@ -46,6 +56,245 @@
     
     .bi-upc-scan {
         animation: scan-pulse 2s infinite;
+    }
+    
+    /* Multi-Scan Mode Toggle Card */
+    .mode-toggle-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    /* Toggle Switch Styling */
+    .mode-toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+    }
+    
+    .mode-toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 30px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(30px);
+    }
+    
+    .toggle-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #495057;
+        margin-left: 12px;
+    }
+    
+    /* Checkmark Animation */
+    @keyframes checkmark-scale {
+        0% {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.15);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes checkmark-fade {
+        0% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
+    }
+    
+    .checkmark-indicator {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 2rem;
+        color: #28a745;
+        animation: checkmark-scale 0.3s ease-out, checkmark-fade 0.8s ease-in 0.5s forwards;
+        display: none; /* Hidden by default */
+    }
+
+    .received-label {
+        position: absolute;
+        right: 60px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.85rem;
+        color: #6c757d;
+        animation: checkmark-fade 0.8s ease-in 0.5s forwards;
+        opacity: 1;
+        display: none; /* Hidden by default */
+    }
+    
+    /* Scanner input wrapper for relative positioning */
+    .scanner-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Success animation for input field */
+    @keyframes success-pulse {
+        0%, 100% {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.3rem rgba(40, 167, 69, 0.25);
+        }
+        50% {
+            border-color: #20c997;
+            box-shadow: 0 0 0 0.4rem rgba(40, 167, 69, 0.35);
+        }
+    }
+    
+    #scanner_input.success-feedback {
+        animation: success-pulse 0.6s ease-out;
+    }
+    
+    /* Error animation for input field */
+    @keyframes error-shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    #scanner_input.error-feedback {
+        border-color: #dc3545;
+        animation: error-shake 0.5s ease-out;
+    }
+    
+    /* Session Statistics */
+    .inline-session-stats {
+        display: flex;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: #0c5460;
+        font-weight: 500;
+    }
+    
+    .inline-stats-text {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .stats-number {
+        color: #0d6efd;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    
+    /* Mode Confirmation Banner */
+    .mode-confirmation {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #0d6efd;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        font-size: 0.9rem;
+        font-weight: 500;
+        animation: slide-in 0.3s ease-out, slide-out 1s ease-in 0.8s forwards;
+        z-index: 1050;
+        display: none;
+    }
+    
+    .mode-confirmation.show {
+        display: block;
+    }
+    
+    @keyframes slide-in {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slide-out {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+    
+    /* Warning/Error Indicators */
+    .brief-indicator {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        padding: 12px 16px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        animation: slide-in 0.3s ease-out, slide-out 1.5s ease-in 1.2s forwards;
+        z-index: 1049;
+        display: none;
+    }
+    
+    .brief-indicator.show {
+        display: block;
+    }
+    
+    .brief-indicator.success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .brief-indicator.warning {
+        background: #ffc107;
+        color: #333;
+    }
+    
+    .brief-indicator.error {
+        background: #dc3545;
+        color: white;
     }
     
     /* Document Scanned Successfully Header */
@@ -110,6 +359,87 @@
     
     .card-header:has(.bi-info-circle) i {
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    }
+    
+    /* Scanned Documents List Styling */
+    .scanned-document-item {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+    
+    .scanned-document-item:hover {
+        background-color: #f8f9fa;
+        border-left-color: #0d6efd;
+        transform: translateX(2px);
+    }
+    
+    .scanned-document-item .document-title {
+        font-weight: 600;
+        color: #212529;
+    }
+    
+    .scanned-document-item .document-number {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .scanned-document-item .document-status {
+        font-size: 0.8rem;
+    }
+    
+    /* Enhanced Status Alert Styling */
+    #scanner-status {
+        border-radius: 8px;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Help tooltip button styling */
+    .btn-link[data-bs-toggle="tooltip"] {
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-link[data-bs-toggle="tooltip"]:hover {
+        transform: scale(1.1);
+    }
+    
+    .btn-link[data-bs-toggle="tooltip"] .bi-question-circle {
+        transition: color 0.2s ease;
+    }
+    
+    .btn-link[data-bs-toggle="tooltip"]:hover .bi-question-circle {
+        color: #0d6efd !important;
+    }
+    
+    /* Manual tooltip styling (fallback) */
+    .manual-tooltip {
+        pointer-events: none;
+        animation: fadeIn 0.2s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
 
@@ -237,13 +567,36 @@
     <!-- Scanner Interface -->
     <div id="scanner-interface" class="row">
         <div class="col-md-8 offset-md-2">
+            <!-- Mode Toggle Card -->
+            <div class="card mode-toggle-card mb-3" id="mode-toggle-card">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <label class="mode-toggle-switch">
+                            <input type="checkbox" id="scan-mode-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label" id="mode-label">Turn on Multi-Scan Mode</span>
+                    </div>
+                    <!-- Inline Session Stats (Multi-Scan Only) -->
+                    <div class="inline-session-stats" id="inline-session-stats" style="display: none;">
+                        <span class="inline-stats-text">
+                            <span class="stats-number" id="inline-stats-received">0</span> received
+                        </span>
+                        <span class="inline-stats-text">
+                            <span class="stats-number" id="inline-stats-errors">0</span> errors
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="bi bi-upc-scan"></i> Scanner Ready</h5>
                 </div>
                 <div class="card-body text-center">
-                    <div id="scanner-status" class="alert alert-success text-center">
-                        <p id="status-message" class="mb-0">Scanner Ready - Point your device at a QR code</p>
+                    <!-- Status alert - only shown when processing or error -->
+                    <div id="scanner-status" class="alert text-center" style="display: none;">
+                        <p id="status-message" class="mb-0"></p>
                         <div id="scanning-indicator" style="display: none;" class="mt-2">
                             <div class="spinner-border spinner-border-sm text-primary" role="status">
                                 <span class="visually-hidden">Scanning...</span>
@@ -252,31 +605,45 @@
                     </div>
 
                     <div class="mb-4">
-                        <input 
-                            type="text" 
-                            id="scanner_input" 
-                            class="form-control form-control-lg text-center" 
-                            placeholder="Scan QR code or type document number here..."
-                            autocomplete="off"
-                            autofocus
-                        >
-                        <small class="text-muted d-block mt-2">Press Enter or click outside to process</small>
+                        <div class="scanner-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="scanner_input" 
+                                class="form-control form-control-lg text-center" 
+                                placeholder="Scan QR code or type document number here..."
+                                autocomplete="off"
+                                autofocus
+                            >
+                            <i class="bi bi-check-circle-fill checkmark-indicator" id="checkmark-indicator"></i>
+                            <div class="received-label" id="received-label">Received</div>
+                        </div>
+                        <div class="position-relative mt-2 text-center" style="width: 100%;">
+                            <small class="text-muted">Press Enter or click outside to process</small>
+                            <!-- Help tooltip icon - positioned absolutely to not affect centering -->
+                            <button type="button" class="btn btn-link p-0" id="scan-mode-help-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%);">
+                                <i class="bi bi-question-circle text-muted" style="font-size: 1.1rem;"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="d-flex justify-content-center">
+                    <div class="d-flex justify-content-center gap-2 mb-3">
                         <button type="button" class="btn btn-secondary" id="clear-btn">
                             <i class="bi bi-x-circle"></i> Clear
                         </button>
-                    </div>
-                    
-                    <div class="alert alert-info mt-3">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>How to use:</strong> Point your device camera at a QR code to scan automatically, or manually type the document number in the field above and press Enter.
+                        <button type="button" class="btn btn-info" id="view-last-btn" style="display: none;">
+                            <i class="bi bi-list-ul"></i> View Scanned Documents
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Mode Confirmation Banner -->
+    <div class="mode-confirmation" id="mode-confirmation"></div>
+
+    <!-- Brief Indicator (Warnings/Errors in Multi-Scan) -->
+    <div class="brief-indicator" id="brief-indicator"></div>
 </div>
 
 <!-- Complete Document Modal -->
@@ -400,10 +767,610 @@
     </div>
 </div>
 
+<!-- Scanned Documents List Modal -->
+<div class="modal fade" id="scannedDocumentsModal" tabindex="-1" aria-labelledby="scannedDocumentsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="scannedDocumentsModalLabel">
+                    <i class="bi bi-list-ul"></i> Scanned Documents
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                <div id="scanned-documents-list-container">
+                    <div id="scanned-documents-empty" class="text-center text-muted py-4" style="display: none;">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <p class="mt-3">No documents scanned yet in this session.</p>
+                    </div>
+                    <div id="scanned-documents-list" class="list-group">
+                        <!-- Documents will be populated here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="bi bi-check-circle"></i> OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
-// Store document ID globally for actions
+// ==============================================
+// Multi-Scan Mode: Global State Management
+// ==============================================
+
 let currentDocumentId = null;
+let multiScanMode = localStorage.getItem('multiScanMode') === 'true' || false;
+let isProcessing = false;
+let enterKeyPressed = false;
+let lastScannedDocId = null;
+let lastScanTime = 0;
+let scanCount = 0;
+let rapidScanCount = 0;
+let rapidScanTime = 0;
+let errorCount = 0;
+let scannedDocuments = []; // Array to store all scanned documents in multi-scan mode
+
+// ==============================================
+// Multi-Scan Helper Functions
+// ==============================================
+
+function showModeConfirmation(message) {
+    const banner = document.getElementById('mode-confirmation');
+    banner.textContent = message;
+    banner.classList.add('show');
+    setTimeout(() => {
+        banner.classList.remove('show');
+    }, 1500);
+}
+
+function showBriefIndicator(message, type = 'success') {
+    const indicator = document.getElementById('brief-indicator');
+    indicator.textContent = message;
+    indicator.className = `brief-indicator show ${type}`;
+    setTimeout(() => {
+        indicator.classList.remove('show');
+    }, 1500);
+}
+
+function vibrate() {
+    if (navigator.vibrate) {
+        navigator.vibrate(50);
+    }
+}
+
+function updateSessionStats() {
+    document.getElementById('inline-stats-received').textContent = scanCount;
+    document.getElementById('inline-stats-errors').textContent = errorCount;
+}
+
+function showCheckmark() {
+    const indicator = document.getElementById('checkmark-indicator');
+    const label = document.getElementById('received-label');
+    indicator.style.display = 'block';
+    label.style.display = 'block';
+    
+    setTimeout(() => {
+        indicator.style.display = 'none';
+        label.style.display = 'none';
+    }, 800);
+}
+
+function clearScannerInput() {
+    const input = document.getElementById('scanner_input');
+    setTimeout(() => {
+        input.value = '';
+        input.focus();
+    }, 500);
+}
+
+// Function to show scanned documents modal
+function showScannedDocumentsModal() {
+    const modal = document.getElementById('scannedDocumentsModal');
+    const listContainer = document.getElementById('scanned-documents-list');
+    const emptyMessage = document.getElementById('scanned-documents-empty');
+    
+    // Sort documents by scan time (newest first)
+    const sortedDocuments = [...scannedDocuments].sort((a, b) => b.scan_time - a.scan_time);
+    
+    // Clear previous content
+    listContainer.innerHTML = '';
+    
+    if (sortedDocuments.length === 0) {
+        emptyMessage.style.display = 'block';
+        listContainer.style.display = 'none';
+    } else {
+        emptyMessage.style.display = 'none';
+        listContainer.style.display = 'block';
+        
+        // Status color mapping
+        const statusColors = {
+            'Approved': 'success',
+            'Received': 'success',
+            'Pending': 'warning',
+            'Pending Verification': 'warning',
+            'Under Review': 'info',
+            'Forwarded': 'info',
+            'Rejected': 'danger',
+            'Return': 'danger',
+            'Completed': 'primary',
+            'Archived': 'secondary'
+        };
+        
+        sortedDocuments.forEach((doc, index) => {
+            const statusColor = statusColors[doc.status] || 'secondary';
+            const scanTime = new Date(doc.scan_time).toLocaleTimeString();
+            
+            const listItem = document.createElement('a');
+            listItem.href = '#';
+            listItem.className = 'list-group-item list-group-item-action scanned-document-item';
+            listItem.onclick = function(e) {
+                e.preventDefault();
+                window.open(doc.redirect_url, '_blank');
+            };
+            
+            listItem.innerHTML = `
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1 document-title">${doc.title}</h6>
+                        <p class="mb-1 document-number"><i class="bi bi-file-earmark-text"></i> ${doc.document_number}</p>
+                        <small class="document-status">
+                            <span class="badge bg-${statusColor}">${doc.status}</span>
+                        </small>
+                    </div>
+                    <small class="text-muted ms-3">${scanTime}</small>
+                </div>
+            `;
+            
+            listContainer.appendChild(listItem);
+        });
+    }
+    
+    // Show modal using Bootstrap
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        // Get existing instance or create new one
+        let bsModal = bootstrap.Modal.getInstance(modal);
+        if (!bsModal) {
+            bsModal = new bootstrap.Modal(modal);
+        }
+        bsModal.show();
+    } else {
+        // Fallback
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        
+        // Add backdrop for fallback
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.id = 'scanned-documents-backdrop';
+        document.body.appendChild(backdrop);
+    }
+}
+
+// Function to close scanned documents modal
+function closeScannedDocumentsModal() {
+    const modal = document.getElementById('scannedDocumentsModal');
+    if (!modal) return;
+    
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) {
+            bsModal.hide();
+        } else {
+            // Fallback close
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            const backdrop = document.getElementById('scanned-documents-backdrop');
+            if (backdrop) backdrop.remove();
+        }
+    } else {
+        // Fallback close
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        const backdrop = document.getElementById('scanned-documents-backdrop');
+        if (backdrop) backdrop.remove();
+    }
+}
+
+// ==============================================
+// Mode Toggle Logic
+// ==============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modeToggle = document.getElementById('scan-mode-toggle');
+    const modeLabel = document.getElementById('mode-label');
+    const modeCard = document.getElementById('mode-toggle-card');
+    const inlineSessionStats = document.getElementById('inline-session-stats');
+    const clearBtn = document.getElementById('clear-btn');
+    const viewLastBtn = document.getElementById('view-last-btn');
+    const scannerInput = document.getElementById('scanner_input');
+
+    // Hide checkmark and received label on page load
+    const checkmarkIndicator = document.getElementById('checkmark-indicator');
+    const receivedLabel = document.getElementById('received-label');
+    if (checkmarkIndicator) checkmarkIndicator.style.display = 'none';
+    if (receivedLabel) receivedLabel.style.display = 'none';
+
+    // Initialize mode from localStorage
+    modeToggle.checked = multiScanMode;
+    updateModeUI();
+
+    // Handle mode toggle
+    modeToggle.addEventListener('change', function() {
+        multiScanMode = this.checked;
+        localStorage.setItem('multiScanMode', multiScanMode);
+        
+        // Reset scanner state
+        scannerInput.value = '';
+        scannerInput.disabled = false;
+        isProcessing = false;
+        
+        // Reset stats in single-scan mode
+        if (!multiScanMode) {
+            scanCount = 0;
+            errorCount = 0;
+            inlineSessionStats.style.display = 'none';
+            viewLastBtn.style.display = 'none';
+        } else {
+            scanCount = 0;
+            errorCount = 0;
+            inlineSessionStats.style.display = 'flex';
+            updateSessionStats();
+        }
+        
+        updateModeUI();
+        scannerInput.focus();
+    });
+
+    function updateModeUI() {
+        if (multiScanMode) {
+            modeLabel.textContent = 'Multi-Scan • On';
+            modeLabel.classList.add('active');
+            modeCard.classList.add('multi-scan-active');
+            inlineSessionStats.style.display = 'flex';
+            viewLastBtn.style.display = 'inline-block';
+        } else {
+            modeLabel.textContent = 'Turn on Multi-Scan Mode';
+            modeLabel.classList.remove('active');
+            modeCard.classList.remove('multi-scan-active');
+            inlineSessionStats.style.display = 'none';
+            viewLastBtn.style.display = 'none';
+        }
+    }
+
+    // ==============================================
+    // Scanner Input Handlers
+    // ==============================================
+
+    scannerInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !isProcessing) {
+            e.preventDefault();
+            enterKeyPressed = true;
+            processScan();
+            setTimeout(() => {
+                enterKeyPressed = false;
+            }, 200);
+        }
+    });
+
+    scannerInput.addEventListener('blur', function() {
+        if (scannerInput.value.trim() && !isProcessing && !enterKeyPressed) {
+            processScan();
+        }
+    });
+
+    scannerInput.addEventListener('focus', function() {
+        // Scanner input focused
+    });
+
+    clearBtn.addEventListener('click', function() {
+        scannerInput.value = '';
+        scannerInput.focus();
+    });
+
+    viewLastBtn.addEventListener('click', function() {
+        showScannedDocumentsModal();
+    });
+
+    // ==============================================
+    // Main Scanning Logic
+    // ==============================================
+
+    function processScan() {
+        let scannedValue = scannerInput.value.trim();
+        let documentNumber = scannedValue;
+        
+        // Extract document code from URL if needed
+        if (scannedValue.includes('document=')) {
+            try {
+                if (scannedValue.includes('://')) {
+                    let url = new URL(scannedValue);
+                    const extractedCode = url.searchParams.get('document');
+                    if (extractedCode) {
+                        documentNumber = extractedCode;
+                    }
+                } else if (scannedValue.includes('?') || scannedValue.includes('&')) {
+                    const match = scannedValue.match(/document=([^&\s#]+)/);
+                    if (match && match[1]) {
+                        documentNumber = decodeURIComponent(match[1]);
+                    }
+                }
+            } catch (e) {
+                const match = scannedValue.match(/document=([^&\s#]+)/);
+                if (match && match[1]) {
+                    documentNumber = decodeURIComponent(match[1]);
+                }
+            }
+        }
+        
+        if (!documentNumber) {
+            return;
+        }
+
+        if (isProcessing) {
+            return;
+        }
+
+        // ==============================================
+        // Duplicate Detection (5-second window)
+        // ==============================================
+        
+        if (multiScanMode && lastScannedDocId === documentNumber && Date.now() - lastScanTime < 5000) {
+            showBriefIndicator('Duplicate scan detected', 'warning');
+            clearScannerInput();
+            return;
+        }
+
+        // ==============================================
+        // Rapid Scan Detection (3+ scans in 2 seconds)
+        // ==============================================
+        
+        if (multiScanMode) {
+            const now = Date.now();
+            if (now - rapidScanTime < 2000) {
+                rapidScanCount++;
+            } else {
+                rapidScanCount = 1;
+                rapidScanTime = now;
+            }
+
+            if (rapidScanCount >= 3) {
+                showBriefIndicator('Scanning too rapidly—pause 1 second', 'warning');
+                isProcessing = true;
+                setTimeout(() => {
+                    isProcessing = false;
+                    if (scannerInput.value.trim()) {
+                        processScan();
+                    }
+                }, 1000);
+                return;
+            }
+        }
+
+        isProcessing = true;
+        scannerInput.value = documentNumber;
+        
+        const statusDiv = document.getElementById('scanner-status');
+        const statusMsg = document.getElementById('status-message');
+        const scanningIndicator = document.getElementById('scanning-indicator');
+
+        // Show status alert when processing
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'alert alert-info text-center';
+        statusMsg.textContent = 'Processing scan...';
+        scanningIndicator.style.display = 'block';
+
+        fetch('{{ route("scan.process") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                document_number: documentNumber
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || 'Failed to process scan');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Remember last scanned document
+                lastScannedDocId = documentNumber;
+                lastScanTime = Date.now();
+                currentDocumentId = data.document.id;
+                scanCount++;
+                updateSessionStats();
+                
+                // Hide status alert on success in multi-scan mode, show briefly in single-scan
+                if (multiScanMode) {
+                    statusDiv.style.display = 'none';
+                } else {
+                    statusDiv.style.display = 'block';
+                    statusDiv.className = 'alert alert-success text-center';
+                    statusMsg.textContent = data.message || 'Document scanned successfully!';
+                }
+                scanningIndicator.style.display = 'none';
+                enterKeyPressed = false;
+                
+                // Add success feedback animation to input
+                scannerInput.classList.add('success-feedback');
+                setTimeout(() => {
+                    scannerInput.classList.remove('success-feedback');
+                }, 600);
+                
+                if (multiScanMode) {
+                    // Multi-Scan: Silent acknowledgment
+                    // Store document info in scannedDocuments array
+                    scannedDocuments.push({
+                        id: data.document.id,
+                        document_number: data.document.document_number || documentNumber,
+                        title: data.document.title || 'Untitled Document',
+                        status: data.document.status || 'Unknown',
+                        scan_time: Date.now(),
+                        redirect_url: data.redirect_url || '/documents/' + data.document.id
+                    });
+                    
+                    showCheckmark();
+                    vibrate();
+                    clearScannerInput();
+                    isProcessing = false;
+                } else {
+                    // Single-Scan: Show full details
+                    if (data.scanner) {
+                        data.document.scanner = data.scanner;
+                    }
+                    displayDocument(data.document, data.redirect_url);
+                    document.getElementById('scanner-interface').style.display = 'none';
+                    statusDiv.style.display = 'none';
+                    isProcessing = false;
+                }
+            } else {
+                throw new Error(data.message || 'Scan failed');
+            }
+        })
+        .catch(error => {
+            console.error('Scan error:', error);
+            errorCount++;
+            updateSessionStats();
+            
+            // Show error status
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'alert alert-danger text-center';
+            statusMsg.textContent = 'Error: ' + (error.message || 'Failed to process scan');
+            scanningIndicator.style.display = 'none';
+            isProcessing = false;
+            enterKeyPressed = false;
+            
+            // Add error feedback animation to input
+            scannerInput.classList.add('error-feedback');
+            setTimeout(() => {
+                scannerInput.classList.remove('error-feedback');
+            }, 500);
+            
+            if (multiScanMode) {
+                showBriefIndicator(error.message.includes('not found') ? 'Not found' : 'Connection lost', 'error');
+                // Hide status alert after brief display in multi-scan mode
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 2000);
+                clearScannerInput();
+            } else {
+                // Keep error visible in single-scan mode
+                setTimeout(() => {
+                    scannerInput.focus();
+                }, 1000);
+            }
+        });
+    }
+
+    // Auto-focus scanner on page load
+    setTimeout(() => {
+        scannerInput.focus();
+    }, 500);
+});
+
+// ==============================================
+// Single-Scan Mode Document Display
+// ==============================================
+
+function displayDocument(doc, detailsUrl) {
+    currentDocumentId = doc.id;
+    
+    document.getElementById('doc-title').textContent = doc.title;
+    document.getElementById('doc-number').textContent = doc.document_number;
+    document.getElementById('doc-type').textContent = doc.document_type || 'N/A';
+    document.getElementById('doc-department').textContent = doc.department;
+    document.getElementById('doc-last-location').textContent = doc.last_location || 'N/A';
+    document.getElementById('doc-creator').textContent = doc.created_by;
+    document.getElementById('doc-created').textContent = doc.created_at;
+    document.getElementById('doc-description').textContent = doc.description || 'No description provided';
+    document.getElementById('view-full-details').href = detailsUrl;
+    
+    document.getElementById('doc-location').innerHTML = `<strong>${doc.department}</strong>`;
+    
+    const statusColors = {
+        'Approved': 'success',
+        'Received': 'success',
+        'Pending': 'warning',
+        'Pending Verification': 'warning',
+        'Under Review': 'info',
+        'Forwarded': 'info',
+        'Rejected': 'danger',
+        'Return': 'danger',
+        'Completed': 'primary',
+        'Archived': 'secondary'
+    };
+    const statusColor = statusColors[doc.status] || 'secondary';
+    const statusBadge = `<span class="badge bg-${statusColor}">${doc.status}</span>`;
+    
+    document.getElementById('doc-status-badge').innerHTML = statusBadge;
+    
+    if (doc.is_priority) {
+        document.getElementById('doc-priority-badge').style.display = 'inline-block';
+    } else {
+        document.getElementById('doc-priority-badge').style.display = 'none';
+    }
+    
+    document.getElementById('whereabouts-dept').textContent = doc.department;
+    document.getElementById('whereabouts-status-badge').innerHTML = statusBadge;
+    
+    document.getElementById('quick-doc-number').textContent = doc.document_number;
+    document.getElementById('quick-status').innerHTML = statusBadge;
+    document.getElementById('quick-priority').innerHTML = doc.is_priority 
+        ? '<span class="badge badge-priority">PRIORITY</span>' 
+        : '<span class="text-muted">Normal</span>';
+    
+    document.getElementById('document-result').style.display = 'flex';
+    document.getElementById('document-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetScanner() {
+    document.getElementById('document-result').style.display = 'none';
+    document.getElementById('scanner-interface').style.display = 'flex';
+    
+    const scannerInput = document.getElementById('scanner_input');
+    scannerInput.value = '';
+    
+    const statusDiv = document.getElementById('scanner-status');
+    const statusMsg = document.getElementById('status-message');
+    const scanningIndicator = document.getElementById('scanning-indicator');
+    
+    // Hide status alert when ready (clean interface)
+    statusDiv.style.display = 'none';
+    statusDiv.className = 'alert alert-success text-center';
+    statusMsg.textContent = 'Scanner Ready - Point your device at a QR code';
+    scanningIndicator.style.display = 'none';
+    
+    // Hide checkmark and received label
+    const checkmarkIndicator = document.getElementById('checkmark-indicator');
+    const receivedLabel = document.getElementById('received-label');
+    if (checkmarkIndicator) checkmarkIndicator.style.display = 'none';
+    if (receivedLabel) receivedLabel.style.display = 'none';
+    
+    isProcessing = false;
+    currentDocumentId = null;
+    
+    setTimeout(() => {
+        scannerInput?.focus();
+    }, 100);
+}
 
 // Use event delegation for complete button (works even if button is dynamically added)
 document.addEventListener('click', function(e) {
@@ -1033,6 +2000,140 @@ document.addEventListener('DOMContentLoaded', function() {
             location.reload();
         });
     }
+
+    // Handle scanned documents modal close buttons
+    const scannedDocumentsModal = document.getElementById('scannedDocumentsModal');
+    if (scannedDocumentsModal) {
+        // Close button (X) in header
+        const closeBtn = scannedDocumentsModal.querySelector('.btn-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeScannedDocumentsModal();
+            });
+        }
+        
+        // OK button in footer
+        const okBtn = scannedDocumentsModal.querySelector('.modal-footer .btn');
+        if (okBtn) {
+            okBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeScannedDocumentsModal();
+            });
+        }
+        
+        // Also handle backdrop click to close
+        scannedDocumentsModal.addEventListener('click', function(e) {
+            if (e.target === scannedDocumentsModal) {
+                closeScannedDocumentsModal();
+            }
+        });
+        
+        // Handle ESC key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && scannedDocumentsModal.classList.contains('show')) {
+                closeScannedDocumentsModal();
+            }
+        });
+    }
+
+    // Initialize Bootstrap tooltips - with delay to ensure Bootstrap is loaded
+    function initializeTooltips() {
+        const helpBtn = document.getElementById('scan-mode-help-btn');
+        if (!helpBtn) {
+            // Retry if element not found yet
+            setTimeout(initializeTooltips, 50);
+            return;
+        }
+        
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            try {
+                // Destroy existing tooltip if any
+                const existingTooltip = bootstrap.Tooltip.getInstance(helpBtn);
+                if (existingTooltip) {
+                    existingTooltip.dispose();
+                }
+                
+                // Create new tooltip with HTML content
+                const tooltipContent = '<div style="text-align: left; padding: 4px;"><strong>Scanning Modes:</strong><br>• <strong>Multi-Scan:</strong> Scans continuously in the background<br>• <strong>Single-Scan:</strong> Shows details after every scan</div>';
+                
+                // Set title attribute first (Bootstrap reads from it)
+                helpBtn.setAttribute('data-bs-original-title', tooltipContent);
+                
+                const tooltip = new bootstrap.Tooltip(helpBtn, {
+                    html: true,
+                    placement: 'top',
+                    trigger: 'hover focus',
+                    boundary: 'viewport'
+                });
+                
+                // Verify tooltip was created
+                if (bootstrap.Tooltip.getInstance(helpBtn)) {
+                    console.log('Bootstrap tooltip initialized successfully');
+                } else {
+                    throw new Error('Tooltip instance not created');
+                }
+            } catch (error) {
+                console.error('Error initializing Bootstrap tooltip:', error);
+                // Will fall back to manual tooltip below
+            }
+        } else {
+            // Retry after a short delay if Bootstrap is not yet loaded
+            setTimeout(initializeTooltips, 100);
+        }
+    }
+    
+    // Initialize tooltips after DOM is ready
+    setTimeout(initializeTooltips, 200);
+    
+    // Also initialize on window load as fallback
+    window.addEventListener('load', function() {
+        setTimeout(initializeTooltips, 300);
+    });
+    
+    // Fallback: Manual tooltip on hover if Bootstrap fails (check after initialization)
+    setTimeout(function() {
+        const helpBtn = document.getElementById('scan-mode-help-btn');
+        if (helpBtn) {
+            // Check if Bootstrap tooltip is working
+            let tooltipWorking = false;
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                const tooltipInstance = bootstrap.Tooltip.getInstance(helpBtn);
+                tooltipWorking = tooltipInstance !== null;
+            }
+            
+            // Only add manual fallback if Bootstrap tooltip didn't work
+            if (!tooltipWorking) {
+                let tooltipElement = null;
+                
+                helpBtn.addEventListener('mouseenter', function(e) {
+                    if (tooltipElement) return; // Already showing
+                    
+                    // Create manual tooltip
+                    tooltipElement = document.createElement('div');
+                    tooltipElement.className = 'manual-tooltip';
+                    tooltipElement.innerHTML = '<div style="text-align: left; padding: 8px; background: #333; color: white; border-radius: 4px; font-size: 0.875rem; max-width: 250px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1060;"><strong>Scanning Modes:</strong><br>• <strong>Multi-Scan:</strong> Scans continuously in the background<br>• <strong>Single-Scan:</strong> Shows details after every scan</div>';
+                    tooltipElement.style.position = 'fixed';
+                    tooltipElement.style.zIndex = '1060';
+                    document.body.appendChild(tooltipElement);
+                    
+                    const rect = helpBtn.getBoundingClientRect();
+                    const tooltipRect = tooltipElement.getBoundingClientRect();
+                    tooltipElement.style.top = (rect.top - tooltipRect.height - 8) + 'px';
+                    tooltipElement.style.left = (rect.left + rect.width / 2 - tooltipRect.width / 2) + 'px';
+                });
+                
+                helpBtn.addEventListener('mouseleave', function() {
+                    if (tooltipElement) {
+                        tooltipElement.remove();
+                        tooltipElement = null;
+                    }
+                });
+            }
+        }
+    }, 500);
 });
 
 // Display document information
@@ -1117,10 +2218,17 @@ function resetScanner() {
     const statusMsg = document.getElementById('status-message');
     const scanningIndicator = document.getElementById('scanning-indicator');
     
-    statusDiv.style.display = 'block';
+    // Hide status alert when ready (clean interface)
+    statusDiv.style.display = 'none';
     statusDiv.className = 'alert alert-success text-center';
     statusMsg.textContent = 'Scanner Ready - Point your device at a QR code';
     scanningIndicator.style.display = 'none';
+    
+    // Hide checkmark and received label
+    const checkmarkIndicator = document.getElementById('checkmark-indicator');
+    const receivedLabel = document.getElementById('received-label');
+    if (checkmarkIndicator) checkmarkIndicator.style.display = 'none';
+    if (receivedLabel) receivedLabel.style.display = 'none';
     
     // Reset processing flag
     isProcessing = false;
@@ -1134,164 +2242,6 @@ function resetScanner() {
     }, 100);
 }
 
-// Scanner functionality
-let isProcessing = false;
-let enterKeyPressed = false;
-
-document.addEventListener('DOMContentLoaded', function() {
-    const scannerInput = document.getElementById('scanner_input');
-    const clearBtn = document.getElementById('clear-btn');
-    const statusDiv = document.getElementById('scanner-status');
-    const statusMsg = document.getElementById('status-message');
-    const scanningIndicator = document.getElementById('scanning-indicator');
-
-    if (scannerInput) {
-        scannerInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !isProcessing) {
-                e.preventDefault();
-                enterKeyPressed = true;
-                processScan();
-                // Reset flag after a short delay to allow blur event to check it
-                setTimeout(() => {
-                    enterKeyPressed = false;
-                }, 200);
-            }
-        });
-
-        scannerInput.addEventListener('blur', function() {
-            // Don't trigger scan if Enter was just pressed or if processing
-            if (scannerInput.value.trim() && !isProcessing && !enterKeyPressed) {
-                processScan();
-            }
-        });
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', function() {
-            scannerInput.value = '';
-            scannerInput.focus();
-            statusMsg.textContent = 'Scanner Ready - Point your device at a QR code';
-        });
-    }
-
-    function processScan() {
-        let scannedValue = scannerInput.value.trim();
-        let documentNumber = scannedValue;
-        
-        // Extract document code from URL if scanned value contains URL parameters
-        // Handles URLs like: http://127.0.0.1:8000/scan?document=DOC-202511-0009
-        // Also handles relative URLs: /scan?document=DOC-202511-0009
-        if (scannedValue.includes('document=')) {
-            try {
-                // Try to parse as full URL first
-                let url;
-                if (scannedValue.includes('://')) {
-                    // It's a full URL
-                    url = new URL(scannedValue);
-                    const extractedCode = url.searchParams.get('document');
-                    if (extractedCode) {
-                        documentNumber = extractedCode;
-                    }
-                } else if (scannedValue.includes('?') || scannedValue.includes('&')) {
-                    // It's a relative URL or query string
-                    const match = scannedValue.match(/document=([^&\s#]+)/);
-                    if (match && match[1]) {
-                        documentNumber = decodeURIComponent(match[1]);
-                    }
-                }
-            } catch (e) {
-                // If URL parsing fails, use regex extraction as fallback
-                const match = scannedValue.match(/document=([^&\s#]+)/);
-                if (match && match[1]) {
-                    documentNumber = decodeURIComponent(match[1]);
-                }
-            }
-        }
-        
-        if (!documentNumber) {
-            return;
-        }
-
-        if (isProcessing) {
-            return;
-        }
-
-        isProcessing = true;
-        
-        // Update scanner input to show only the document code (not the full URL)
-        scannerInput.value = documentNumber;
-        
-        statusDiv.className = 'alert alert-info text-center';
-        statusMsg.textContent = 'Processing scan...';
-        scanningIndicator.style.display = 'block';
-
-        fetch('{{ route("scan.process") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                document_number: documentNumber
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => {
-                    throw new Error(err.message || 'Failed to process scan');
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Clear input after successful scan to prevent duplicate processing
-                scannerInput.value = '';
-                statusDiv.className = 'alert alert-success text-center';
-                statusMsg.textContent = data.message || 'Document scanned successfully!';
-                scanningIndicator.style.display = 'none';
-                
-                enterKeyPressed = false; // Reset flag on success
-                
-                // Display document information (include scanner info if available)
-                if (data.scanner) {
-                    data.document.scanner = data.scanner;
-                }
-                displayDocument(data.document, data.redirect_url);
-                
-                // Hide scanner interface
-                document.getElementById('scanner-interface').style.display = 'none';
-                statusDiv.style.display = 'none';
-                
-                // Reset processing flag
-                isProcessing = false;
-            } else {
-                throw new Error(data.message || 'Scan failed');
-            }
-        })
-        .catch(error => {
-            console.error('Scan error:', error);
-            statusDiv.className = 'alert alert-danger text-center';
-            statusMsg.textContent = 'Error: ' + (error.message || 'Failed to process scan');
-            scanningIndicator.style.display = 'none';
-            isProcessing = false;
-            enterKeyPressed = false; // Reset flag on error
-            
-            // Refocus input after error
-            setTimeout(() => {
-                scannerInput.focus();
-            }, 1000);
-        });
-    }
-
-    // Auto-focus scanner input on page load
-    if (scannerInput) {
-        setTimeout(() => {
-            scannerInput.focus();
-        }, 500);
-    }
-});
 </script>
 @endpush
 

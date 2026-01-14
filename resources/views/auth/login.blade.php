@@ -312,7 +312,7 @@
                                     </div>
 
                                     <div class="form-check mb-3">
-                                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                                        <input type="checkbox" class="form-check-input" id="remember" name="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
                                         <label class="form-check-label" for="remember" style="font-size: 0.9375rem;">Remember me</label>
                                     </div>
 
