@@ -48,6 +48,127 @@
     .pagination .page-item:last-child .page-link {
         padding: 0.5rem 1rem;
     }
+
+    /* ============================================
+       UI/UX IMPROVEMENTS - Document Table
+       ============================================ */
+    
+    /* Table container with sticky actions column */
+    .table-responsive {
+        position: relative;
+    }
+    
+    /* Consistent row height - prevents long titles from making rows too tall */
+    .table tbody tr {
+        height: auto;
+        min-height: 60px;
+    }
+    
+    .table tbody td {
+        vertical-align: middle;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    /* Title column - truncate with ellipsis and show tooltip on hover */
+    .table tbody td:nth-child(2) {
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        position: relative;
+        line-height: 1.4;
+    }
+    
+    /* Title cell wrapper for tooltip */
+    .title-cell {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Type column - truncate with ellipsis and show tooltip on hover */
+    .table tbody td:nth-child(3) {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        position: relative;
+    }
+    
+    /* Type badge wrapper for tooltip */
+    .type-badge {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Sticky Actions Column - Always visible */
+    .table thead th:last-child,
+    .table tbody td:last-child {
+        position: sticky;
+        right: 0;
+        background-color: inherit;
+        z-index: 10;
+        box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+        min-width: 140px;
+    }
+    
+    /* Ensure header matches body for sticky column */
+    .table thead th:last-child {
+        background-color: #f8f9fa;
+        z-index: 11;
+    }
+    
+    /* Priority rows should also have sticky background */
+    .table tbody tr.table-warning td:last-child {
+        background-color: #fff3cd;
+    }
+    
+    /* Hover effect for rows - keep existing functionality */
+    .table tbody tr {
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .table tbody tr.table-warning:hover {
+        background-color: #ffeaa7;
+    }
+    
+    /* Prevent action buttons from triggering row click */
+    .table tbody tr td:last-child,
+    .table tbody tr td:last-child * {
+        cursor: default;
+        pointer-events: auto;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .table tbody td:nth-child(2) {
+            max-width: 200px;
+        }
+        .table tbody td:nth-child(3) {
+            max-width: 150px;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .table tbody td:nth-child(2) {
+            max-width: 150px;
+        }
+        .table tbody td:nth-child(3) {
+            max-width: 120px;
+        }
+    }
 </style>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -165,15 +286,13 @@
                             <th class="text-center" style="width: 8%; white-space: nowrap;">TYPE</th>
                             <th class="text-center" style="width: 10%; white-space: nowrap;">CURRENT DEPARTMENT</th>
                             <th class="text-center" style="width: 10%; white-space: nowrap;">CURRENT STATUS</th>
-                            <th class="text-center" style="width: 10%; white-space: nowrap;">CREATED BY</th>
-                            <th class="text-center" style="width: 12%; white-space: nowrap;">CURRENT HANDLER</th>
                             <th class="text-center" style="width: 8%; white-space: nowrap;">DATE</th>
                             <th class="text-center" style="width: 12%; white-space: nowrap;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($documents as $document)
-                        <tr class="{{ $document->is_priority ? 'table-warning' : '' }}">
+                        <tr class="{{ $document->is_priority ? 'table-warning' : '' }}" onclick="window.location.href='{{ route('documents.show', $document) }}'">
                             <td class="text-center">
                                 <strong>{{ $document->document_number }}</strong>
                                 @if($document->is_priority)
@@ -181,7 +300,9 @@
                                 @endif
                             </td>
                             <td>
-                                {{ Str::limit($document->title, 50) }}
+                                <span class="title-cell" title="{{ $document->title }}">
+                                    {{ $document->title }}
+                                </span>
                                 @php
                                     // For archived documents, check pre-archive status for icon display
                                     $iconStatus = $document->status;
@@ -202,7 +323,7 @@
                                 <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
                                 @endif
                             </td>
-                            <td class="text-center"><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
+                            <td class="text-center"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ Str::limit($document->document_type, 10) }}</span></td>
                             <td class="text-center">
                                 @if(in_array($document->status, ['Forwarded', 'Pending']))
                                 <span class="text-muted">N/A</span>
@@ -238,20 +359,9 @@
                                     @endif
                                 </span>
                             </td>
-                            <td class="text-center">{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
-                            <td class="text-center">
-                                @if($document->currentHandler)
-                                {{ $document->currentHandler->name }}
-                                @else
-                                <span class="text-muted">Unassigned</span>
-                                @endif
-                            </td>
                             <td class="text-center"><small>{{ $document->created_at->format('M d, Y') }}</small></td>
-                            <td class="text-center">
+                            <td class="text-center" onclick="event.stopPropagation();">
                                 <div class="d-flex gap-1 justify-content-center">
-                                    <a href="{{ route('documents.show', $document) }}" class="btn btn-sm btn-info" title="View">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     @can('manage-documents')
                                     @if($document->created_by == auth()->id() || auth()->user()->hasAnyRole(['Administrator', 'Mayor']))
                                     <a href="{{ route('documents.edit', $document) }}" class="btn btn-sm btn-warning" title="Edit">
@@ -266,7 +376,7 @@
                                     @if($document->status != 'Archived')
                                     <form method="POST" action="{{ route('documents.archive', $document) }}" class="d-inline">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-dark" title="Archive" onclick="return confirm('Archive this document?')">
+                                        <button type="submit" class="btn btn-sm btn-dark" title="Archive" onclick="event.stopPropagation(); return confirm('Archive this document?')">
                                             <i class="bi bi-archive"></i>
                                         </button>
                                     </form>
@@ -277,7 +387,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-4">
+                            <td colspan="7" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mb-0">No documents found</p>
                             </td>
@@ -334,4 +444,3 @@
     </div>
 </div>
 @endsection
-

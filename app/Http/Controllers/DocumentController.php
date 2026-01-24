@@ -11,6 +11,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
@@ -189,7 +190,7 @@ class DocumentController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'document_type' => ['required', 'string'],
-            'document_type_other' => ['nullable', 'string', 'max:255', 'required_if:document_type,Others'],
+            'document_type_other' => ['nullable', 'string', 'max:50', 'required_if:document_type,Others'],
             'department_id' => ['required', 'exists:departments,id'],
             'is_priority' => ['nullable', 'boolean'],
         ]);
@@ -199,70 +200,94 @@ class DocumentController extends Controller
             ? $validated['document_type_other'] 
             : $validated['document_type'];
 
-        DB::beginTransaction();
-        try {
-            // Generate unique document number
-            $documentNumber = Document::generateDocumentNumber();
+        $maxRetries = 3;
+        $retryCount = 0;
+        
+        while ($retryCount < $maxRetries) {
+            DB::beginTransaction();
+            try {
+                // Generate unique document number
+                $documentNumber = Document::generateDocumentNumber();
 
-            // Get department and creator info before creating document
-            $department = Department::find($validated['department_id']);
-            $creator = Auth::user();
-            $creatorRole = $creator->roles->first()->name ?? 'User';
+                // Get department and creator info before creating document
+                $department = Department::find($validated['department_id']);
+                $creator = Auth::user();
+                $creatorRole = $creator->roles->first()->name ?? 'User';
 
-            // Create document (forwarded to department)
-            $document = Document::create([
-                'document_number' => $documentNumber,
-                'title' => $validated['title'],
-                'description' => $validated['description'],
-                'document_type' => $documentType,
-                'department_id' => $validated['department_id'],
-                'created_by' => Auth::id(),
-                'status' => 'Forwarded',
-                'is_priority' => $request->has('is_priority') ? true : false,
-            ]);
+                // Create document (forwarded to department)
+                $document = Document::create([
+                    'document_number' => $documentNumber,
+                    'title' => $validated['title'],
+                    'description' => $validated['description'],
+                    'document_type' => $documentType,
+                    'department_id' => $validated['department_id'],
+                    'created_by' => Auth::id(),
+                    'status' => 'Forwarded',
+                    'is_priority' => $request->has('is_priority') ? true : false,
+                ]);
 
-            // Generate QR code
-            $qrCodePath = $this->qrCodeService->generateDocumentQRCode(
-                $document->document_number,
-                $document->id
-            );
-            $document->update(['qr_code_path' => $qrCodePath]);
+                // Generate QR code
+                $qrCodePath = $this->qrCodeService->generateDocumentQRCode(
+                    $document->document_number,
+                    $document->id
+                );
+                $document->update(['qr_code_path' => $qrCodePath]);
 
-            // Create initial status log
-            DocumentStatusLog::createLog(
-                $document->id,
-                Auth::id(),
-                null,
-                'Forwarded',
-                "Document forwarded to {$department->name}"
-            );
+                // Create initial status log
+                DocumentStatusLog::createLog(
+                    $document->id,
+                    Auth::id(),
+                    null,
+                    'Forwarded',
+                    "Document forwarded to {$department->name}"
+                );
 
-            // EVENT 1: Document Forwarded
-            // Get creator's department for old department (if creator has a department)
-            $oldDepartment = $creator->department ?? null;
-            if (!$oldDepartment) {
-                // If creator has no department, create a dummy department object for notification
-                $oldDepartment = (object)['id' => null, 'name' => 'System'];
+                // EVENT 1: Document Forwarded
+                // Get creator's department for old department (if creator has a department)
+                $oldDepartment = $creator->department ?? null;
+                if (!$oldDepartment) {
+                    // If creator has no department, create a dummy department object for notification
+                    $oldDepartment = (object)['id' => null, 'name' => 'System'];
+                }
+                
+                // Notify using new notification system
+                // Note: Creator is not notified when they forward themselves (handled in onDocumentForwarded)
+                $this->notificationService->onDocumentForwarded(
+                    $document,
+                    $oldDepartment,
+                    $department,
+                    $creator
+                );
+
+                DB::commit();
+
+                return redirect()->route('documents.show', $document)
+                    ->with('success', 'Document created successfully!');
+
+            } catch (\PDOException $e) {
+                DB::rollBack();
+                
+                // Handle specific database errors for concurrent access
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false || 
+                    strpos($e->getMessage(), 'UNIQUE constraint') !== false) {
+                    $retryCount++;
+                    if ($retryCount >= $maxRetries) {
+                        return back()->withInput()
+                            ->withErrors(['error' => 'Unable to generate unique document number after multiple attempts. Please try again.']);
+                    }
+                    // Wait briefly before retrying (exponential backoff)
+                    usleep(100000 * $retryCount); // 100ms, 200ms, 300ms
+                    continue;
+                }
+                
+                return back()->withInput()
+                    ->withErrors(['error' => 'Database error: ' . $e->getMessage()]);
+                    
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()->withInput()
+                    ->withErrors(['error' => 'Failed to create document: ' . $e->getMessage()]);
             }
-            
-            // Notify using new notification system
-            // Note: Creator is not notified when they forward themselves (handled in onDocumentForwarded)
-            $this->notificationService->onDocumentForwarded(
-                $document,
-                $oldDepartment,
-                $department,
-                $creator
-            );
-
-            DB::commit();
-
-            return redirect()->route('documents.show', $document)
-                ->with('success', 'Document created successfully!');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withInput()
-                ->withErrors(['error' => 'Failed to create document: ' . $e->getMessage()]);
         }
     }
 
@@ -316,6 +341,25 @@ class DocumentController extends Controller
 
         // Get all active departments for the return dropdown
         $departments = Department::active()->orderBy('name')->get();
+
+        // Ensure QR code exists; regenerate if missing
+        try {
+            $qrPath = $document->qr_code_path;
+            $qrMissing = !$qrPath || !file_exists(public_path($qrPath));
+
+            if ($qrMissing) {
+                $qrCodePath = $this->qrCodeService->generateDocumentQRCode(
+                    $document->document_number,
+                    $document->id
+                );
+
+                $document->update(['qr_code_path' => $qrCodePath]);
+                $document->refresh();
+            }
+        } catch (\Throwable $e) {
+            // Log the error but allow the page to load
+            Log::error('Failed to ensure QR code for document '.$document->id.': '.$e->getMessage());
+        }
         
         return view('documents.show', compact('document', 'lastLocation', 'departments'));
     }
@@ -363,7 +407,7 @@ class DocumentController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'document_type' => ['required', 'string'],
-            'document_type_other' => ['nullable', 'string', 'max:255', 'required_if:document_type,Others'],
+            'document_type_other' => ['nullable', 'string', 'max:50', 'required_if:document_type,Others'],
             'department_id' => ['required', 'exists:departments,id'],
             'forward_to_department' => ['nullable', 'exists:departments,id'],
         ]);

@@ -99,7 +99,7 @@
                 </form>
                 @endif
                 @if(in_array($document->status, ['Received', 'Under Review']))
-                <button type="button" class="btn btn-warning btn-uniform" title="Return Document" data-bs-toggle="modal" data-bs-target="#returnModal">
+                <button type="button" class="btn btn-danger btn-uniform" title="Return Document" data-bs-toggle="modal" data-bs-target="#returnModal">
                     <i class="bi bi-arrow-return-left"></i>
                 </button>
                 @endif
@@ -319,8 +319,22 @@
                     <h5 class="mb-0"><i class="bi bi-qr-code"></i> QR Code</h5>
                 </div>
                 <div class="card-body text-center">
-                    @if($document->qr_code_path)
-                    <img src="{{ asset($document->qr_code_path) }}" alt="QR Code" id="qr-code-image" class="img-fluid mb-3" style="max-width: 250px;">
+                    @php
+                        $qrCodeExists = $document->qr_code_path && file_exists(public_path($document->qr_code_path));
+                    @endphp
+
+                    @if($qrCodeExists)
+                    <img 
+                        src="{{ asset($document->qr_code_path) }}" 
+                        alt="QR Code" 
+                        id="qr-code-image" 
+                        class="img-fluid mb-3" 
+                        style="max-width: 250px;"
+                        onerror="this.style.display='none'; document.getElementById('qr-code-error').style.display='block';"
+                    >
+                    <div id="qr-code-error" class="alert alert-warning" style="display: none;">
+                        <i class="bi bi-exclamation-triangle"></i> QR Code image failed to load. Please refresh the page.
+                    </div>
                     <div class="d-grid gap-2">
                         <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-primary" target="_blank">
                             <i class="bi bi-printer"></i> Print QR Code
@@ -330,7 +344,9 @@
                         </button>
                     </div>
                     @else
-                    <p class="text-muted">QR Code not available</p>
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> QR Code not available. The QR file is missing.
+                    </div>
                     @endif
                 </div>
             </div>
@@ -362,11 +378,11 @@
     <div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
+                <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="returnModalLabel">
                         <i class="bi bi-arrow-return-left"></i> Return Document
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" action="{{ route('documents.updateStatus', $document) }}">
                     @csrf
@@ -395,7 +411,7 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="bi bi-x"></i> Cancel
                         </button>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn btn-danger">
                             <i class="bi bi-arrow-return-left"></i> Return Document
                         </button>
                     </div>
@@ -507,4 +523,3 @@ function saveQRCode() {
 @endpush
 
 @endsection
-

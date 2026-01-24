@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
@@ -241,6 +242,65 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User deleted successfully!');
+    }
+
+    /**
+     * Show the form for resetting a user's password (Admin only)
+     */
+    public function showPasswordResetForm(User $user)
+    {
+        $this->authorize('reset user passwords');
+
+        return view('users.reset-password', compact('user'));
+    }
+
+    /**
+     * Reset a user's password (Admin only)
+     */
+    public function resetPassword(Request $request, User $user)
+    {
+        $this->authorize('reset user passwords');
+
+        $validated = $request->validate([
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+        ]);
+
+        // Use the provided password
+        $newPassword = $validated['password'];
+
+        // Update user password
+        $user->update([
+            'password' => Hash::make($newPassword),
+        ]);
+
+        // Store temporary password in cache for viewing (expires in 1 hour)
+        $cacheKey = 'user_temp_password_' . $user->id;
+        Cache::put($cacheKey, $newPassword, now()->addHour());
+
+        // Audit log
+        AuditLog::log('user.password_reset', auth()->id(), User::class, $user->id, "Password reset for user {$user->name} ({$user->email}) by administrator", null, ['password_reset' => true], request()->ip(), request()->userAgent());
+
+        return redirect()->route('users.password.view', $user)
+            ->with('success', "Password has been reset successfully for {$user->name}.");
+    }
+
+    /**
+     * View user's temporary password (Admin only)
+     * Shows the password that was set during the last reset (if within cache expiration)
+     */
+    public function viewPassword(User $user)
+    {
+        $this->authorize('view user passwords');
+
+        $cacheKey = 'user_temp_password_' . $user->id;
+        $tempPassword = Cache::get($cacheKey);
+
+        if (!$tempPassword) {
+            return redirect()->route('users.show', $user)
+                ->with('error', 'No temporary password found. Please reset the password first to view it.');
+        }
+
+        return view('users.view-password', compact('user', 'tempPassword'));
     }
 }
 

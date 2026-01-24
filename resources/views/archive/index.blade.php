@@ -48,6 +48,92 @@
     .pagination .page-item:last-child .page-link {
         padding: 0.5rem 1rem;
     }
+    
+    /* Title column - allow truncation but keep icons visible */
+    .table tbody td:nth-child(2) {
+        max-width: 250px;
+        position: relative;
+        line-height: 1.4;
+    }
+    
+    /* Title cell wrapper for tooltip - truncate only the title text */
+    .title-cell {
+        display: inline-block;
+        max-width: calc(100% - 25px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Ensure status icons are always visible */
+    .table tbody td:nth-child(2) i {
+        display: inline-block;
+        flex-shrink: 0;
+        margin-left: 4px;
+        vertical-align: middle;
+    }
+    
+    /* Type column - truncate with ellipsis and show tooltip on hover */
+    .table tbody td:nth-child(3) {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        position: relative;
+    }
+    
+    /* Type badge wrapper for tooltip */
+    .type-badge {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Hover effect for rows - make rows clickable */
+    .table tbody tr {
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    /* Prevent action buttons from triggering row click */
+    .table tbody tr td:last-child,
+    .table tbody tr td:last-child * {
+        cursor: default;
+        pointer-events: auto;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .table tbody td:nth-child(2) {
+            max-width: 200px;
+        }
+        .table tbody td:nth-child(2) .title-cell {
+            max-width: calc(100% - 25px);
+        }
+        .table tbody td:nth-child(3) {
+            max-width: 150px;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .table tbody td:nth-child(2) {
+            max-width: 150px;
+        }
+        .table tbody td:nth-child(2) .title-cell {
+            max-width: calc(100% - 25px);
+        }
+        .table tbody td:nth-child(3) {
+            max-width: 120px;
+        }
+    }
 </style>
 <div class="container-fluid">
     <div class="mb-4">
@@ -103,10 +189,12 @@
                     </thead>
                     <tbody>
                         @forelse($archivedDocuments as $document)
-                        <tr>
+                        <tr onclick="window.location.href='{{ route('archive.show', $document) }}'">
                             <td class="text-center"><strong>{{ $document->document_number }}</strong></td>
                             <td>
-                                {{ Str::limit($document->title, 50) }}
+                                <span class="title-cell" title="{{ $document->title }}">
+                                    {{ $document->title }}
+                                </span>
                                 @php
                                     // Get the status before archiving to show correct badge
                                     $preArchiveStatus = $document->getPreArchiveStatus();
@@ -122,7 +210,7 @@
                                 <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
                                 @endif
                             </td>
-                            <td class="text-center"><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
+                            <td class="text-center"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ Str::limit($document->document_type, 10) }}</span></td>
                             <td class="text-center">{{ $document->department->code ?? 'N/A' }}</td>
                             <td class="text-center">{{ $document->creator->name ?? 'N/A' }}</td>
                             <td class="text-center">
@@ -133,15 +221,12 @@
                                     <small class="text-muted">N/A</small>
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" onclick="event.stopPropagation();">
                                 <div class="d-flex gap-1 justify-content-center">
-                                    <a href="{{ route('archive.show', $document) }}" class="btn btn-sm btn-info" title="View">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     @can('archive-documents')
                                     <form method="POST" action="{{ route('archive.restore', $document) }}" class="d-inline">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-success" title="Retrieve" onclick="return confirm('Retrieve this document from archive?')">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Retrieve" onclick="event.stopPropagation(); return confirm('Retrieve this document from archive?')">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
                                     </form>
@@ -153,7 +238,7 @@
                                     <form method="POST" action="{{ route('archive.destroy', $document) }}" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Permanently Delete" onclick="return confirm('⚠️ PERMANENTLY DELETE this document?\n\nThis action CANNOT be undone!\n\nDocument: {{ $document->document_number }}')">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Permanently Delete" onclick="event.stopPropagation(); return confirm('⚠️ PERMANENTLY DELETE this document?\n\nThis action CANNOT be undone!\n\nDocument: {{ $document->document_number }}')">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -220,4 +305,3 @@
     </div>
 </div>
 @endsection
-

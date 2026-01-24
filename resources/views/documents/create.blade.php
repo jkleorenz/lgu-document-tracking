@@ -67,10 +67,16 @@
                                        name="document_type_other" 
                                        value="{{ old('document_type_other') }}"
                                        placeholder="Enter your custom document type here..."
-                                       autocomplete="off">
-                                <small class="form-text text-muted">
-                                    <i class="bi bi-info-circle"></i> Please enter the specific document type you need.
-                                </small>
+                                       autocomplete="off"
+                                       maxlength="50">
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Please enter the specific document type you need.
+                                    </small>
+                                    <small class="form-text text-muted">
+                                        <span id="document_type_other_counter">0</span>/50 characters
+                                    </small>
+                                </div>
                                 @error('document_type_other')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -227,7 +233,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.remove('is-invalid');
             }
         }
+        // Update character counter
+        updateCharacterCounter();
     });
+    
+    // Character counter function
+    function updateCharacterCounter() {
+        const counter = document.getElementById('document_type_other_counter');
+        if (counter && documentTypeOtherInput) {
+            const currentLength = documentTypeOtherInput.value.length;
+            counter.textContent = currentLength;
+            if (currentLength > 50) {
+                counter.classList.add('text-danger');
+                counter.classList.remove('text-muted');
+            } else if (currentLength > 40) {
+                counter.classList.add('text-warning');
+                counter.classList.remove('text-danger', 'text-muted');
+            } else {
+                counter.classList.remove('text-danger', 'text-warning');
+                counter.classList.add('text-muted');
+            }
+        }
+    }
+    
+    // Initialize character counter on page load
+    if (documentTypeOtherInput) {
+        updateCharacterCounter();
+    }
 });
 </script>
 @endpush
