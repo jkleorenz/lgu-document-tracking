@@ -262,7 +262,7 @@ class DocumentController extends Controller
                 DB::commit();
 
                 return redirect()->route('documents.show', $document)
-                    ->with('success', 'Document created successfully!');
+                    ->with('success', "Document {$document->document_number} ({$document->title}) was created successfully.");
 
             } catch (\PDOException $e) {
                 DB::rollBack();
@@ -459,7 +459,7 @@ class DocumentController extends Controller
                 
                 DB::commit();
                 return redirect()->route('documents.show', $document)
-                    ->with('success', "Document updated and forwarded to {$newDepartment->name} successfully!");
+                    ->with('success', "Document {$document->document_number} ({$document->title}) was updated and forwarded to {$newDepartment->name} successfully.");
             }
             
             // Normal update without forwarding
@@ -468,7 +468,7 @@ class DocumentController extends Controller
             
             DB::commit();
             return redirect()->route('documents.show', $document)
-                ->with('success', 'Document updated successfully!');
+                ->with('success', "Document {$document->document_number} ({$document->title}) was updated successfully.");
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -497,10 +497,17 @@ class DocumentController extends Controller
         $oldStatus = $document->status;
         $oldDepartment = $document->department;
 
-        // Validate that Complete and Return actions can only be performed on received documents
-        if (in_array($validated['status'], ['Completed', 'Return'])) {
+        // Validate that Complete action can only be performed on received, under review, or retrieved documents
+        if ($validated['status'] === 'Completed') {
+            if (!in_array($document->status, ['Received', 'Under Review', 'Retrieved'])) {
+                return back()->withErrors(['error' => 'Document must be received or retrieved before it can be completed.']);
+            }
+        }
+
+        // Validate that Return action can only be performed on received or under review documents
+        if ($validated['status'] === 'Return') {
             if (!in_array($document->status, ['Received', 'Under Review'])) {
-                return back()->withErrors(['error' => 'Document must be received before it can be completed or returned.']);
+                return back()->withErrors(['error' => 'Document must be received before it can be returned.']);
             }
         }
 
@@ -723,7 +730,7 @@ class DocumentController extends Controller
 
             DB::commit();
 
-            return back()->with('success', 'Document archived successfully!');
+            return back()->with('success', "Document {$document->document_number} ({$document->title}) was archived successfully.");
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1061,10 +1068,12 @@ class DocumentController extends Controller
             $this->qrCodeService->deleteQRCode($document->qr_code_path);
         }
 
+        $documentNumber = $document->document_number;
+        $documentTitle = $document->title;
         $document->delete();
 
         return redirect()->route('documents.index')
-            ->with('success', 'Document deleted successfully!');
+            ->with('success', "Document {$documentNumber} ({$documentTitle}) was deleted successfully.");
     }
 }
 

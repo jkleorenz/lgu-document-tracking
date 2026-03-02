@@ -42,7 +42,12 @@
             <p>If you believe your account has been compromised, please contact an administrator immediately.</p>
         </div>
         <div class="footer">
-            <p>&copy; LGU Document Tracking System. All rights reserved.</p>
+            <p style="margin: 0;">
+                &copy; LGU Document Tracking System. All rights reserved.
+                <span style="display: block; margin-top: 4px; color: #0d6efd; font-weight: 600;">
+                    Developed by SLSU BSIT Students &#10004;
+                </span>
+            </p>
         </div>
     </div>
 </body>

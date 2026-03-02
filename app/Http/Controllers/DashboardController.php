@@ -57,10 +57,8 @@ class DashboardController extends Controller
                 ->active()
                 ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
                 ->count(),
-            // Count archived-completed documents (status='Completed' with archived_at set)
-            'archivedDocuments' => Document::where('status', 'Completed')
-                ->whereNotNull('archived_at')
-                ->count(),
+            // Count ALL archived documents (any status as long as archived_at is set)
+            'archivedDocuments' => Document::whereNotNull('archived_at')->count(),
             'pendingVerifications' => User::where('status', 'pending')->count(),
             'totalUsers' => User::where('status', 'verified')->count(),
             'totalDepartments' => Department::active()->count(),

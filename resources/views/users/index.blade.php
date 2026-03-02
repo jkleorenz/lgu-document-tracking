@@ -178,10 +178,19 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     @if($user->id != auth()->id())
-                                    <form method="POST" action="{{ route('users.destroy', $user) }}">
+                                    <form method="POST"
+                                          action="{{ route('users.destroy', $user) }}"
+                                          data-swal-title="Delete User?"
+                                          data-swal-text="You are about to delete {{ $user->name }} ({{ $user->email }}). This action cannot be undone."
+                                          data-swal-confirm-text="Yes, delete user"
+                                          data-swal-cancel-text="Cancel"
+                                          data-swal-icon="warning"
+                                          data-swal-show-cancel-message="true"
+                                          data-swal-cancel-title="Deletion Cancelled"
+                                          data-swal-cancel-text="User {{ $user->name }} was not deleted.">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Delete this user?')">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

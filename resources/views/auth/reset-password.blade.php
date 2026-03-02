@@ -228,6 +228,10 @@
 
                     <p style="text-align: center; color: #94a3b8; font-size: 0.8125rem; margin: 0;">
                         &copy; {{ date('Y') }} LGU Document Tracking System. All rights reserved.
+                        <span style="display: block; margin-top: 4px; color: #2563eb; font-weight: 600;">
+                            Developed by SLSU BSIT Students
+                            <i class="bi bi-patch-check-fill" style="margin-left: 4px;"></i>
+                        </span>
                     </p>
                 </div>
             </div>

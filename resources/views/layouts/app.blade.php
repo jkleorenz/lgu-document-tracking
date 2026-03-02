@@ -520,6 +520,49 @@
                 margin-left: 0;
             }
         }
+
+        /* Shared pagination (Documents, Notifications, etc.) - no arrows, text only */
+        .pagination {
+            font-size: 0.875rem;
+            gap: 4px;
+        }
+        .pagination .page-link {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            min-width: 40px;
+            text-align: center;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        .pagination .page-link:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+            color: #212529;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: white;
+            font-weight: 600;
+        }
+        .pagination .page-item.disabled .page-link {
+            color: #6c757d;
+            background-color: #fff;
+            border-color: #dee2e6;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination .page-item:first-child .page-link,
+        .pagination .page-item:last-child .page-link {
+            padding: 0.5rem 1rem;
+        }
+        .pagination-wrap {
+            min-width: 0;
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -587,6 +630,14 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-3">
                     <span class="text-muted"><i class="bi bi-calendar3"></i> {{ date('F d, Y') }}</span>
+                    <button type="button"
+                            class="btn btn-link p-0 text-muted"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            title="Single Web Hosting will expire on 2026-04-01"
+                            aria-label="Single Web Hosting expiry information">
+                        <i class="bi bi-info-circle"></i>
+                    </button>
                 </div>
                 <div class="dropdown">
                     <a class="user-dropdown dropdown-toggle text-decoration-none" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -624,32 +675,16 @@
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Alerts -->
-            @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            @endif
-
-            @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            @endif
-
-            @if($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <ul class="mb-0">
-                    @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            @endif
+            @php
+                $swalFlashData = [
+                    'success' => session('success'),
+                    'error' => session('error') ?: session('message'),
+                    'validationErrors' => $errors->any() ? $errors->all() : [],
+                ];
+            @endphp
+            <script id="swal-flash-data" type="application/json">
+                @json($swalFlashData)
+            </script>
 
             @yield('content')
         </div>

@@ -58,12 +58,64 @@
     
     /* Title cell wrapper for tooltip - truncate only the title text */
     .title-cell {
-        display: inline-block;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
         max-width: calc(100% - 25px);
+        vertical-align: middle;
+        gap: 0.25rem;
+    }
+
+    .title-cell-text {
+        display: inline-block;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         vertical-align: middle;
+    }
+
+    .title-cell::after,
+    .title-cell::before {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .title-cell::after {
+        content: attr(data-full-title);
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 8px);
+        background: #1f2328;
+        color: #fff;
+        padding: 0.4rem 0.6rem;
+        border-radius: 0.45rem;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+        max-width: 360px;
+        white-space: normal;
+        line-height: 1.3;
+        z-index: 20;
+        transform: translateY(-4px);
+    }
+
+    .title-cell::before {
+        content: '';
+        position: absolute;
+        left: 12px;
+        bottom: calc(100% + 4px);
+        border: 6px solid transparent;
+        border-top-color: #1f2328;
+        z-index: 19;
+        transform: translateY(-4px);
+    }
+
+    .title-cell:hover::after,
+    .title-cell:hover::before,
+    .title-cell:focus-within::after,
+    .title-cell:focus-within::before {
+        opacity: 1;
+        transform: translateY(0);
     }
     
     /* Ensure status icons are always visible */
@@ -192,8 +244,8 @@
                         <tr onclick="window.location.href='{{ route('archive.show', $document) }}'">
                             <td class="text-center"><strong>{{ $document->document_number }}</strong></td>
                             <td>
-                                <span class="title-cell" title="{{ $document->title }}">
-                                    {{ $document->title }}
+                                <span class="title-cell" data-full-title="{{ $document->title }}">
+                                    <span class="title-cell-text">{{ $document->title }}</span>
                                 </span>
                                 @php
                                     // Get the status before archiving to show correct badge
@@ -224,9 +276,20 @@
                             <td class="text-center" onclick="event.stopPropagation();">
                                 <div class="d-flex gap-1 justify-content-center">
                                     @can('archive-documents')
-                                    <form method="POST" action="{{ route('archive.restore', $document) }}" class="d-inline">
+                                    <form method="POST"
+                                          action="{{ route('archive.restore', $document) }}"
+                                          class="d-inline"
+                                          data-swal-confirm="true"
+                                          data-swal-title="Retrieve Document?"
+                                          data-swal-text="Retrieve {{ $document->document_number }} - {{ Str::limit($document->title, 60) }} from archive?"
+                                          data-swal-confirm-text="Yes, retrieve"
+                                          data-swal-cancel-text="Cancel"
+                                          data-swal-icon="question"
+                                          data-swal-show-cancel-message="true"
+                                          data-swal-cancel-title="Retrieval Cancelled"
+                                          data-swal-cancel-text="Document {{ $document->document_number }} remained in archive.">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-success" title="Retrieve" onclick="event.stopPropagation(); return confirm('Retrieve this document from archive?')">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Retrieve" onclick="event.stopPropagation();">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
                                     </form>
@@ -235,10 +298,20 @@
                                     </a>
                                     @endcan
                                     @role('Administrator')
-                                    <form method="POST" action="{{ route('archive.destroy', $document) }}" class="d-inline">
+                                    <form method="POST"
+                                          action="{{ route('archive.destroy', $document) }}"
+                                          class="d-inline"
+                                          data-swal-title="Permanently Delete Archived Document?"
+                                          data-swal-text="Delete {{ $document->document_number }} - {{ Str::limit($document->title, 60) }} permanently? This cannot be undone."
+                                          data-swal-confirm-text="Yes, delete permanently"
+                                          data-swal-cancel-text="Cancel"
+                                          data-swal-icon="warning"
+                                          data-swal-show-cancel-message="true"
+                                          data-swal-cancel-title="Deletion Cancelled"
+                                          data-swal-cancel-text="Document {{ $document->document_number }} was not deleted.">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Permanently Delete" onclick="event.stopPropagation(); return confirm('⚠️ PERMANENTLY DELETE this document?\n\nThis action CANNOT be undone!\n\nDocument: {{ $document->document_number }}')">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Permanently Delete" onclick="event.stopPropagation();">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

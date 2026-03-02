@@ -804,6 +804,8 @@
 // ==============================================
 
 let currentDocumentId = null;
+let currentDocumentNumber = null;
+let currentDocumentTitle = null;
 let multiScanMode = localStorage.getItem('multiScanMode') === 'true' || false;
 let isProcessing = false;
 let enterKeyPressed = false;
@@ -1086,7 +1088,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Main Scanning Logic
     // ==============================================
 
-    function processScan() {
+    async function processScan() {
         let scannedValue = scannerInput.value.trim();
         let documentNumber = scannedValue;
         
@@ -1208,6 +1210,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 scanningIndicator.style.display = 'none';
                 enterKeyPressed = false;
+
+                if (!multiScanMode && data.status_changed && window.SwalHelper) {
+                    window.SwalHelper.success({
+                        title: 'Document Received',
+                        text: `Document ${data.document.document_number} (${data.document.title}) was marked as Received.`
+                    });
+                }
                 
                 // Add success feedback animation to input
                 scannerInput.classList.add('success-feedback');
@@ -1292,6 +1301,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function displayDocument(doc, detailsUrl) {
     currentDocumentId = doc.id;
+    currentDocumentNumber = doc.document_number;
+    currentDocumentTitle = doc.title;
     
     document.getElementById('doc-title').textContent = doc.title;
     document.getElementById('doc-number').textContent = doc.document_number;
@@ -1373,7 +1384,7 @@ function resetScanner() {
 }
 
 // Use event delegation for complete button (works even if button is dynamically added)
-document.addEventListener('click', function(e) {
+document.addEventListener('click', async function(e) {
     // Check if the clicked element is the complete button or inside it
     const completeBtn = e.target.closest('#complete-document-btn');
     if (completeBtn) {
@@ -1388,6 +1399,22 @@ document.addEventListener('click', function(e) {
             return false;
         }
         
+        // Confirm completion first
+        if (window.SwalHelper) {
+            const result = await window.SwalHelper.confirm({
+                title: 'Mark this document as Completed?',
+                text: `Document ${currentDocumentNumber || currentDocumentId} will be marked as completed and archived.`,
+                confirmButtonText: 'Yes, complete',
+                cancelButtonText: 'Cancel',
+                icon: 'question'
+            });
+            if (!result.isConfirmed) {
+                return false;
+            }
+        } else if (!window.SwalHelper && !confirm('Mark this document as Completed?')) {
+            return false;
+        }
+
         // Set the document ID in the hidden field
         const docIdField = document.getElementById('complete-document-id');
         if (docIdField) {
@@ -1600,60 +1627,21 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 if (data.success) {
-                    // Close the complete modal first, then show success modal when it's fully closed
                     const completeModalElement = document.getElementById('completeDocumentModal');
-                    const successModalElement = document.getElementById('completeSuccessModal');
-                    
-                    if (completeModalElement && successModalElement) {
-                        let successModalShown = false;
-                        
-                        // Function to show success modal
-                        const showSuccessModal = () => {
-                            if (successModalShown) return; // Prevent double-showing
-                            successModalShown = true;
-                            
-                            console.log('Showing complete success modal');
-                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                                try {
-                                    const successModal = new bootstrap.Modal(successModalElement);
-                                    successModal.show();
-                                } catch (e) {
-                                    console.error('Error showing success modal:', e);
-                                    // Fallback to alert
-                                    alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
-                                    setTimeout(() => location.reload(), 500);
-                                }
-                            } else {
-                                // Fallback to alert if Bootstrap not available
-                                alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
-                                setTimeout(() => location.reload(), 500);
-                            }
-                        };
-                        
-                        // Check if modal is already open and visible
-                        const isModalVisible = completeModalElement.classList.contains('show') || 
-                                             completeModalElement.style.display === 'block';
-                        
-                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal && isModalVisible) {
-                            const completeModal = bootstrap.Modal.getInstance(completeModalElement);
-                            if (completeModal) {
-                                // Listen for when modal is fully hidden
-                                completeModalElement.addEventListener('hidden.bs.modal', showSuccessModal, { once: true });
-                                completeModal.hide();
-                                // Fallback timeout in case event doesn't fire (will be ignored if event already fired)
-                                setTimeout(showSuccessModal, 1000);
-                            } else {
-                                // Modal instance not found, show success modal after short delay
-                                setTimeout(showSuccessModal, 300);
-                            }
-                        } else {
-                            // Modal not visible or Bootstrap not available, show success modal directly
-                            setTimeout(showSuccessModal, 300);
+                    if (completeModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modalInstance = bootstrap.Modal.getInstance(completeModalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
                         }
+                    }
+                    const successText = `Document ${data.document.document_number} (${data.document.title}) was marked as complete and archived successfully.`;
+                    if (window.SwalHelper) {
+                        window.SwalHelper.success({
+                            title: 'Document Completed',
+                            text: successText
+                        }).then(() => location.reload());
                     } else {
-                        // Fallback: if elements not found, use alert
-                        console.error('Modal elements not found');
-                        alert('Document marked as complete and approved successfully!\n\nThe document has been archived.');
+                        alert(successText);
                         setTimeout(() => location.reload(), 500);
                     }
                 } else {
@@ -1822,65 +1810,25 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 if (data.success) {
-                    // Clear form
                     if (remarksField) {
                         remarksField.value = '';
                     }
-                    
-                    // Close the return modal first, then show success modal when it's fully closed
                     const returnModalElement = document.getElementById('returnDocumentModal');
-                    const successModalElement = document.getElementById('returnSuccessModal');
-                    
-                    if (returnModalElement && successModalElement) {
-                        let successModalShown = false;
-                        
-                        // Function to show success modal
-                        const showSuccessModal = () => {
-                            if (successModalShown) return; // Prevent double-showing
-                            successModalShown = true;
-                            
-                            console.log('Showing return success modal');
-                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                                try {
-                                    const successModal = new bootstrap.Modal(successModalElement);
-                                    successModal.show();
-                                } catch (e) {
-                                    console.error('Error showing success modal:', e);
-                                    // Fallback to alert
-                                    alert('Document returned successfully!');
-                                    setTimeout(() => location.reload(), 500);
-                                }
-                            } else {
-                                // Fallback to alert if Bootstrap not available
-                                alert('Document returned successfully!');
-                                setTimeout(() => location.reload(), 500);
-                            }
-                        };
-                        
-                        // Check if modal is already open and visible
-                        const isModalVisible = returnModalElement.classList.contains('show') || 
-                                             returnModalElement.style.display === 'block';
-                        
-                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal && isModalVisible) {
-                            const returnModal = bootstrap.Modal.getInstance(returnModalElement);
-                            if (returnModal) {
-                                // Listen for when modal is fully hidden
-                                returnModalElement.addEventListener('hidden.bs.modal', showSuccessModal, { once: true });
-                                returnModal.hide();
-                                // Fallback timeout in case event doesn't fire (will be ignored if event already fired)
-                                setTimeout(showSuccessModal, 1000);
-                            } else {
-                                // Modal instance not found, show success modal after short delay
-                                setTimeout(showSuccessModal, 300);
-                            }
-                        } else {
-                            // Modal not visible or Bootstrap not available, show success modal directly
-                            setTimeout(showSuccessModal, 300);
+                    if (returnModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modalInstance = bootstrap.Modal.getInstance(returnModalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
                         }
+                    }
+
+                    const successText = `Document ${data.document.document_number} (${data.document.title}) was returned successfully.`;
+                    if (window.SwalHelper) {
+                        window.SwalHelper.success({
+                            title: 'Document Returned',
+                            text: successText
+                        }).then(() => location.reload());
                     } else {
-                        // Fallback: if elements not found, use alert
-                        console.error('Modal elements not found');
-                        alert('Document returned successfully!');
+                        alert(successText);
                         setTimeout(() => location.reload(), 500);
                     }
                 } else {

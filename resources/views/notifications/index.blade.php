@@ -18,51 +18,6 @@
     .notification-item:hover {
         background-color: rgba(0, 0, 0, 0.02);
     }
-    
-    /* Custom Pagination - No Arrows, Text Only */
-    .pagination {
-        font-size: 0.875rem;
-        gap: 4px;
-    }
-    
-    .pagination .page-link {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        min-width: 40px;
-        text-align: center;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
-        color: #495057;
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-    
-    .pagination .page-link:hover {
-        background-color: #e9ecef;
-        border-color: #adb5bd;
-        color: #212529;
-    }
-    
-    .pagination .page-item.active .page-link {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        color: white;
-        font-weight: 600;
-    }
-    
-    .pagination .page-item.disabled .page-link {
-        color: #6c757d;
-        background-color: #fff;
-        border-color: #dee2e6;
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    /* Previous/Next text styling */
-    .pagination .page-item:first-child .page-link,
-    .pagination .page-item:last-child .page-link {
-        padding: 0.5rem 1rem;
-    }
 </style>
 
 <div class="container-fluid">
@@ -145,67 +100,80 @@
                 <p class="text-muted mt-3">No notifications yet</p>
             </div>
             @endforelse
+
+            <div class="mt-3 px-3 pb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="text-muted small">
+                    Showing {{ $notifications->firstItem() ?? 0 }} to {{ $notifications->lastItem() ?? 0 }} of {{ $notifications->total() }} results
+                </div>
+                <div class="pagination-wrap">
+                    <nav aria-label="Notification pagination">
+                        <ul class="pagination mb-0">
+                            {{-- Previous Page Link --}}
+                            @if ($notifications->onFirstPage())
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $notifications->previousPageUrl() }}" rel="prev">Previous</a>
+                                </li>
+                            @endif
+
+                            {{-- Page Numbers --}}
+                            @foreach ($notifications->getUrlRange(1, $notifications->lastPage()) as $page => $url)
+                                @if ($page == $notifications->currentPage())
+                                    <li class="page-item active" aria-current="page">
+                                        <span class="page-link">{{ $page }}</span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                    </li>
+                                @endif
+                            @endforeach
+
+                            {{-- Next Page Link --}}
+                            @if ($notifications->hasMorePages())
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $notifications->nextPageUrl() }}" rel="next">Next</a>
+                                </li>
+                            @else
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next</span>
+                                </li>
+                            @endif
+                        </ul>
+                    </nav>
+                </div>
+            </div>
         </div>
-    </div>
-
-    <div class="mt-3 d-flex justify-content-between align-items-center">
-        <div class="text-muted small">
-            Showing {{ $notifications->firstItem() ?? 0 }} to {{ $notifications->lastItem() ?? 0 }} of {{ $notifications->total() }} results
-        </div>
-        <nav aria-label="Notification pagination">
-            <ul class="pagination mb-0">
-                {{-- Previous Page Link --}}
-                @if ($notifications->onFirstPage())
-                    <li class="page-item disabled">
-                        <span class="page-link">Previous</span>
-                    </li>
-                @else
-                    <li class="page-item">
-                        <a class="page-link" href="{{ $notifications->previousPageUrl() }}" rel="prev">Previous</a>
-                    </li>
-                @endif
-
-                {{-- Page Numbers --}}
-                @foreach ($notifications->getUrlRange(1, $notifications->lastPage()) as $page => $url)
-                    @if ($page == $notifications->currentPage())
-                        <li class="page-item active" aria-current="page">
-                            <span class="page-link">{{ $page }}</span>
-                        </li>
-                    @else
-                        <li class="page-item">
-                            <a class="page-link" href="{{ $url }}">{{ $page }}</a>
-                        </li>
-                    @endif
-                @endforeach
-
-                {{-- Next Page Link --}}
-                @if ($notifications->hasMorePages())
-                    <li class="page-item">
-                        <a class="page-link" href="{{ $notifications->nextPageUrl() }}" rel="next">Next</a>
-                    </li>
-                @else
-                    <li class="page-item disabled">
-                        <span class="page-link">Next</span>
-                    </li>
-                @endif
-            </ul>
-        </nav>
     </div>
 </div>
 
 <script>
-// Auto-mark all unread notifications as read when page loads
+// Auto-mark all unread notifications as read after a short delay when the page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Get all unread notification items
+    const autoReadDelayMs = 1500; // wait 1.5 seconds so users can scan the list
+    const staggerIntervalMs = 150; // spread requests to keep the UI responsive
+
     const unreadNotifications = document.querySelectorAll('.notification-item.unread');
-    
-    // Mark each unread notification as read
-    unreadNotifications.forEach(function(notificationElement) {
-        const notificationId = notificationElement.getAttribute('data-notification-id');
-        if (notificationId) {
-            markNotificationAsRead(notificationId, notificationElement);
-        }
-    });
+
+    if (!unreadNotifications.length) {
+        return;
+    }
+
+    setTimeout(() => {
+        unreadNotifications.forEach(function(notificationElement, index) {
+            const notificationId = notificationElement.getAttribute('data-notification-id');
+            if (!notificationId) {
+                return;
+            }
+
+            setTimeout(() => {
+                markNotificationAsRead(notificationId, notificationElement);
+            }, index * staggerIntervalMs);
+        });
+    }, autoReadDelayMs);
 });
 
 // Function to mark a notification as read via AJAX

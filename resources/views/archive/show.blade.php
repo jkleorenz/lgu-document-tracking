@@ -49,18 +49,37 @@
             </div>
             <div class="d-flex gap-2">
                 @can('archive-documents')
-                <form method="POST" action="{{ route('archive.restore', $document) }}">
+                <form method="POST"
+                      action="{{ route('archive.restore', $document) }}"
+                      data-swal-confirm="true"
+                      data-swal-title="Retrieve Document?"
+                      data-swal-text="Retrieve {{ $document->document_number }} - {{ Str::limit($document->title, 80) }} from archive?"
+                      data-swal-confirm-text="Yes, retrieve"
+                      data-swal-cancel-text="Cancel"
+                      data-swal-icon="question"
+                      data-swal-show-cancel-message="true"
+                      data-swal-cancel-title="Retrieval Cancelled"
+                      data-swal-cancel-text="Document {{ $document->document_number }} remained in archive.">
                     @csrf
-                    <button type="submit" class="btn btn-success btn-archive-action" onclick="return confirm('Retrieve this document from archive?')">
+                    <button type="submit" class="btn btn-success btn-archive-action">
                         <i class="bi bi-arrow-counterclockwise"></i> Retrieve Document
                     </button>
                 </form>
                 @endcan
                 @role('Administrator')
-                <form method="POST" action="{{ route('archive.destroy', $document) }}">
+                <form method="POST"
+                      action="{{ route('archive.destroy', $document) }}"
+                      data-swal-title="Permanently Delete Archived Document?"
+                      data-swal-text="Delete {{ $document->document_number }} - {{ Str::limit($document->title, 80) }} permanently? This action cannot be undone."
+                      data-swal-confirm-text="Yes, delete permanently"
+                      data-swal-cancel-text="Cancel"
+                      data-swal-icon="warning"
+                      data-swal-show-cancel-message="true"
+                      data-swal-cancel-title="Deletion Cancelled"
+                      data-swal-cancel-text="Document {{ $document->document_number }} was not deleted.">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-danger btn-archive-action" onclick="return confirm('⚠️ PERMANENTLY DELETE this document?\n\nThis action CANNOT be undone!\n\nDocument: {{ $document->document_number }}')">
+                    <button type="submit" class="btn btn-danger btn-archive-action">
                         <i class="bi bi-trash"></i> Delete Permanently
                     </button>
                 </form>

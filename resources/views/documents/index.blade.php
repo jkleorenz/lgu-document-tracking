@@ -4,51 +4,6 @@
 
 @section('content')
 <style>
-    /* Custom Pagination - No Arrows, Text Only */
-    .pagination {
-        font-size: 0.875rem;
-        gap: 4px;
-    }
-    
-    .pagination .page-link {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        min-width: 40px;
-        text-align: center;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
-        color: #495057;
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-    
-    .pagination .page-link:hover {
-        background-color: #e9ecef;
-        border-color: #adb5bd;
-        color: #212529;
-    }
-    
-    .pagination .page-item.active .page-link {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        color: white;
-        font-weight: 600;
-    }
-    
-    .pagination .page-item.disabled .page-link {
-        color: #6c757d;
-        background-color: #fff;
-        border-color: #dee2e6;
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    /* Previous/Next text styling */
-    .pagination .page-item:first-child .page-link,
-    .pagination .page-item:last-child .page-link {
-        padding: 0.5rem 1rem;
-    }
-
     /* ============================================
        UI/UX IMPROVEMENTS - Document Table
        ============================================ */
@@ -72,21 +27,70 @@
     /* Title column - truncate with ellipsis and show tooltip on hover */
     .table tbody td:nth-child(2) {
         max-width: 250px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
         position: relative;
         line-height: 1.4;
     }
     
     /* Title cell wrapper for tooltip */
     .title-cell {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        vertical-align: middle;
+        gap: 0.25rem;
+    }
+
+    .title-cell-text {
         display: inline-block;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         vertical-align: middle;
+    }
+
+    .title-cell::after,
+    .title-cell::before {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .title-cell::after {
+        content: attr(data-full-title);
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 8px);
+        background: #1f2328;
+        color: #fff;
+        padding: 0.4rem 0.6rem;
+        border-radius: 0.45rem;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+        max-width: 360px;
+        white-space: normal;
+        line-height: 1.3;
+        z-index: 20;
+        transform: translateY(-4px);
+    }
+
+    .title-cell::before {
+        content: '';
+        position: absolute;
+        left: 12px;
+        bottom: calc(100% + 4px);
+        border: 6px solid transparent;
+        border-top-color: #1f2328;
+        z-index: 19;
+        transform: translateY(-4px);
+    }
+
+    .title-cell:hover::after,
+    .title-cell:hover::before,
+    .title-cell:focus-within::after,
+    .title-cell:focus-within::before {
+        opacity: 1;
+        transform: translateY(0);
     }
     
     /* Type column - truncate with ellipsis and show tooltip on hover */
@@ -300,8 +304,8 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="title-cell" title="{{ $document->title }}">
-                                    {{ $document->title }}
+                                <span class="title-cell" data-full-title="{{ $document->title }}">
+                                    <span class="title-cell-text">{{ $document->title }}</span>
                                 </span>
                                 @php
                                     // For archived documents, check pre-archive status for icon display
@@ -360,28 +364,67 @@
                                 </span>
                             </td>
                             <td class="text-center"><small>{{ $document->created_at->format('M d, Y') }}</small></td>
-                            <td class="text-center" onclick="event.stopPropagation();">
-                                <div class="d-flex gap-1 justify-content-center">
-                                    @can('manage-documents')
-                                    @if($document->created_by == auth()->id() || auth()->user()->hasAnyRole(['Administrator', 'Mayor']))
-                                    <a href="{{ route('documents.edit', $document) }}" class="btn btn-sm btn-warning" title="Edit">
+                            <td class="text-end" onclick="event.stopPropagation();">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    @php
+                                        $currentUser = auth()->user();
+                                        $canEdit = $currentUser && $currentUser->can('manage-documents') && (
+                                            $document->created_by == $currentUser->id ||
+                                            $currentUser->hasAnyRole(['Administrator', 'Mayor'])
+                                        );
+                                        $canArchive = $currentUser && $currentUser->can('archive-documents') && !$document->isArchived();
+                                        $hasManagePermission = $currentUser && $currentUser->can('manage-documents');
+                                        $editTooltip = 'Edit document';
+                                        if (!$canEdit) {
+                                            $editTooltip = $hasManagePermission
+                                                ? 'Only the creator, Administrator, or Mayor can edit this document.'
+                                                : 'You do not have permission to edit documents.';
+                                        }
+
+                                        $alreadyArchived = $document->isArchived();
+                                        $hasArchivePermission = $currentUser && $currentUser->can('archive-documents');
+                                        $canArchive = $hasArchivePermission && !$alreadyArchived;
+                                        $archiveTooltip = $canArchive
+                                            ? 'Archive document'
+                                            : ($alreadyArchived
+                                                ? 'Document is already archived.'
+                                                : 'You do not have permission to archive documents.');
+                                    @endphp
+
+                                    <a href="{{ $canEdit ? route('documents.edit', $document) : 'javascript:void(0);' }}"
+                                       class="btn btn-sm btn-warning action-btn {{ $canEdit ? '' : 'action-btn--disabled' }}"
+                                       title="{{ $editTooltip }}"
+                                       @unless($canEdit) aria-disabled="true" tabindex="-1" @endunless>
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    @endif
-                                    @endcan
-                                    <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-sm btn-secondary" title="Print QR" target="_blank">
+
+                                    <a href="{{ route('documents.print-qr', $document) }}"
+                                       class="btn btn-sm btn-secondary action-btn"
+                                       title="Print QR" target="_blank">
                                         <i class="bi bi-qr-code"></i>
                                     </a>
-                                    @can('archive-documents')
-                                    @if($document->status != 'Archived')
-                                    <form method="POST" action="{{ route('documents.archive', $document) }}" class="d-inline">
+
+                                    <form method="POST"
+                                          action="{{ route('documents.archive', $document) }}"
+                                          class="d-inline"
+                                          data-swal-confirm="true"
+                                          data-swal-title="Archive Document?"
+                                          data-swal-text="Archive {{ $document->document_number }} - {{ Str::limit($document->title, 60) }}?"
+                                          data-swal-confirm-text="Yes, archive"
+                                          data-swal-cancel-text="Cancel"
+                                          data-swal-icon="warning"
+                                          data-swal-show-cancel-message="true"
+                                          data-swal-cancel-title="Archive Cancelled"
+                                          data-swal-cancel-text="Document {{ $document->document_number }} was not archived.">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-dark" title="Archive" onclick="event.stopPropagation(); return confirm('Archive this document?')">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-dark action-btn {{ $canArchive ? '' : 'action-btn--disabled' }} {{ $alreadyArchived ? 'action-btn--archived' : '' }}"
+                                                title="{{ $archiveTooltip }}"
+                                                onclick="event.stopPropagation();"
+                                                @unless($canArchive) disabled aria-disabled="true" @endunless>
                                             <i class="bi bi-archive"></i>
                                         </button>
                                     </form>
-                                    @endif
-                                    @endcan
                                 </div>
                             </td>
                         </tr>
@@ -397,12 +440,13 @@
                 </table>
             </div>
 
-            <div class="mt-3 d-flex justify-content-between align-items-center">
+            <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div class="text-muted small">
                     Showing {{ $documents->firstItem() ?? 0 }} to {{ $documents->lastItem() ?? 0 }} of {{ $documents->total() }} results
                 </div>
-                <nav aria-label="Document pagination">
-                    <ul class="pagination mb-0">
+                <div class="pagination-wrap">
+                    <nav aria-label="Document pagination">
+                        <ul class="pagination mb-0">
                         {{-- Previous Page Link --}}
                         @if ($documents->onFirstPage())
                             <li class="page-item disabled">
@@ -439,6 +483,7 @@
                         @endif
                     </ul>
                 </nav>
+                </div>
             </div>
         </div>
     </div>

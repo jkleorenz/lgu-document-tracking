@@ -151,7 +151,7 @@ class UserController extends Controller
         AuditLog::log('user.created', auth()->id(), User::class, $user->id, "User {$user->name} ({$user->email}) created by administrator", null, ['name' => $user->name, 'email' => $user->email, 'role' => $validated['role']], request()->ip(), request()->userAgent());
 
         return redirect()->route('users.index')
-            ->with('success', 'User created successfully!');
+            ->with('success', "User {$user->name} ({$user->email}) was created successfully.");
     }
 
     /**
@@ -218,8 +218,22 @@ class UserController extends Controller
         // Audit log
         AuditLog::log('user.updated', auth()->id(), User::class, $user->id, "User {$user->name} ({$user->email}) updated by administrator", array_merge($oldValues, ['role' => $oldRole]), $newValues, request()->ip(), request()->userAgent());
 
+        $changes = [];
+        foreach (['name', 'email', 'phone', 'department_id', 'status'] as $field) {
+            if (($oldValues[$field] ?? null) !== ($newValues[$field] ?? null)) {
+                $changes[] = ucfirst(str_replace('_', ' ', $field));
+            }
+        }
+        if ($oldRole !== $validated['role']) {
+            $changes[] = 'Role';
+        }
+
+        $changeSummary = !empty($changes)
+            ? (' Updated fields: ' . implode(', ', $changes) . '.')
+            : '';
+
         return redirect()->route('users.show', $user)
-            ->with('success', 'User updated successfully!');
+            ->with('success', "User {$user->name} ({$user->email}) was updated successfully." . $changeSummary);
     }
 
     /**
@@ -241,7 +255,7 @@ class UserController extends Controller
         AuditLog::log('user.deleted', auth()->id(), User::class, $user->id, "User {$userData['name']} ({$userData['email']}) deleted by administrator", $userData, null, request()->ip(), request()->userAgent());
 
         return redirect()->route('users.index')
-            ->with('success', 'User deleted successfully!');
+            ->with('success', "User {$userData['name']} ({$userData['email']}) was deleted successfully.");
     }
 
     /**

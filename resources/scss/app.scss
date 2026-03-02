@@ -30,6 +30,43 @@ body {
     font-weight: 500;
 }
 
+.action-btn {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.action-btn--disabled {
+    cursor: not-allowed;
+}
+
+.action-btn--disabled,
+.action-btn:disabled,
+.action-btn[aria-disabled="true"],
+.action-btn.disabled {
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+.action-btn--archived {
+    position: relative;
+}
+
+.action-btn--archived::after {
+    content: '\2713';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #198754;
+    color: #fff;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
+}
+
 .card {
     transition: transform 0.2s, box-shadow 0.2s;
 }

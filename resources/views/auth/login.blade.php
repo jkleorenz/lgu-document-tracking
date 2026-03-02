@@ -322,7 +322,13 @@
                                 </form>
 
                                 <div class="footer-text">
-                                    <small>&copy; {{ date('Y') }} LGU Document Tracking System. All rights reserved.</small>
+                                    <small>
+                                        &copy; {{ date('Y') }} LGU Document Tracking System. All rights reserved.
+                                        <span style="display: block; margin-top: 4px; color: #2563eb; font-weight: 600;">
+                                            Developed by SLSU BSIT Students
+                                            <i class="bi bi-patch-check-fill" style="margin-left: 4px;"></i>
+                                        </span>
+                                    </small>
                                 </div>
                             </div>
                         </div>

@@ -71,6 +71,36 @@
                 </h2>
                 <p class="text-muted">{{ $document->document_number }}</p>
             </div>
+            @php
+                $currentUser = auth()->user();
+                $canCompleteRetrieved = $document->status === 'Retrieved'
+                    && $currentUser
+                    && (
+                        $currentUser->hasRole('Administrator') ||
+                        ($document->department_id && $currentUser->department_id && $currentUser->department_id === $document->department_id)
+                    );
+                $canShowCompleteButton = in_array($document->status, ['Received', 'Under Review']) || $canCompleteRetrieved;
+                $canEdit = $currentUser && $currentUser->can('manage-documents') && (
+                    $document->created_by == $currentUser->id ||
+                    $currentUser->hasAnyRole(['Administrator', 'Mayor'])
+                );
+                $editTooltip = 'Edit document';
+                if (!$canEdit) {
+                    $hasManagePermission = $currentUser && $currentUser->can('manage-documents');
+                    $editTooltip = $hasManagePermission
+                        ? 'Only the creator, Administrator, or Mayor can edit this document.'
+                        : 'You do not have permission to edit documents.';
+                }
+
+                $alreadyArchived = $document->isArchived();
+                $hasArchivePermission = $currentUser && $currentUser->can('archive-documents');
+                $canArchive = $hasArchivePermission && !$alreadyArchived;
+                $archiveTooltip = $canArchive
+                    ? 'Archive document'
+                    : ($alreadyArchived
+                        ? 'Document is already archived.'
+                        : 'You do not have permission to archive documents.');
+            @endphp
             <div class="d-flex gap-2 align-items-center flex-wrap">
                 <!-- Administrator Verification Buttons -->
                 @role('Administrator')
@@ -89,11 +119,22 @@
 
                 <!-- Document Review Action Buttons -->
                 @if($document->status != 'Pending Verification' && $document->status != 'Rejected' && $document->status != 'Archived' && $document->status != 'Approved')
-                @if(in_array($document->status, ['Received', 'Under Review']))
-                <form method="POST" action="{{ route('documents.updateStatus', $document) }}" style="display: inline-block; margin: 0;">
+                @if($canShowCompleteButton)
+                <form method="POST" action="{{ route('documents.updateStatus', $document) }}"
+                      style="display: inline-block; margin: 0;"
+                      data-swal-confirm="true"
+                      data-swal-title="Mark Document Completed?"
+                      data-swal-text="Document {{ $document->document_number }} - {{ Str::limit($document->title, 80) }} will be marked as Completed and archived." 
+                      data-swal-confirm-text="Yes, complete"
+                      data-swal-cancel-text="Cancel"
+                      data-swal-icon="question"
+                      data-swal-show-cancel-message="true"
+                      data-swal-cancel-title="Completion Cancelled"
+                      data-swal-cancel-text="Document {{ $document->document_number }} remains unsent."
+                >
                     @csrf
                     <input type="hidden" name="status" value="Completed">
-                    <button type="submit" class="btn btn-primary btn-uniform" title="Complete Document" onclick="return confirm('Mark this document as Completed?')">
+                    <button type="submit" class="btn btn-primary btn-uniform" title="Complete Document">
                         <i class="bi bi-check-lg"></i>
                     </button>
                 </form>
@@ -105,29 +146,38 @@
                 @endif
                 @endif
 
-                @can('manage-documents')
-                @if($document->created_by == auth()->id() || auth()->user()->hasAnyRole(['Administrator', 'Mayor']))
-                <a href="{{ route('documents.edit', $document) }}" class="btn btn-warning btn-uniform" title="Edit Document">
+                <a href="{{ $canEdit ? route('documents.edit', $document) : 'javascript:void(0);' }}"
+                   class="btn btn-warning btn-uniform action-btn {{ $canEdit ? '' : 'action-btn--disabled' }}"
+                   title="{{ $editTooltip }}"
+                   @unless($canEdit) aria-disabled="true" tabindex="-1" @endunless>
                     <i class="bi bi-pencil"></i>
                 </a>
-                @endif
-                @endcan
-                <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-secondary btn-uniform" target="_blank" title="Print QR Code">
+                <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-secondary btn-uniform action-btn" target="_blank" title="Print QR Code">
                     <i class="bi bi-qr-code"></i>
                 </a>
                 <a href="{{ route('documents.report', ['document' => $document->id, 'format' => 'pdf']) }}" class="btn btn-info btn-uniform" title="Generate Report">
                     <i class="bi bi-file-earmark-text"></i>
                 </a>
-                @can('archive-documents')
-                @if($document->status != 'Archived')
-                <form method="POST" action="{{ route('documents.archive', $document) }}" style="display: inline-block; margin: 0;">
+                <form method="POST"
+                      action="{{ route('documents.archive', $document) }}"
+                      style="display: inline-block; margin: 0;"
+                      data-swal-confirm="true"
+                      data-swal-title="Archive Document?"
+                      data-swal-text="Archive {{ $document->document_number }} - {{ Str::limit($document->title, 80) }}?"
+                      data-swal-confirm-text="Yes, archive"
+                      data-swal-cancel-text="Cancel"
+                      data-swal-icon="warning"
+                      data-swal-show-cancel-message="true"
+                      data-swal-cancel-title="Archive Cancelled"
+                      data-swal-cancel-text="Document {{ $document->document_number }} was not archived.">
                     @csrf
-                    <button type="submit" class="btn btn-dark btn-uniform" title="Archive Document" onclick="return confirm('Are you sure you want to archive this document?')">
+                    <button type="submit"
+                            class="btn btn-dark btn-uniform action-btn {{ $canArchive ? '' : 'action-btn--disabled' }} {{ $alreadyArchived ? 'action-btn--archived' : '' }}"
+                            title="{{ $archiveTooltip }}"
+                            @unless($canArchive) disabled aria-disabled="true" @endunless>
                         <i class="bi bi-archive"></i>
                     </button>
                 </form>
-                @endif
-                @endcan
             </div>
         </div>
     </div>
