@@ -12,10 +12,15 @@ $info: #0dcaf0;
 // Bootstrap
 @import 'bootstrap/scss/bootstrap';
 
+// Custom Layout Styles
+@import 'layout';
+
+// Page Specific Styles
+@import 'login';
+
 // Custom Styles
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+/* Removed generic body font to allow layout/login styles to take precedence */
+
 
 .table {
     font-size: 0.9rem;

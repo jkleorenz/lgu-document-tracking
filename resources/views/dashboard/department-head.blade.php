@@ -17,7 +17,7 @@
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-4">
-            <a href="{{ route('documents.index', ['department' => auth()->user()->department_id]) }}" class="text-decoration-none">
+            <a href="{{ route('documents.index', ['status' => 'Active', 'department' => auth()->user()->department_id]) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #0d6efd;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -55,7 +55,7 @@
         </div>
 
         <div class="col-md-4">
-            <a href="{{ route('documents.index', ['priority' => '1', 'department' => auth()->user()->department_id]) }}" class="text-decoration-none">
+            <a href="{{ route('documents.index', ['priority' => '1', 'status' => 'Active', 'department' => auth()->user()->department_id]) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #dc3545;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">

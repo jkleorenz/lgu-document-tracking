@@ -144,6 +144,20 @@
         white-space: nowrap;
         vertical-align: middle;
     }
+
+    /* Created By column - truncate long names with ellipsis */
+    .table tbody td:nth-child(5) {
+        max-width: 180px;
+    }
+
+    .creator-name {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
     
     /* Hover effect for rows - make rows clickable */
     .table tbody tr {
@@ -201,16 +215,27 @@
                     <div class="col-md-4">
                         <input type="text" name="search" class="form-control" placeholder="Search archived documents..." value="{{ request('search') }}">
                     </div>
-                    <div class="col-md-3">
-                        <input type="date" name="from_date" class="form-control" placeholder="From Date" value="{{ request('from_date') }}">
+                    <div class="col-md-2">
+                        <input type="date" name="from_date" class="form-control" placeholder="Created From" value="{{ request('from_date') }}">
+                        @error('from_date')
+                            <div class="text-danger small">{{ $message }}</div>
+                        @enderror
                     </div>
-                    <div class="col-md-3">
-                        <input type="date" name="to_date" class="form-control" placeholder="To Date" value="{{ request('to_date') }}">
+                    <div class="col-md-2">
+                        <input type="date" name="to_date" class="form-control" placeholder="Created To" value="{{ request('to_date') }}">
+                        @error('to_date')
+                            <div class="text-danger small">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-info w-100">
                             <i class="bi bi-funnel"></i> Filter
                         </button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{{ route('archive.index') }}" class="btn btn-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
                     </div>
                 </div>
             </form>
@@ -241,7 +266,7 @@
                     </thead>
                     <tbody>
                         @forelse($archivedDocuments as $document)
-                        <tr onclick="window.location.href='{{ route('archive.show', $document) }}'">
+                        <tr class="clickable-row" data-href="{{ route('archive.show', $document) }}">
                             <td class="text-center"><strong>{{ $document->document_number }}</strong></td>
                             <td>
                                 <span class="title-cell" data-full-title="{{ $document->title }}">
@@ -264,7 +289,9 @@
                             </td>
                             <td class="text-center"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ Str::limit($document->document_type, 10) }}</span></td>
                             <td class="text-center">{{ $document->department->code ?? 'N/A' }}</td>
-                            <td class="text-center">{{ $document->creator->name ?? 'N/A' }}</td>
+                            <td class="text-center">
+                                <span class="creator-name" title="{{ $document->creator->name ?? 'N/A' }}">{{ Str::limit($document->creator->name ?? 'N/A', 12) }}</span>
+                            </td>
                             <td class="text-center">
                                 @if($document->archived_at)
                                     <small>{{ $document->archived_at->format('M d, Y') }}</small><br>
@@ -344,13 +371,57 @@
                             </li>
                         @else
                             <li class="page-item">
-                                <a class="page-link" href="{{ $archivedDocuments->previousPageUrl() }}" rel="prev">Previous</a>
+                                <a class="page-link" href="{{ $archivedDocuments->appends(request()->query())->previousPageUrl() }}" rel="prev">Previous</a>
                             </li>
                         @endif
 
-                        {{-- Page Numbers --}}
-                        @foreach ($archivedDocuments->getUrlRange(1, $archivedDocuments->lastPage()) as $page => $url)
-                            @if ($page == $archivedDocuments->currentPage())
+                        {{-- Custom Pagination Elements with 1-7 pages limit --}}
+                        @php
+                            $currentPage = $archivedDocuments->currentPage();
+                            $lastPage = $archivedDocuments->lastPage();
+                            $maxPages = 7;
+                            
+                            // Generate custom pagination elements
+                            $customElements = [];
+                            
+                            if ($lastPage <= $maxPages) {
+                                // Show all pages if total pages is less than or equal to max
+                                for ($i = 1; $i <= $lastPage; $i++) {
+                                    $customElements[$i] = $archivedDocuments->appends(request()->query())->url($i);
+                                }
+                            } else {
+                                // Show limited pages with ellipsis
+                                if ($currentPage <= 4) {
+                                    // Current page is in the first 4 pages
+                                    for ($i = 1; $i <= 5; $i++) {
+                                        $customElements[$i] = $archivedDocuments->appends(request()->query())->url($i);
+                                    }
+                                    $customElements['...'] = 'ellipsis';
+                                    $customElements[$lastPage] = $archivedDocuments->appends(request()->query())->url($lastPage);
+                                } elseif ($currentPage >= $lastPage - 3) {
+                                    // Current page is in the last 4 pages
+                                    $customElements[1] = $archivedDocuments->appends(request()->query())->url(1);
+                                    $customElements['...'] = 'ellipsis';
+                                    for ($i = $lastPage - 4; $i <= $lastPage; $i++) {
+                                        $customElements[$i] = $archivedDocuments->appends(request()->query())->url($i);
+                                    }
+                                } else {
+                                    // Current page is in the middle
+                                    $customElements[1] = $archivedDocuments->appends(request()->query())->url(1);
+                                    $customElements['...'] = 'ellipsis';
+                                    for ($i = $currentPage - 1; $i <= $currentPage + 1; $i++) {
+                                        $customElements[$i] = $archivedDocuments->appends(request()->query())->url($i);
+                                    }
+                                    $customElements['...'] = 'ellipsis';
+                                    $customElements[$lastPage] = $archivedDocuments->appends(request()->query())->url($lastPage);
+                                }
+                            }
+                        @endphp
+                        
+                        @foreach ($customElements as $page => $url)
+                            @if ($page === '...')
+                                <li class="page-item disabled" aria-disabled="true"><span class="page-link">...</span></li>
+                            @elseif ($page == $currentPage)
                                 <li class="page-item active" aria-current="page">
                                     <span class="page-link">{{ $page }}</span>
                                 </li>
@@ -364,7 +435,7 @@
                         {{-- Next Page Link --}}
                         @if ($archivedDocuments->hasMorePages())
                             <li class="page-item">
-                                <a class="page-link" href="{{ $archivedDocuments->nextPageUrl() }}" rel="next">Next</a>
+                                <a class="page-link" href="{{ $archivedDocuments->appends(request()->query())->nextPageUrl() }}" rel="next">Next</a>
                             </li>
                         @else
                             <li class="page-item disabled">

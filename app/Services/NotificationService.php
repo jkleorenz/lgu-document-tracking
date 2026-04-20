@@ -711,9 +711,9 @@ class NotificationService
         // Get retrieving department name for notification message
         $retrievingDepartment = $retrievedBy->department ? $retrievedBy->department->name : 'Unknown Department';
         
-        // A. Notify Creator (ALWAYS notify if creator exists and is not the one retrieving)
-        // This is critical: The creator must be notified when their document is retrieved by another department
-        if ($document->created_by && $document->created_by != $retrievedBy->id) {
+        // A. Notify Creator (ALWAYS notify if creator exists)
+        // This is critical: The creator must be notified when their document is retrieved.
+        if ($document->created_by) {
             try {
                 // Verify the creator user exists before sending notification
                 if (!$creator) {
@@ -722,7 +722,11 @@ class NotificationService
                 
                 if ($creator) {
                     // Create notification message mentioning 'Retrieved' status
-                    $message = "{$document->title} ({$document->document_number}) retrieved from archive by {$retrievedBy->name} from {$retrievingDepartment}. Status changed to 'Retrieved'.";
+                    if ($document->created_by == $retrievedBy->id) {
+                        $message = "{$document->title} ({$document->document_number}) retrieved from archive by you ({$retrievedBy->name}) from {$retrievingDepartment}. Status changed to 'Retrieved'.";
+                    } else {
+                        $message = "{$document->title} ({$document->document_number}) retrieved from archive by {$retrievedBy->name} from {$retrievingDepartment}. Status changed to 'Retrieved'.";
+                    }
                     
                     // Log before attempting to notify
                     Log::info('Attempting to notify creator of retrieved document', [
@@ -768,26 +772,14 @@ class NotificationService
                 ]);
             }
         } else {
-            // Log if creator notification was skipped
-            if (!$document->created_by) {
-                Log::warning('Skipped creator notification: document has no created_by field', [
-                    'document_id' => $document->id
-                ]);
-            } elseif ($document->created_by == $retrievedBy->id) {
-                Log::info('Skipped creator notification: creator is the same as retriever', [
-                    'document_id' => $document->id,
-                    'user_id' => $retrievedBy->id
-                ]);
-            }
+            Log::warning('Skipped creator notification: document has no created_by field', [
+                'document_id' => $document->id
+            ]);
         }
         
         // B. Notify Administrator (all events)
-        // Exclude the retriever if they're an admin, and exclude creator if they're also an admin
-        // (to avoid duplicate notifications since creator already got notified above)
+        // Exclude creator if they're also an admin (to avoid duplicate notifications since creator already got notified above)
         $excludeUserIds = [];
-        if ($retrievedBy->hasRole('Administrator')) {
-            $excludeUserIds[] = $retrievedBy->id;
-        }
         if ($creatorIsAdmin && $document->created_by) {
             $excludeUserIds[] = $document->created_by;
         }
@@ -801,4 +793,3 @@ class NotificationService
         );
     }
 }
-

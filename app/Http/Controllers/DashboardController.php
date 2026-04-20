@@ -95,18 +95,14 @@ class DashboardController extends Controller
         $user = Auth::user();
         
         $data = [
-            'myDocuments' => Document::where(function($query) use ($user) {
-                    // Documents created by the user
-                    $query->where('created_by', $user->id);
-                })
-                ->orWhere(function($query) use ($user) {
-                    // Documents forwarded to their department
+            'myDocuments' => Document::active()
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
+                ->where(function ($query) use ($user) {
                     if ($user->department_id) {
-                        $query->where('department_id', $user->department_id)
-                              ->whereIn('status', ['Forwarded', 'Received', 'Under Review']);
+                        $query->where('department_id', $user->department_id);
                     }
+                    $query->orWhere('created_by', $user->id);
                 })
-                ->active()
                 ->count(),
             // Count return documents: documents created by user OR documents returned to user's department
             'returnDocuments' => Document::where('status', 'Return')
@@ -121,8 +117,7 @@ class DashboardController extends Controller
                 })
                 ->count(),
             // Count completed documents:
-            // 1. Documents created by user with status='Completed' (includes archived-completed)
-            // 2. Documents completed by user's department with status='Completed' (includes archived-completed)
+            // Strictly counts only fully Completed documents, ignores abruptly/manually Archived ones.
             'completedDocuments' => Document::where('status', 'Completed')
                 ->where(function($q) use ($user) {
                     // Documents created by the user

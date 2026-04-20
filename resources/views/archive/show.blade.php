@@ -29,61 +29,70 @@
                 <li class="breadcrumb-item active">{{ $document->document_number }}</li>
             </ol>
         </nav>
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h2 class="fw-bold">
-                    <i class="bi bi-archive"></i> {{ $document->title }}
-                    @php
-                        // Get the status before archiving to show correct badge
-                        $preArchiveStatus = $document->getPreArchiveStatus();
-                        $displayStatus = $preArchiveStatus ?: $document->status;
-                    @endphp
-                    @if($displayStatus == 'Approved')
-                    <i class="bi bi-check-circle-fill text-success ms-2" title="Approved"></i>
-                    @endif
-                    @if($displayStatus == 'Rejected')
-                    <i class="bi bi-x-circle-fill text-danger ms-2" title="Rejected"></i>
-                    @endif
-                </h2>
-                <p class="text-muted">{{ $document->document_number }} <span class="badge bg-dark">ARCHIVED</span></p>
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-primary">
+                    {{ $document->document_number }}
+                </h5>
+                <span class="badge bg-dark">ARCHIVED</span>
             </div>
-            <div class="d-flex gap-2">
-                @can('archive-documents')
-                <form method="POST"
-                      action="{{ route('archive.restore', $document) }}"
-                      data-swal-confirm="true"
-                      data-swal-title="Retrieve Document?"
-                      data-swal-text="Retrieve {{ $document->document_number }} - {{ Str::limit($document->title, 80) }} from archive?"
-                      data-swal-confirm-text="Yes, retrieve"
-                      data-swal-cancel-text="Cancel"
-                      data-swal-icon="question"
-                      data-swal-show-cancel-message="true"
-                      data-swal-cancel-title="Retrieval Cancelled"
-                      data-swal-cancel-text="Document {{ $document->document_number }} remained in archive.">
-                    @csrf
-                    <button type="submit" class="btn btn-success btn-archive-action">
-                        <i class="bi bi-arrow-counterclockwise"></i> Retrieve Document
-                    </button>
-                </form>
-                @endcan
-                @role('Administrator')
-                <form method="POST"
-                      action="{{ route('archive.destroy', $document) }}"
-                      data-swal-title="Permanently Delete Archived Document?"
-                      data-swal-text="Delete {{ $document->document_number }} - {{ Str::limit($document->title, 80) }} permanently? This action cannot be undone."
-                      data-swal-confirm-text="Yes, delete permanently"
-                      data-swal-cancel-text="Cancel"
-                      data-swal-icon="warning"
-                      data-swal-show-cancel-message="true"
-                      data-swal-cancel-title="Deletion Cancelled"
-                      data-swal-cancel-text="Document {{ $document->document_number }} was not deleted.">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger btn-archive-action">
-                        <i class="bi bi-trash"></i> Delete Permanently
-                    </button>
-                </form>
-                @endrole
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-0">
+                            <i class="bi bi-archive me-2"></i>{{ $document->title }}
+                            @php
+                                // Get the status before archiving to show correct badge
+                                $preArchiveStatus = $document->getPreArchiveStatus();
+                                $displayStatus = $preArchiveStatus ?: $document->status;
+                            @endphp
+                            @if($displayStatus == 'Approved')
+                            <i class="bi bi-check-circle-fill text-success ms-2" title="Approved"></i>
+                            @endif
+                            @if($displayStatus == 'Rejected')
+                            <i class="bi bi-x-circle-fill text-danger ms-2" title="Rejected"></i>
+                            @endif
+                        </h2>
+                    </div>
+                    <div class="d-flex gap-2">
+                        @can('archive-documents')
+                        <form method="POST"
+                              action="{{ route('archive.restore', $document) }}"
+                              data-swal-confirm="true"
+                              data-swal-title="Retrieve Document?"
+                              data-swal-text="Retrieve {{ $document->document_number }} - {{ Str::limit($document->title, 80) }} from archive?"
+                              data-swal-confirm-text="Yes, retrieve"
+                              data-swal-cancel-text="Cancel"
+                              data-swal-icon="question"
+                              data-swal-show-cancel-message="true"
+                              data-swal-cancel-title="Retrieval Cancelled"
+                              data-swal-cancel-text="Document {{ $document->document_number }} remained in archive.">
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-archive-action">
+                                <i class="bi bi-arrow-counterclockwise"></i> Retrieve Document
+                            </button>
+                        </form>
+                        @endcan
+                        @role('Administrator')
+                        <form method="POST"
+                              action="{{ route('archive.destroy', $document) }}"
+                              data-swal-title="Permanently Delete Archived Document?"
+                              data-swal-text="Delete {{ $document->document_number }} - {{ Str::limit($document->title, 80) }} permanently? This action cannot be undone."
+                              data-swal-confirm-text="Yes, delete permanently"
+                              data-swal-cancel-text="Cancel"
+                              data-swal-icon="warning"
+                              data-swal-show-cancel-message="true"
+                              data-swal-cancel-title="Deletion Cancelled"
+                              data-swal-cancel-text="Document {{ $document->document_number }} was not deleted.">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-archive-action">
+                                <i class="bi bi-trash"></i> Delete Permanently
+                            </button>
+                        </form>
+                        @endrole
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -120,12 +129,13 @@
                                     $preArchiveStatus = $document->getPreArchiveStatus();
                                     $displayStatus = $preArchiveStatus ?: $document->status;
                                 @endphp
+                                @if($preArchiveStatus && $preArchiveStatus !== 'Archived')
+                                <span class="badge bg-{{ $preArchiveStatus == 'Approved' ? 'success' : ($preArchiveStatus == 'Completed' ? 'primary' : ($preArchiveStatus == 'Rejected' ? 'danger' : ($preArchiveStatus == 'Return' ? 'danger' : 'secondary'))) }}">
+                                    {{ $preArchiveStatus }}
+                                </span>
+                                @else
                                 <span class="badge bg-{{ $displayStatus == 'Approved' ? 'success' : ($displayStatus == 'Rejected' ? 'danger' : 'secondary') }}">
                                     {{ $document->status }}
-                                </span>
-                                @if($preArchiveStatus && $preArchiveStatus !== 'Archived')
-                                <span class="badge bg-{{ $preArchiveStatus == 'Approved' ? 'success' : ($preArchiveStatus == 'Completed' ? 'primary' : ($preArchiveStatus == 'Rejected' ? 'danger' : ($preArchiveStatus == 'Return' ? 'danger' : 'secondary'))) }} ms-2">
-                                    {{ $preArchiveStatus }}
                                 </span>
                                 @endif
                             </td>

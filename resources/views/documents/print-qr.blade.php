@@ -97,8 +97,12 @@
 
         <!-- QR Code -->
         <div class="qr-code">
-            @if($document->qr_code_path)
-            <img src="{{ asset($document->qr_code_path) }}" alt="QR Code">
+            @php
+                $printPath = $qrCodePath ?? $document->qr_code_path;
+            @endphp
+
+            @if($printPath)
+            <img src="{{ asset($printPath) }}" alt="QR Code">
             @else
             <p style="font-size: 8pt;">QR Code not available</p>
             @endif

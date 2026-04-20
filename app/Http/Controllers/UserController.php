@@ -161,12 +161,21 @@ class UserController extends Controller
     {
         $this->authorize('verify-users');
 
-        $user->load(['department', 'roles', 'createdDocuments', 'statusLogs']);
+        $user->load(['department', 'roles', 'statusLogs']);
         
-        // Get handling documents based on role
-        $handlingDocuments = $user->handlingDocuments()->get();
+        // Paginate created documents with a custom page name to avoid conflicts
+        $createdDocuments = $user->createdDocuments()
+            ->with(['department'])
+            ->latest()
+            ->paginate(10, ['*'], 'created_page');
+        
+        // Paginate handling documents with a custom page name
+        $handlingDocuments = $user->handlingDocuments()
+            ->with(['department'])
+            ->latest()
+            ->paginate(10, ['*'], 'handling_page');
 
-        return view('users.show', compact('user', 'handlingDocuments'));
+        return view('users.show', compact('user', 'createdDocuments', 'handlingDocuments'));
     }
 
     /**

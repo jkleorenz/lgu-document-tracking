@@ -44,14 +44,20 @@
             @forelse($notifications as $notification)
             <div class="notification-item d-flex align-items-start p-3 border-bottom {{ !$notification->is_read ? 'unread' : '' }}" data-notification-id="{{ $notification->id }}" style="cursor: pointer;" onclick="handleNotificationClick(event, {{ $notification->id }}, {{ !$notification->is_read ? 'true' : 'false' }})">
                 <div class="me-3">
-                    @if($notification->type == 'success')
-                    <i class="bi bi-check-circle-fill text-success" style="font-size: 1.5rem;"></i>
+                    @if(in_array($notification->title, ['Document Scanned via QR Code', 'Document Received via QR Scan']))
+                        <span aria-hidden="true" style="width: 24px; height: 24px; display: inline-block; background-color: var(--bs-primary); -webkit-mask: url('{{ asset('images/scanner.png') }}') no-repeat center / contain; mask: url('{{ asset('images/scanner.png') }}') no-repeat center / contain;"></span>
+                    @elseif($notification->title === 'Document Retrieved from Archive')
+                        <i class="bi bi-question-circle-fill text-warning" style="font-size: 1.5rem;"></i>
+                    @elseif(\Illuminate\Support\Str::startsWith($notification->title, 'Document Returned'))
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 1.5rem;"></i>
+                    @elseif($notification->type == 'success')
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 1.5rem;"></i>
                     @elseif($notification->type == 'warning')
-                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.5rem;"></i>
+                        <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.5rem;"></i>
                     @elseif($notification->type == 'danger')
-                    <i class="bi bi-x-circle-fill text-danger" style="font-size: 1.5rem;"></i>
+                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 1.5rem;"></i>
                     @else
-                    <i class="bi bi-info-circle-fill text-info" style="font-size: 1.5rem;"></i>
+                        <i class="bi bi-info-circle-fill text-info" style="font-size: 1.5rem;"></i>
                     @endif
                 </div>
                 
@@ -119,9 +125,53 @@
                                 </li>
                             @endif
 
-                            {{-- Page Numbers --}}
-                            @foreach ($notifications->getUrlRange(1, $notifications->lastPage()) as $page => $url)
-                                @if ($page == $notifications->currentPage())
+                            {{-- Custom Pagination Elements with 1-7 pages limit --}}
+                            @php
+                                $currentPage = $notifications->currentPage();
+                                $lastPage = $notifications->lastPage();
+                                $maxPages = 7;
+                                
+                                // Generate custom pagination elements
+                                $customElements = [];
+                                
+                                if ($lastPage <= $maxPages) {
+                                    // Show all pages if total pages is less than or equal to max
+                                    for ($i = 1; $i <= $lastPage; $i++) {
+                                        $customElements[$i] = $notifications->url($i);
+                                    }
+                                } else {
+                                    // Show limited pages with ellipsis
+                                    if ($currentPage <= 4) {
+                                        // Current page is in the first 4 pages
+                                        for ($i = 1; $i <= 5; $i++) {
+                                            $customElements[$i] = $notifications->url($i);
+                                        }
+                                        $customElements['...'] = 'ellipsis';
+                                        $customElements[$lastPage] = $notifications->url($lastPage);
+                                    } elseif ($currentPage >= $lastPage - 3) {
+                                        // Current page is in the last 4 pages
+                                        $customElements[1] = $notifications->url(1);
+                                        $customElements['...'] = 'ellipsis';
+                                        for ($i = $lastPage - 4; $i <= $lastPage; $i++) {
+                                            $customElements[$i] = $notifications->url($i);
+                                        }
+                                    } else {
+                                        // Current page is in the middle
+                                        $customElements[1] = $notifications->url(1);
+                                        $customElements['...'] = 'ellipsis';
+                                        for ($i = $currentPage - 1; $i <= $currentPage + 1; $i++) {
+                                            $customElements[$i] = $notifications->url($i);
+                                        }
+                                        $customElements['...'] = 'ellipsis';
+                                        $customElements[$lastPage] = $notifications->url($lastPage);
+                                    }
+                                }
+                            @endphp
+                            
+                            @foreach ($customElements as $page => $url)
+                                @if ($page === '...')
+                                    <li class="page-item disabled" aria-disabled="true"><span class="page-link">...</span></li>
+                                @elseif ($page == $currentPage)
                                     <li class="page-item active" aria-current="page">
                                         <span class="page-link">{{ $page }}</span>
                                     </li>
@@ -268,4 +318,3 @@ function handleNotificationClick(event, notificationId, isUnread) {
 }
 </script>
 @endsection
-

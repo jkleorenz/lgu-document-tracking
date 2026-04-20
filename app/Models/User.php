@@ -136,15 +136,10 @@ class User extends Authenticatable
         // Forwarded documents are considered active even if not yet received
         if (($this->hasRole('Department Head') || $this->hasRole('LGU Staff')) && $this->department_id) {
             return Document::active()
-                ->where(function($query) {
-                    // Documents forwarded to their department (including Forwarded status)
+                ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return'])
+                ->where(function ($query) {
                     $query->where('department_id', $this->department_id)
-                          ->whereIn('status', ['Pending', 'Received', 'Under Review', 'Forwarded', 'Return']);
-                })
-                ->orWhere(function($query) {
-                    // Documents created by the user
-                    $query->where('created_by', $this->id)
-                          ->whereIn('status', ['Pending', 'Under Review', 'Forwarded']);
+                          ->orWhere('created_by', $this->id);
                 })
                 ->count();
         }
@@ -255,4 +250,3 @@ class User extends Authenticatable
         ]);
     }
 }
-

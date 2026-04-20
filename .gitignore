@@ -6,6 +6,8 @@
 /public/qrcodes/*.png
 /public/qrcodes/*.svg
 /storage/*.key
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
 /storage/framework/cache/*
 !/storage/framework/cache/.gitignore
 /storage/framework/sessions/*

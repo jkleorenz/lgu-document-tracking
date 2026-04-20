@@ -53,7 +53,7 @@
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('documents.index', ['priority' => '1']) }}" class="text-decoration-none">
+            <a href="{{ route('documents.index', ['priority' => '1', 'status' => 'Active']) }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -98,35 +98,7 @@
         <h5 class="text-muted mb-3"><i class="bi bi-people"></i> User Management</h5>
     </div>
     <div class="row mb-4">
-        <div class="col-lg-6 mb-3">
-            <div class="card stat-card h-100 {{ $pendingVerifications > 0 ? 'border-warning' : '' }}">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <div class="stat-icon bg-warning bg-opacity-10">
-                                    <i class="bi bi-person-check text-warning"></i>
-                                </div>
-                                <h6 class="text-muted mb-0">Pending Verifications</h6>
-                            </div>
-                            <h2 class="fw-bold mb-0">{{ $pendingVerifications }}</h2>
-                            @if($pendingVerifications > 0)
-                            <p class="text-warning mb-0 mt-2"><small><i class="bi bi-exclamation-circle"></i> Action required</small></p>
-                            @else
-                            <p class="text-success mb-0 mt-2"><small><i class="bi bi-check-circle"></i> All users verified</small></p>
-                            @endif
-                        </div>
-                    </div>
-                    @if($pendingVerifications > 0)
-                    <a href="{{ route('users.pending') }}" class="btn btn-warning w-100 mt-2">
-                        <i class="bi bi-arrow-right-circle"></i> Review Pending Users
-                    </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-6 col-md-6 mb-3">
             <a href="{{ route('users.index') }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
@@ -144,13 +116,16 @@
             </a>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-6 col-md-6 mb-3">
             <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#departmentFilterModal">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="stat-icon bg-success bg-opacity-10">
-                                <i class="bi bi-building text-success"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="text-success" viewBox="0 0 16 16" aria-hidden="true">
+                                    <path d="M4 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM4 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM7.5 5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM4.5 8a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z" />
+                                    <path d="M2 1a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1zm11 0H3v14h3v-2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V15h3z" />
+                                </svg>
                             </div>
                             <span class="badge bg-success bg-opacity-10 text-success">Active</span>
                         </div>
@@ -267,7 +242,7 @@
                             </thead>
                             <tbody>
                                 @foreach($pendingUsers as $user)
-                                <tr>
+                                <tr class="clickable-row" data-href="{{ route('users.show', $user) }}">
                                     <td>{{ $user->name }}</td>
                                     <td>{{ $user->email }}</td>
                                     <td>{{ $user->department ? $user->department->name : 'N/A' }}</td>
@@ -308,7 +283,11 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="departmentFilterModalLabel">
-                    <i class="bi bi-building"></i> Filter Documents by Department
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-success me-2" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M4 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM4 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM7.5 5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM4.5 8a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z" />
+                        <path d="M2 1a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1zm11 0H3v14h3v-2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V15h3z" />
+                    </svg>
+                    Filter Documents by Department
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -331,7 +310,10 @@
                         <a href="{{ route('documents.index', ['department' => $dept->id]) }}" class="text-decoration-none">
                             <div class="card border h-100 hover-shadow" style="cursor: pointer; transition: all 0.2s;">
                                 <div class="card-body text-center py-3">
-                                    <i class="bi bi-building text-success" style="font-size: 1.5rem;"></i>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="text-success" viewBox="0 0 16 16" aria-hidden="true" style="font-size: 1.5rem;">
+                                        <path d="M4 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM4 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM7.5 5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM4.5 8a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z" />
+                                        <path d="M2 1a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1zm11 0H3v14h3v-2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V15h3z" />
+                                    </svg>
                                     <h6 class="mb-0 mt-2">{{ $dept->name }}</h6>
                                     <small class="text-muted">{{ $dept->code }}</small>
                                 </div>

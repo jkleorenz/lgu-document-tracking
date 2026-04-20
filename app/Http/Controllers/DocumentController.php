@@ -41,14 +41,18 @@ class DocumentController extends Controller
         
         // Base filter: Exclude manually archived documents (status='Archived')
         // But include completed documents even if they have archived_at set
-        $query->where(function($q) {
+        $query->where(function($q) use ($user) {
             // Include non-archived documents
-            $q->whereNull('archived_at')
-              // OR completed documents that are archived (archived-completed)
-              ->orWhere(function($completedQ) {
-                  $completedQ->where('status', 'Completed')
-                             ->whereNotNull('archived_at');
-              });
+            $q->whereNull('archived_at');
+            
+            // Only Administrators and Mayors see completed documents in the main documents table
+            if (!$user->hasRole('LGU Staff') && !$user->hasRole('Department Head')) {
+                // OR completed documents that are archived (archived-completed)
+                $q->orWhere(function($completedQ) {
+                    $completedQ->where('status', 'Completed')
+                               ->whereNotNull('archived_at');
+                });
+            }
         })->where('status', '!=', 'Archived');
 
         // Apply search filter
@@ -101,6 +105,10 @@ class DocumentController extends Controller
             } elseif ($status === 'Received') {
                 // Received: only active (non-archived) Received documents
                 $query->where('status', 'Received')
+                      ->whereNull('archived_at');
+            } elseif ($status === 'for_review') {
+                // For review: active documents with Received, Under Review, or Forwarded status
+                $query->whereIn('status', ['Received', 'Under Review', 'Forwarded'])
                       ->whereNull('archived_at');
             } else {
                 // For other statuses, filter by status and exclude archived
@@ -344,18 +352,8 @@ class DocumentController extends Controller
 
         // Ensure QR code exists; regenerate if missing
         try {
-            $qrPath = $document->qr_code_path;
-            $qrMissing = !$qrPath || !file_exists(public_path($qrPath));
-
-            if ($qrMissing) {
-                $qrCodePath = $this->qrCodeService->generateDocumentQRCode(
-                    $document->document_number,
-                    $document->id
-                );
-
-                $document->update(['qr_code_path' => $qrCodePath]);
-                $document->refresh();
-            }
+            $this->ensureDocumentQrCode($document);
+            $document->refresh();
         } catch (\Throwable $e) {
             // Log the error but allow the page to load
             Log::error('Failed to ensure QR code for document '.$document->id.': '.$e->getMessage());
@@ -851,6 +849,58 @@ class DocumentController extends Controller
         $qrCodePath = $this->qrCodeService->generatePrintableQRCode($document);
         
         return view('documents.print-qr', compact('document', 'qrCodePath'));
+    }
+
+    /**
+     * Serve the QR code image, regenerating it automatically if missing
+     */
+    public function serveQrCode(Request $request, Document $document)
+    {
+        try {
+            $forceRegenerate = $request->boolean('regenerate');
+            $qrPath = $this->ensureDocumentQrCode($document, $forceRegenerate);
+
+            $fullPath = $qrPath ? public_path($qrPath) : null;
+
+            if (!$fullPath || !file_exists($fullPath)) {
+                abort(404, 'QR code not available.');
+            }
+
+            $headers = [
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            ];
+
+            if ($request->boolean('download')) {
+                $filename = 'QRCode_'.$document->document_number.'.svg';
+                return response()->download($fullPath, $filename, $headers);
+            }
+
+            return response()->file($fullPath, $headers);
+        } catch (\Throwable $e) {
+            Log::error('Failed to serve QR code for document '.$document->id.': '.$e->getMessage());
+
+            return response('QR code unavailable.', 500);
+        }
+    }
+
+    /**
+     * Ensure the document has a QR code stored on disk
+     */
+    protected function ensureDocumentQrCode(Document $document, bool $forceRegenerate = false): ?string
+    {
+        $qrPath = $document->qr_code_path;
+        $qrMissing = $forceRegenerate || !$qrPath || !file_exists(public_path($qrPath));
+
+        if ($qrMissing) {
+            $qrPath = $this->qrCodeService->generateDocumentQRCode(
+                $document->document_number,
+                $document->id
+            );
+
+            $document->update(['qr_code_path' => $qrPath]);
+        }
+
+        return $qrPath;
     }
 
     /**

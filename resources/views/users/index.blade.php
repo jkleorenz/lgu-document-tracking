@@ -147,27 +147,17 @@
                             <th style="white-space: nowrap;">EMAIL</th>
                             <th class="text-center" style="white-space: nowrap;">DEPARTMENT</th>
                             <th class="text-center" style="white-space: nowrap;">ROLE</th>
-                            <th class="text-center" style="white-space: nowrap;">STATUS</th>
                             <th class="text-center" style="white-space: nowrap;">JOINED</th>
                             <th class="text-center" style="white-space: nowrap;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($users as $user)
-                        <tr>
+                        <tr class="clickable-row" data-href="{{ route('users.show', $user) }}">
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
                             <td class="text-center">{{ $user->department->name ?? 'N/A' }}</td>
                             <td class="text-center"><span class="badge bg-primary">{{ $user->roles->first()->name ?? 'No Role' }}</span></td>
-                            <td class="text-center">
-                                @if($user->status == 'verified')
-                                <span class="badge bg-success">Verified</span>
-                                @elseif($user->status == 'pending')
-                                <span class="badge bg-warning">Pending</span>
-                                @else
-                                <span class="badge bg-danger">Rejected</span>
-                                @endif
-                            </td>
                             <td class="text-center"><small>{{ $user->created_at->format('M d, Y') }}</small></td>
                             <td class="text-center">
                                 <div class="btn-group">
@@ -224,9 +214,53 @@
                             </li>
                         @endif
 
-                        {{-- Page Numbers --}}
-                        @foreach ($users->getUrlRange(1, $users->lastPage()) as $page => $url)
-                            @if ($page == $users->currentPage())
+                        {{-- Custom Pagination Elements with 1-7 pages limit --}}
+                        @php
+                            $currentPage = $users->currentPage();
+                            $lastPage = $users->lastPage();
+                            $maxPages = 7;
+                            
+                            // Generate custom pagination elements
+                            $customElements = [];
+                            
+                            if ($lastPage <= $maxPages) {
+                                // Show all pages if total pages is less than or equal to max
+                                for ($i = 1; $i <= $lastPage; $i++) {
+                                    $customElements[$i] = $users->url($i);
+                                }
+                            } else {
+                                // Show limited pages with ellipsis
+                                if ($currentPage <= 4) {
+                                    // Current page is in the first 4 pages
+                                    for ($i = 1; $i <= 5; $i++) {
+                                        $customElements[$i] = $users->url($i);
+                                    }
+                                    $customElements['...'] = 'ellipsis';
+                                    $customElements[$lastPage] = $users->url($lastPage);
+                                } elseif ($currentPage >= $lastPage - 3) {
+                                    // Current page is in the last 4 pages
+                                    $customElements[1] = $users->url(1);
+                                    $customElements['...'] = 'ellipsis';
+                                    for ($i = $lastPage - 4; $i <= $lastPage; $i++) {
+                                        $customElements[$i] = $users->url($i);
+                                    }
+                                } else {
+                                    // Current page is in the middle
+                                    $customElements[1] = $users->url(1);
+                                    $customElements['...'] = 'ellipsis';
+                                    for ($i = $currentPage - 1; $i <= $currentPage + 1; $i++) {
+                                        $customElements[$i] = $users->url($i);
+                                    }
+                                    $customElements['...'] = 'ellipsis';
+                                    $customElements[$lastPage] = $users->url($lastPage);
+                                }
+                            }
+                        @endphp
+                        
+                        @foreach ($customElements as $page => $url)
+                            @if ($page === '...')
+                                <li class="page-item disabled" aria-disabled="true"><span class="page-link">...</span></li>
+                            @elseif ($page == $currentPage)
                                 <li class="page-item active" aria-current="page">
                                     <span class="page-link">{{ $page }}</span>
                                 </li>

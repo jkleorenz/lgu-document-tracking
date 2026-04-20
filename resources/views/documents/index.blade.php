@@ -207,7 +207,9 @@
                             <option value="">All Status</option>
                             <option value="Active" {{ request('status') == 'Active' ? 'selected' : '' }}>Active</option>
                             <option value="Received" {{ request('status') == 'Received' ? 'selected' : '' }}>Received</option>
+                            @role('Administrator|Mayor')
                             <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                            @endrole
                             <option value="Return" {{ request('status') == 'Return' ? 'selected' : '' }}>Returned</option>
                         </select>
                     </div>
@@ -296,7 +298,7 @@
                     </thead>
                     <tbody>
                         @forelse($documents as $document)
-                        <tr class="{{ $document->is_priority ? 'table-warning' : '' }}" onclick="window.location.href='{{ route('documents.show', $document) }}'">
+                        <tr class="{{ $document->is_priority ? 'table-warning' : '' }} clickable-row" data-href="{{ route('documents.show', $document) }}">
                             <td class="text-center">
                                 <strong>{{ $document->document_number }}</strong>
                                 @if($document->is_priority)
@@ -304,28 +306,32 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="title-cell" data-full-title="{{ $document->title }}">
-                                    <span class="title-cell-text">{{ $document->title }}</span>
-                                </span>
-                                @php
-                                    // For archived documents, check pre-archive status for icon display
-                                    $iconStatus = $document->status;
-                                    if ($document->status === 'Archived') {
-                                        $preArchiveStatus = $document->getPreArchiveStatus();
-                                        if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved' || $preArchiveStatus === 'Completed')) {
-                                            $iconStatus = $preArchiveStatus;
+                                <div class="d-flex align-items-center" style="max-width: 100%;">
+                                    <span class="title-cell" data-full-title="{{ $document->title }}" style="min-width: 0;">
+                                        <span class="title-cell-text">{{ $document->title }}</span>
+                                    </span>
+                                    @php
+                                        // For archived documents, check pre-archive status for icon display
+                                        $iconStatus = $document->status;
+                                        if ($document->status === 'Archived') {
+                                            $preArchiveStatus = $document->getPreArchiveStatus();
+                                            if ($preArchiveStatus && ($preArchiveStatus === 'Rejected' || $preArchiveStatus === 'Approved' || $preArchiveStatus === 'Completed')) {
+                                                $iconStatus = $preArchiveStatus;
+                                            }
                                         }
-                                    }
-                                @endphp
-                                @if($iconStatus == 'Approved')
-                                <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
-                                @endif
-                                @if($iconStatus == 'Completed')
-                                <i class="bi bi-check-circle-fill text-primary" title="Completed" style="font-size: 0.9rem;"></i>
-                                @endif
-                                @if($iconStatus == 'Rejected')
-                                <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
-                                @endif
+                                    @endphp
+                                    <div class="flex-shrink-0 ms-1">
+                                        @if($iconStatus == 'Approved')
+                                        <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.9rem;"></i>
+                                        @endif
+                                        @if($iconStatus == 'Completed')
+                                        <i class="bi bi-check-circle-fill text-primary" title="Completed" style="font-size: 0.9rem;"></i>
+                                        @endif
+                                        @if($iconStatus == 'Rejected')
+                                        <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
+                                        @endif
+                                    </div>
+                                </div>
                             </td>
                             <td class="text-center"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ Str::limit($document->document_type, 10) }}</span></td>
                             <td class="text-center">
@@ -458,9 +464,53 @@
                             </li>
                         @endif
 
-                        {{-- Page Numbers --}}
-                        @foreach ($documents->getUrlRange(1, $documents->lastPage()) as $page => $url)
-                            @if ($page == $documents->currentPage())
+                        {{-- Custom Pagination Elements with 1-7 pages limit --}}
+                        @php
+                            $currentPage = $documents->currentPage();
+                            $lastPage = $documents->lastPage();
+                            $maxPages = 7;
+                            
+                            // Generate custom pagination elements
+                            $customElements = [];
+                            
+                            if ($lastPage <= $maxPages) {
+                                // Show all pages if total pages is less than or equal to max
+                                for ($i = 1; $i <= $lastPage; $i++) {
+                                    $customElements[$i] = $documents->url($i);
+                                }
+                            } else {
+                                // Show limited pages with ellipsis
+                                if ($currentPage <= 4) {
+                                    // Current page is in the first 4 pages
+                                    for ($i = 1; $i <= 5; $i++) {
+                                        $customElements[$i] = $documents->url($i);
+                                    }
+                                    $customElements['...'] = 'ellipsis';
+                                    $customElements[$lastPage] = $documents->url($lastPage);
+                                } elseif ($currentPage >= $lastPage - 3) {
+                                    // Current page is in the last 4 pages
+                                    $customElements[1] = $documents->url(1);
+                                    $customElements['...'] = 'ellipsis';
+                                    for ($i = $lastPage - 4; $i <= $lastPage; $i++) {
+                                        $customElements[$i] = $documents->url($i);
+                                    }
+                                } else {
+                                    // Current page is in the middle
+                                    $customElements[1] = $documents->url(1);
+                                    $customElements['...'] = 'ellipsis';
+                                    for ($i = $currentPage - 1; $i <= $currentPage + 1; $i++) {
+                                        $customElements[$i] = $documents->url($i);
+                                    }
+                                    $customElements['...'] = 'ellipsis';
+                                    $customElements[$lastPage] = $documents->url($lastPage);
+                                }
+                            }
+                        @endphp
+                        
+                        @foreach ($customElements as $page => $url)
+                            @if ($page === '...')
+                                <li class="page-item disabled" aria-disabled="true"><span class="page-link">...</span></li>
+                            @elseif ($page == $currentPage)
                                 <li class="page-item active" aria-current="page">
                                     <span class="page-link">{{ $page }}</span>
                                 </li>

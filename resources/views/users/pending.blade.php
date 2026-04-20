@@ -38,7 +38,7 @@
                     </thead>
                     <tbody>
                         @foreach($pendingUsers as $user)
-                        <tr>
+                        <tr class="clickable-row" data-href="{{ route('users.show', $user) }}">
                             <td><strong>{{ $user->name }}</strong></td>
                             <td>{{ $user->email }}</td>
                             <td>{{ $user->phone ?? 'N/A' }}</td>

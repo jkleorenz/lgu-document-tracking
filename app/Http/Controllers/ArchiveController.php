@@ -4,17 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Services\NotificationService;
+use App\Services\QRCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ArchiveController extends Controller
 {
     protected $notificationService;
+    protected $qrCodeService;
 
-    public function __construct(NotificationService $notificationService)
+    public function __construct(NotificationService $notificationService, QRCodeService $qrCodeService)
     {
         $this->notificationService = $notificationService;
+        $this->qrCodeService = $qrCodeService;
     }
     /**
      * Display archived documents
@@ -25,9 +29,8 @@ class ArchiveController extends Controller
         $user = Auth::user();
         
         // Archive page shows all archived documents
-        // These are documents with (status='Completed' OR status='Archived') AND archived_at IS NOT NULL
+        // These are all documents with archived_at IS NOT NULL
         $query = Document::with(['creator', 'department'])
-            ->whereIn('status', ['Completed', 'Archived'])
             ->whereNotNull('archived_at');
 
         // Filter based on user role
@@ -60,13 +63,19 @@ class ArchiveController extends Controller
             });
         }
 
-        // Apply date filter
+        // Validate date range (created_at)
+        $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+        ]);
+
+        // Apply created_at date filter (inclusive)
         if ($request->filled('from_date')) {
-            $query->whereDate('archived_at', '>=', $request->from_date);
+            $query->whereDate('created_at', '>=', $request->from_date);
         }
 
         if ($request->filled('to_date')) {
-            $query->whereDate('archived_at', '<=', $request->to_date);
+            $query->whereDate('created_at', '<=', $request->to_date);
         }
 
         $archivedDocuments = $query->with('statusLogs')->latest('archived_at')->paginate(15);
@@ -89,7 +98,8 @@ class ArchiveController extends Controller
         
         // Administrators can view all archived documents
         if ($user->hasRole('Administrator')) {
-            $document->load(['creator', 'department', 'statusLogs.updatedBy']);
+            $this->safelyEnsureQrCode($document);
+            $document->refresh()->load(['creator', 'department', 'statusLogs.updatedBy']);
             return view('archive.show', compact('document'));
         }
         
@@ -113,12 +123,35 @@ class ArchiveController extends Controller
                 abort(403, 'Unauthorized access to this document.');
             }
             
-            $document->load(['creator', 'department', 'statusLogs.updatedBy']);
+            $this->safelyEnsureQrCode($document);
+            $document->refresh()->load(['creator', 'department', 'statusLogs.updatedBy']);
             return view('archive.show', compact('document'));
         }
         
         // Other roles cannot view archived documents
         abort(403, 'Unauthorized access to this document.');
+    }
+
+    /**
+     * Ensure the archived document has a QR code file
+     */
+    protected function safelyEnsureQrCode(Document $document, bool $forceRegenerate = false): void
+    {
+        try {
+            $qrPath = $document->qr_code_path;
+            $qrMissing = $forceRegenerate || !$qrPath || !file_exists(public_path($qrPath));
+
+            if ($qrMissing) {
+                $newPath = $this->qrCodeService->generateDocumentQRCode(
+                    $document->document_number,
+                    $document->id
+                );
+
+                $document->update(['qr_code_path' => $newPath]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Failed to ensure QR code for archived document '.$document->id.': '.$e->getMessage());
+        }
     }
 
     /**
@@ -205,4 +238,3 @@ class ArchiveController extends Controller
             ->with('success', "Document {$documentNumber} has been permanently deleted.");
     }
 }
-

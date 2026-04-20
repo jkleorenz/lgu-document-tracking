@@ -67,6 +67,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('documents.reject');
     Route::get('/documents/{document}/print-qr', [DocumentController::class, 'printQRCode'])
         ->name('documents.print-qr');
+    Route::get('/documents/{document}/qr-code', [DocumentController::class, 'serveQrCode'])
+        ->name('documents.qr-code');
     Route::get('/documents/{document}/timeline', [DocumentController::class, 'timeline'])
         ->name('documents.timeline');
     Route::get('/documents/{document}/report', [DocumentController::class, 'generateReport'])
