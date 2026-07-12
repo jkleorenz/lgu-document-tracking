@@ -13,18 +13,54 @@
 </head>
 <body class="{{ Request::is('login') || Request::is('register') || Request::is('password/*') ? 'login-page' : '' }}">
     @auth
-    <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <button class="sidebar-collapse-toggle" id="sidebar-collapse-toggle" aria-label="Toggle sidebar">
+    <!-- Top Navigation Bar -->
+    <nav class="top-navbar" id="top-navbar">
+        <div class="navbar-left">
+            <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
                 <i class="bi bi-list"></i>
             </button>
-            <a href="{{ route('dashboard') }}">
-                <img src="{{ asset('favicon.png') }}" alt="favicon" class="sidebar-brand-icon">
+            <a href="{{ route('dashboard') }}" class="navbar-brand">
+                <img src="{{ asset('favicon.png') }}" alt="favicon" class="navbar-brand-icon">
+                <span class="navbar-brand-text">LGU DocTrack</span>
             </a>
-            <a href="{{ route('dashboard') }}" class="sidebar-brand-text text-decoration-none">LGU DocTrack</a>
         </div>
-        
+        <div class="navbar-right">
+            <div class="dropdown">
+                <a class="user-dropdown dropdown-toggle text-decoration-none" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    @if(auth()->user()->profile_picture)
+                        <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}" 
+                             alt="Profile" 
+                             class="rounded-circle" 
+                             style="width: 40px; height: 40px; object-fit: cover; margin-right: 8px;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                        <i class="bi bi-person-circle" style="font-size: 1.5rem; display: none;"></i>
+                    @else
+                        <i class="bi bi-person-circle" style="font-size: 1.5rem;"></i>
+                    @endif
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.9rem;">{{ auth()->user()->name }}</div>
+                        <small class="text-muted">{{ auth()->user()->roles->first()->name }}</small>
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="bi bi-person"></i> Profile</a></li>
+                    <li><a class="dropdown-item" href="{{ route('settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tooltip="Dashboard">
@@ -79,49 +115,6 @@
 
     <!-- Main Wrapper -->
     <div class="main-wrapper">
-        <!-- Top Navigation Bar -->
-        <nav class="top-navbar">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-3">
-                    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    <span class="text-muted"><i class="bi bi-calendar3"></i> {{ date('F d, Y') }}</span>
-                </div>
-                <div class="dropdown">
-                    <a class="user-dropdown dropdown-toggle text-decoration-none" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        @if(auth()->user()->profile_picture)
-                            <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}" 
-                                 alt="Profile" 
-                                 class="rounded-circle" 
-                                 style="width: 40px; height: 40px; object-fit: cover; margin-right: 8px;"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
-                            <i class="bi bi-person-circle" style="font-size: 1.5rem; display: none;"></i>
-                        @else
-                            <i class="bi bi-person-circle" style="font-size: 1.5rem;"></i>
-                        @endif
-                        <div>
-                            <div style="font-weight: 600; font-size: 0.9rem;">{{ auth()->user()->name }}</div>
-                            <small class="text-muted">{{ auth()->user()->roles->first()->name }}</small>
-                        </div>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="bi bi-person"></i> Profile</a></li>
-                        <li><a class="dropdown-item" href="{{ route('settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="dropdown-item text-danger">
-                                    <i class="bi bi-box-arrow-right"></i> Logout
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-
         <!-- Main Content -->
         <div class="main-content">
             @php
@@ -180,16 +173,18 @@
     });
     </script>
     
-    <!-- Sidebar Toggle Script -->
+    <!-- Sidebar Toggle Script (Mobile + Desktop) -->
     <script>
     (function() {
         const toggle = document.getElementById('sidebar-toggle');
-        const sidebar = document.querySelector('.sidebar');
+        const sidebar = document.getElementById('sidebar') || document.querySelector('.sidebar');
         const overlay = document.getElementById('sidebar-overlay');
+        const mainWrapper = document.querySelector('.main-wrapper');
         const body = document.body;
 
         if (!toggle || !sidebar || !overlay) return;
 
+        // Mobile: open/close sidebar overlay
         function openSidebar() {
             sidebar.classList.add('open');
             overlay.classList.add('active');
@@ -202,37 +197,14 @@
             body.classList.remove('sidebar-open');
         }
 
-        toggle.addEventListener('click', function() {
-            if (sidebar.classList.contains('open')) {
-                closeSidebar();
-            } else {
-                openSidebar();
-            }
-        });
+        // Desktop: collapse/expand sidebar
+        function collapseSidebar() {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            mainWrapper.classList.toggle('sidebar-collapsed', isCollapsed);
+            localStorage.setItem('sidebar-collapsed', isCollapsed);
+        }
 
-        overlay.addEventListener('click', closeSidebar);
-
-        sidebar.querySelectorAll('.nav-link').forEach(function(link) {
-            link.addEventListener('click', closeSidebar);
-        });
-
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 991) {
-                closeSidebar();
-            }
-        });
-    })();
-    </script>
-
-    <!-- Sidebar Collapse Script (Desktop) -->
-    <script>
-    (function() {
-        const sidebar = document.getElementById('sidebar') || document.querySelector('.sidebar');
-        const collapseToggle = document.getElementById('sidebar-collapse-toggle');
-        const mainWrapper = document.querySelector('.main-wrapper');
-        if (!sidebar || !collapseToggle || !mainWrapper) return;
-
-        // Load saved state on desktop only
+        // Load saved collapse state on desktop
         if (window.innerWidth > 991) {
             const saved = localStorage.getItem('sidebar-collapsed');
             if (saved === 'true') {
@@ -241,17 +213,48 @@
             }
         }
 
-        collapseToggle.addEventListener('click', function() {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            mainWrapper.classList.toggle('sidebar-collapsed', isCollapsed);
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
+        toggle.addEventListener('click', function() {
+            if (window.innerWidth <= 991) {
+                // Mobile: toggle overlay
+                if (sidebar.classList.contains('open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            } else {
+                // Desktop: toggle collapse
+                collapseSidebar();
+            }
         });
 
-        // Reset collapse on mobile resize
+        overlay.addEventListener('click', closeSidebar);
+
+        sidebar.querySelectorAll('.nav-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 991) {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Gmail-style peek: expand sidebar on hover when collapsed
+        sidebar.addEventListener('mouseenter', function() {
+            if (sidebar.classList.contains('collapsed')) {
+                mainWrapper.classList.add('sidebar-peeking');
+            }
+        });
+
+        sidebar.addEventListener('mouseleave', function() {
+            mainWrapper.classList.remove('sidebar-peeking');
+        });
+
+        // Reset on resize
         window.addEventListener('resize', function() {
             if (window.innerWidth <= 991) {
                 sidebar.classList.remove('collapsed');
                 mainWrapper.classList.remove('sidebar-collapsed');
+                mainWrapper.classList.remove('sidebar-peeking');
+                closeSidebar();
             }
         });
     })();

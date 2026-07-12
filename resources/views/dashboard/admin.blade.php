@@ -11,7 +11,7 @@
         </a>
     </div>
 
-    <!-- Document Statistics -->
+    <!-- Document Overview -->
     <div class="mb-3">
         <h5 class="text-muted mb-3"><i class="bi bi-file-text"></i> Document Overview</h5>
     </div>
@@ -93,7 +93,7 @@
         </div>
     </div>
 
-    <!-- User & System Statistics -->
+    <!-- User Management -->
     <div class="mb-3">
         <h5 class="text-muted mb-3"><i class="bi bi-people"></i> User Management</h5>
     </div>
@@ -138,9 +138,9 @@
         </div>
     </div>
 
-    <!-- Document Status Distribution -->
+    <!-- Document Status Distribution & Recent Documents -->
     <div class="row mb-4">
-        <div class="col-lg-5 mb-3">
+        <div class="col-12 mb-3">
             <div class="card h-100">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Document Status Distribution</h5>
@@ -163,7 +163,7 @@
             </div>
         </div>
 
-        <div class="col-lg-7 mb-3">
+        <div class="col-12 mb-3">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Documents</h5>
@@ -217,62 +217,6 @@
             </div>
         </div>
     </div>
-
-    @if($pendingUsers->count() > 0)
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-warning">
-                    <h5 class="mb-0"><i class="bi bi-person-exclamation"></i> Pending User Verifications</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Department</th>
-                                    <th>Role</th>
-                                    <th>Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($pendingUsers as $user)
-                                <tr class="clickable-row" data-href="{{ route('users.show', $user) }}">
-                                    <td data-label="Name">{{ $user->name }}</td>
-                                    <td data-label="Email">{{ $user->email }}</td>
-                                    <td data-label="Department">{{ $user->department ? $user->department->name : 'N/A' }}</td>
-                                    <td data-label="Role"><span class="badge bg-secondary">{{ $user->roles->first() ? $user->roles->first()->name : 'No Role' }}</span></td>
-                                    <td data-label="Date"><small>{{ $user->created_at->diffForHumans() }}</small></td>
-                                    <td data-label="Actions">
-                                        <div class="d-flex gap-2">
-                                            <form method="POST" action="{{ route('users.verify', $user) }}">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-success">
-                                                    <i class="bi bi-check-circle"></i> Verify
-                                                </button>
-                                            </form>
-                                            <form method="POST" action="{{ route('users.reject', $user) }}">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-danger" 
-                                                        onclick="return confirm('Are you sure you want to reject this user?')">
-                                                    <i class="bi bi-x-circle"></i> Reject
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
 </div>
 
 <!-- Department Filter Modal -->
@@ -345,4 +289,3 @@
 @endpush
 
 @endsection
-

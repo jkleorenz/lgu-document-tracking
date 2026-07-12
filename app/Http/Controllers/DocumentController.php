@@ -35,7 +35,7 @@ class DocumentController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->hasRole('Administrator') || $user->hasRole('Mayor')) {
+        if ($user->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff', 'Department Head'])) {
             return;
         }
 
