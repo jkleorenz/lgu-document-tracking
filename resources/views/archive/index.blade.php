@@ -130,6 +130,60 @@
         cursor: default;
         pointer-events: auto;
     }
+
+    /* Expandable Action Bar — above, right-aligned */
+    .action-bar {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .action-bar-trigger {
+        transition: transform 0.2s ease;
+    }
+
+    .action-bar.active .action-bar-trigger {
+        transform: rotate(90deg);
+    }
+
+    .action-bar-buttons {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        right: 0;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 6px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        z-index: 20;
+        gap: 4px;
+        align-items: center;
+        white-space: nowrap;
+    }
+
+    .action-bar-buttons::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        right: 10px;
+        border: 6px solid transparent;
+        border-top-color: #fff;
+    }
+
+    .action-bar.active .action-bar-buttons {
+        display: inline-flex;
+    }
+
+    /* Elevate active row so popover renders above all other rows */
+    tr:has(.action-bar.active) {
+        position: relative;
+        z-index: 30;
+    }
+
+    tr:has(.action-bar.active) td:last-child {
+        z-index: 31;
+    }
     
     /* Responsive adjustments */
     @media (max-width: 1200px) {
@@ -183,6 +237,28 @@
         }
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        var trigger = e.target.closest('.action-bar-trigger');
+        if (trigger) {
+            e.stopPropagation();
+            var bar = trigger.closest('.action-bar');
+            document.querySelectorAll('.action-bar.active').forEach(function(other) {
+                if (other !== bar) other.classList.remove('active');
+            });
+            bar.classList.toggle('active');
+            return;
+        }
+        if (!e.target.closest('.action-bar')) {
+            document.querySelectorAll('.action-bar.active').forEach(function(bar) {
+                bar.classList.remove('active');
+            });
+        }
+    }, true);
+});
+</script>
 <div class="container-fluid">
     <div class="mb-4">
         <h2 class="fw-bold"><i class="bi bi-archive"></i> Archived Documents</h2>
@@ -243,7 +319,7 @@
                             <th class="text-center" style="width: 12%; white-space: nowrap;">CURRENT DEPARTMENT</th>
                             <th class="text-center" style="width: 12%; white-space: nowrap;">CREATED BY</th>
                             <th class="text-center" style="width: 14%; white-space: nowrap;">ARCHIVED DATE</th>
-                            <th class="text-center" style="width: 18%; white-space: nowrap;">ACTIONS</th>
+                            <th class="text-center" style="width: 8%; white-space: nowrap;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -283,48 +359,54 @@
                                 @endif
                             </td>
                             <td class="text-center" data-label="Actions" onclick="event.stopPropagation();">
-                                <div class="d-flex gap-1 justify-content-center">
-                                    @can('archive-documents')
-                                    <form method="POST"
-                                          action="{{ route('archive.restore', $document) }}"
-                                          class="d-inline"
-                                          data-swal-confirm="true"
-                                          data-swal-title="Retrieve Document?"
-                                          data-swal-text="Retrieve {{ $document->document_number }} - {{ Str::limit($document->title, 60) }} from archive?"
-                                          data-swal-confirm-text="Yes, retrieve"
-                                          data-swal-cancel-text="Cancel"
-                                          data-swal-icon="question"
-                                          data-swal-show-cancel-message="true"
-                                          data-swal-cancel-title="Retrieval Cancelled"
-                                          data-swal-cancel-text="Document {{ $document->document_number }} remained in archive.">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-success" title="Retrieve" onclick="event.stopPropagation();">
-                                            <i class="bi bi-arrow-counterclockwise"></i>
-                                        </button>
-                                    </form>
-                                    <a href="{{ route('documents.report', ['document' => $document->id, 'format' => 'pdf']) }}" class="btn btn-sm btn-info" title="Generate Report" target="_blank">
-                                        <i class="bi bi-file-earmark-text"></i>
-                                    </a>
-                                    @endcan
-                                    @role('Administrator')
-                                    <form method="POST"
-                                          action="{{ route('archive.destroy', $document) }}"
-                                          class="d-inline"
-                                          data-swal-title="Permanently Delete Archived Document?"
-                                          data-swal-text="Delete {{ $document->document_number }} - {{ Str::limit($document->title, 60) }} permanently? This cannot be undone."
-                                          data-swal-confirm-text="Yes, delete permanently"
-                                          data-swal-cancel-text="Cancel"
-                                          data-swal-icon="warning"
-                                          data-swal-show-cancel-message="true"
-                                          data-swal-cancel-title="Deletion Cancelled"
-                                          data-swal-cancel-text="Document {{ $document->document_number }} was not deleted.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Permanently Delete" onclick="event.stopPropagation();">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                    @endrole
+                                <div class="action-bar" data-action-bar>
+                                    <button class="btn btn-sm btn-secondary action-btn action-bar-trigger" type="button" title="Actions" aria-label="Actions for {{ $document->document_number }}">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+
+                                    <div class="action-bar-buttons">
+                                        @can('archive-documents')
+                                        <form method="POST"
+                                              action="{{ route('archive.restore', $document) }}"
+                                              class="d-inline"
+                                              data-swal-confirm="true"
+                                              data-swal-title="Retrieve Document?"
+                                              data-swal-text="Retrieve {{ $document->document_number }} - {{ Str::limit($document->title, 60) }} from archive?"
+                                              data-swal-confirm-text="Yes, retrieve"
+                                              data-swal-cancel-text="Cancel"
+                                              data-swal-icon="question"
+                                              data-swal-show-cancel-message="true"
+                                              data-swal-cancel-title="Retrieval Cancelled"
+                                              data-swal-cancel-text="Document {{ $document->document_number }} remained in archive.">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-success action-btn" title="Retrieve" onclick="event.stopPropagation();">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                        <a href="{{ route('documents.report', ['document' => $document->id, 'format' => 'pdf']) }}" class="btn btn-sm btn-info action-btn" title="Generate Report" target="_blank">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </a>
+                                        @endcan
+                                        @role('Administrator')
+                                        <form method="POST"
+                                              action="{{ route('archive.destroy', $document) }}"
+                                              class="d-inline"
+                                              data-swal-title="Permanently Delete Archived Document?"
+                                              data-swal-text="Delete {{ $document->document_number }} - {{ Str::limit($document->title, 60) }} permanently? This cannot be undone."
+                                              data-swal-confirm-text="Yes, delete permanently"
+                                              data-swal-cancel-text="Cancel"
+                                              data-swal-icon="warning"
+                                              data-swal-show-cancel-message="true"
+                                              data-swal-cancel-title="Deletion Cancelled"
+                                              data-swal-cancel-text="Document {{ $document->document_number }} was not deleted.">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger action-btn" title="Permanently Delete" onclick="event.stopPropagation();">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        @endrole
+                                    </div>
                                 </div>
                             </td>
                         </tr>

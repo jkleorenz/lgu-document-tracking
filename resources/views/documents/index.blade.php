@@ -122,6 +122,60 @@
         box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
         min-width: 140px;
     }
+
+    /* Expandable Action Bar — above, right-aligned */
+    .action-bar {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .action-bar-trigger {
+        transition: transform 0.2s ease;
+    }
+
+    .action-bar.active .action-bar-trigger {
+        transform: rotate(90deg);
+    }
+
+    .action-bar-buttons {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        right: 0;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 6px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        z-index: 20;
+        gap: 4px;
+        align-items: center;
+        white-space: nowrap;
+    }
+
+    .action-bar-buttons::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        right: 10px;
+        border: 6px solid transparent;
+        border-top-color: #fff;
+    }
+
+    .action-bar.active .action-bar-buttons {
+        display: inline-flex;
+    }
+
+    /* Elevate active row so popover renders above all other rows */
+    tr:has(.action-bar.active) {
+        position: relative;
+        z-index: 30;
+    }
+
+    tr:has(.action-bar.active) td:last-child {
+        z-index: 31;
+    }
     
     /* Ensure header matches body for sticky column */
     .table thead th:last-child {
@@ -209,13 +263,30 @@
         .title-cell {
             max-width: 100%;
         }
-
-        .table tbody td:last-child .d-flex {
-            gap: 6px;
-            flex-wrap: wrap;
-        }
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        var trigger = e.target.closest('.action-bar-trigger');
+        if (trigger) {
+            e.stopPropagation();
+            var bar = trigger.closest('.action-bar');
+            document.querySelectorAll('.action-bar.active').forEach(function(other) {
+                if (other !== bar) other.classList.remove('active');
+            });
+            bar.classList.toggle('active');
+            return;
+        }
+        if (!e.target.closest('.action-bar')) {
+            document.querySelectorAll('.action-bar.active').forEach(function(bar) {
+                bar.classList.remove('active');
+            });
+        }
+    }, true);
+});
+</script>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold"><i class="bi bi-file-earmark-text"></i> Documents</h2>
@@ -392,67 +463,69 @@
                                 </span>
                             </td>
                             <td class="text-center" data-label="Date"><small>{{ $document->created_at->format('M d, Y') }}</small></td>
-                            <td class="text-end" data-label="Actions" onclick="event.stopPropagation();">
-                                <div class="d-flex gap-1 justify-content-end">
-                                    @php
-                                        $currentUser = auth()->user();
-                                        $canEdit = $currentUser && $currentUser->can('manage-documents') && (
-                                            $document->created_by == $currentUser->id ||
-                                            $currentUser->hasAnyRole(['Administrator', 'Mayor'])
-                                        );
-                                        $canArchive = $currentUser && $currentUser->can('archive-documents') && !$document->isArchived();
-                                        $hasManagePermission = $currentUser && $currentUser->can('manage-documents');
-                                        $editTooltip = 'Edit document';
-                                        if (!$canEdit) {
-                                            $editTooltip = $hasManagePermission
-                                                ? 'Only the creator, Administrator, or Mayor can edit this document.'
-                                                : 'You do not have permission to edit documents.';
-                                        }
+                            <td class="text-center" data-label="Actions" onclick="event.stopPropagation();">
+                                @php
+                                    $currentUser = auth()->user();
+                                    $canEdit = $currentUser && $currentUser->can('manage-documents') && (
+                                        $document->created_by == $currentUser->id ||
+                                        $currentUser->hasAnyRole(['Administrator', 'Mayor'])
+                                    );
+                                    $hasManagePermission = $currentUser && $currentUser->can('manage-documents');
+                                    $editTooltip = $canEdit ? 'Edit document' : ($hasManagePermission ? 'Only the creator, Administrator, or Mayor can edit this document.' : 'You do not have permission to edit documents.');
 
-                                        $alreadyArchived = $document->isArchived();
-                                        $hasArchivePermission = $currentUser && $currentUser->can('archive-documents');
-                                        $canArchive = $hasArchivePermission && !$alreadyArchived;
-                                        $archiveTooltip = $canArchive
-                                            ? 'Archive document'
-                                            : ($alreadyArchived
-                                                ? 'Document is already archived.'
-                                                : 'You do not have permission to archive documents.');
-                                    @endphp
+                                    $alreadyArchived = $document->isArchived();
+                                    $hasArchivePermission = $currentUser && $currentUser->can('archive-documents');
+                                    $canArchive = $hasArchivePermission && !$alreadyArchived;
+                                    $archiveTooltip = $canArchive ? 'Archive document' : ($alreadyArchived ? 'Document is already archived.' : 'You do not have permission to archive documents.');
+                                @endphp
 
-                                    <a href="{{ $canEdit ? route('documents.edit', $document) : 'javascript:void(0);' }}"
-                                       class="btn btn-sm btn-warning action-btn {{ $canEdit ? '' : 'action-btn--disabled' }}"
-                                       title="{{ $editTooltip }}"
-                                       @unless($canEdit) aria-disabled="true" tabindex="-1" @endunless>
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
+                                <div class="action-bar" data-action-bar>
+                                    <button class="btn btn-sm btn-secondary action-btn action-bar-trigger" type="button" title="Actions" aria-label="Actions for {{ $document->document_number }}">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
 
-                                    <a href="{{ route('documents.print-qr', $document) }}"
-                                       class="btn btn-sm btn-secondary action-btn"
-                                       title="Print QR" target="_blank">
-                                        <i class="bi bi-qr-code"></i>
-                                    </a>
+                                    <div class="action-bar-buttons">
+                                        <a href="{{ route('documents.show', $document) }}"
+                                           class="btn btn-sm btn-info action-btn"
+                                           title="View document">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
 
-                                    <form method="POST"
-                                          action="{{ route('documents.archive', $document) }}"
-                                          class="d-inline"
-                                          data-swal-confirm="true"
-                                          data-swal-title="Archive Document?"
-                                          data-swal-text="Archive {{ $document->document_number }} - {{ Str::limit($document->title, 60) }}?"
-                                          data-swal-confirm-text="Yes, archive"
-                                          data-swal-cancel-text="Cancel"
-                                          data-swal-icon="warning"
-                                          data-swal-show-cancel-message="true"
-                                          data-swal-cancel-title="Archive Cancelled"
-                                          data-swal-cancel-text="Document {{ $document->document_number }} was not archived.">
-                                        @csrf
-                                        <button type="submit"
-                                                class="btn btn-sm btn-dark action-btn {{ $canArchive ? '' : 'action-btn--disabled' }} {{ $alreadyArchived ? 'action-btn--archived' : '' }}"
-                                                title="{{ $archiveTooltip }}"
-                                                onclick="event.stopPropagation();"
-                                                @unless($canArchive) disabled aria-disabled="true" @endunless>
-                                            <i class="bi bi-archive"></i>
-                                        </button>
-                                    </form>
+                                        <a href="{{ $canEdit ? route('documents.edit', $document) : 'javascript:void(0);' }}"
+                                           class="btn btn-sm btn-warning action-btn {{ $canEdit ? '' : 'action-btn--disabled' }}"
+                                           title="{{ $editTooltip }}"
+                                           @unless($canEdit) aria-disabled="true" tabindex="-1" @endunless>
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+
+                                        <a href="{{ route('documents.print-qr', $document) }}"
+                                           class="btn btn-sm btn-secondary action-btn"
+                                           title="Print QR" target="_blank">
+                                            <i class="bi bi-qr-code"></i>
+                                        </a>
+
+                                        <form method="POST"
+                                              action="{{ route('documents.archive', $document) }}"
+                                              class="d-inline"
+                                              data-swal-confirm="true"
+                                              data-swal-title="Archive Document?"
+                                              data-swal-text="Archive {{ $document->document_number }} - {{ Str::limit($document->title, 60) }}?"
+                                              data-swal-confirm-text="Yes, archive"
+                                              data-swal-cancel-text="Cancel"
+                                              data-swal-icon="warning"
+                                              data-swal-show-cancel-message="true"
+                                              data-swal-cancel-title="Archive Cancelled"
+                                              data-swal-cancel-text="Document {{ $document->document_number }} was not archived.">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-dark action-btn {{ $canArchive ? '' : 'action-btn--disabled' }} {{ $alreadyArchived ? 'action-btn--archived' : '' }}"
+                                                    title="{{ $archiveTooltip }}"
+                                                    onclick="event.stopPropagation();"
+                                                    @unless($canArchive) disabled aria-disabled="true" @endunless>
+                                                <i class="bi bi-archive"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </td>
                         </tr>

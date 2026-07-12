@@ -14,20 +14,25 @@
 <body class="{{ Request::is('login') || Request::is('register') || Request::is('password/*') ? 'login-page' : '' }}">
     @auth
     <!-- Sidebar -->
-    <nav class="sidebar">
-        <a href="{{ route('dashboard') }}" class="sidebar-brand text-decoration-none">
-            <h5><img src="{{ asset('favicon.png') }}" alt="favicon" style="height:24px; width:24px; margin-right:6px;"> LGU DocTrack</h5>
-            <small>Document Management System</small>
-        </a>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <button class="sidebar-collapse-toggle" id="sidebar-collapse-toggle" aria-label="Toggle sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <a href="{{ route('dashboard') }}">
+                <img src="{{ asset('favicon.png') }}" alt="favicon" class="sidebar-brand-icon">
+            </a>
+            <a href="{{ route('dashboard') }}" class="sidebar-brand-text text-decoration-none">LGU DocTrack</a>
+        </div>
         
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tooltip="Dashboard">
                     <i class="bi bi-speedometer2"></i> <span class="nav-link-label">Dashboard</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link position-relative {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}">
+                <a class="nav-link position-relative {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}" data-tooltip="Documents">
                     <i class="bi bi-file-earmark-text"></i> <span class="nav-link-label">Documents</span>
                     @if(auth()->user()->pendingDocumentsCount() > 0)
                     <span class="notification-badge">{{ auth()->user()->pendingDocumentsCount() }}</span>
@@ -35,12 +40,12 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('scan.*') ? 'active' : '' }}" href="{{ route('scan.index') }}">
+                <a class="nav-link {{ request()->routeIs('scan.*') ? 'active' : '' }}" href="{{ route('scan.index') }}" data-tooltip="Scan QR Code">
                     <i class="bi bi-qr-code-scan"></i> <span class="nav-link-label">Scan QR Code</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link position-relative {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
+                <a class="nav-link position-relative {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}" data-tooltip="Notifications">
                     <i class="bi bi-bell"></i> <span class="nav-link-label">Notifications</span>
                     @php
                         try {
@@ -53,15 +58,15 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('archive.*') ? 'active' : '' }}" href="{{ route('archive.index') }}">
-                    <i class="bi bi-archive"></i> Archive
+                <a class="nav-link {{ request()->routeIs('archive.*') ? 'active' : '' }}" href="{{ route('archive.index') }}" data-tooltip="Archive">
+                    <i class="bi bi-archive"></i> <span class="nav-link-label">Archive</span>
                 </a>
             </li>
             
             @role('Administrator')
-            <div class="sidebar-section-title">ADMINISTRATION</div>
+            <div class="sidebar-section-title"><span class="sidebar-section-text">ADMINISTRATION</span></div>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}" data-tooltip="User Management">
                     <i class="bi bi-people"></i> <span class="nav-link-label">User Management</span>
                 </a>
             </li>
@@ -214,6 +219,39 @@
         window.addEventListener('resize', function() {
             if (window.innerWidth > 991) {
                 closeSidebar();
+            }
+        });
+    })();
+    </script>
+
+    <!-- Sidebar Collapse Script (Desktop) -->
+    <script>
+    (function() {
+        const sidebar = document.getElementById('sidebar') || document.querySelector('.sidebar');
+        const collapseToggle = document.getElementById('sidebar-collapse-toggle');
+        const mainWrapper = document.querySelector('.main-wrapper');
+        if (!sidebar || !collapseToggle || !mainWrapper) return;
+
+        // Load saved state on desktop only
+        if (window.innerWidth > 991) {
+            const saved = localStorage.getItem('sidebar-collapsed');
+            if (saved === 'true') {
+                sidebar.classList.add('collapsed');
+                mainWrapper.classList.add('sidebar-collapsed');
+            }
+        }
+
+        collapseToggle.addEventListener('click', function() {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            mainWrapper.classList.toggle('sidebar-collapsed', isCollapsed);
+            localStorage.setItem('sidebar-collapsed', isCollapsed);
+        });
+
+        // Reset collapse on mobile resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth <= 991) {
+                sidebar.classList.remove('collapsed');
+                mainWrapper.classList.remove('sidebar-collapsed');
             }
         });
     })();

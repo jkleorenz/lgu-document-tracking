@@ -273,6 +273,7 @@ php artisan route:clear          # Clear route cache
 php artisan config:clear         # Clear config cache
 php artisan view:clear           # Clear compiled views
 php artisan cache:clear          # Clear application cache
+php artisan qr:regenerate        # Regenerate missing QR codes (storage/app/qrcodes/)
 npm run build                    # Compile frontend assets
 ```
 
@@ -282,6 +283,5 @@ npm run build                    # Compile frontend assets
 
 - CSP `unsafe-inline` for `script-src` and `style-src` — 16 Blade templates have inline `<script>` blocks; needs refactor to external JS files
 - `password_reset_tokens` table exists but no routes use it (dead config)
-- `public/qrcodes/` directory still contains old QR code files from before security fix (should be migrated to `storage/app/qrcodes/`)
 - LGU Staff and Department Head have identical permissions — consider merging or differentiating
 - No self-service password reset — admin-only (by design choice)

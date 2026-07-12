@@ -932,7 +932,7 @@ class DocumentController extends Controller
     protected function ensureDocumentQrCode(Document $document, bool $forceRegenerate = false): ?string
     {
         $qrPath = $document->qr_code_path;
-        $qrMissing = $forceRegenerate || !$qrPath || !file_exists(public_path($qrPath));
+        $qrMissing = $forceRegenerate || !$qrPath || !file_exists(storage_path('app/' . $qrPath));
 
         if ($qrMissing) {
             $qrPath = $this->qrCodeService->generateDocumentQRCode(

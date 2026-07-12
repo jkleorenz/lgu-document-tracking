@@ -18,6 +18,103 @@
     .btn-archive-action i {
         font-size: 1.1rem;
     }
+
+    @media (max-width: 767.98px) {
+        .card-header.bg-white.py-3 {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 12px;
+        }
+        .card-header.bg-white.py-3 > h5 {
+            width: 100%;
+            word-break: break-word;
+        }
+        .card-header.bg-white.py-3 .badge {
+            align-self: flex-start;
+        }
+        .card-body > .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 12px;
+        }
+        .card-body > .d-flex.justify-content-between .d-flex.gap-2 {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .card-body > .d-flex.justify-content-between .btn {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .detail-table,
+        .detail-table tr,
+        .detail-table th,
+        .detail-table td {
+            display: block;
+            width: 100% !important;
+        }
+        .detail-table th {
+            min-width: 0 !important;
+            padding-bottom: 2px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+        }
+        .detail-table td {
+            text-align: left;
+            padding-top: 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .detail-table td:last-child {
+            border-bottom: none;
+        }
+
+        .timeline .d-flex.mb-3 {
+            flex-direction: row;
+            gap: 12px;
+            position: relative;
+            padding-left: 20px;
+        }
+        .timeline .d-flex.mb-3::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        .timeline .d-flex.mb-3:last-child::before {
+            bottom: 50%;
+        }
+        .timeline .d-flex.mb-3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 2px #e2e8f0;
+        }
+        .timeline .text-muted.me-3 {
+            min-width: auto !important;
+            margin-bottom: 0;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .timeline .border-start.border-2 {
+            border-left: none !important;
+            padding-left: 0 !important;
+        }
+    }
 </style>
 
 <div class="container-fluid">
@@ -105,7 +202,7 @@
                     <h5 class="mb-0">Document Details</h5>
                 </div>
                 <div class="card-body">
-                    <table class="table table-borderless">
+                    <table class="table table-borderless detail-table">
                         <tr>
                             <th width="200">Document Number:</th>
                             <td><strong>{{ $document->document_number }}</strong></td>
