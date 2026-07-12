@@ -247,6 +247,41 @@ body {
     margin-left: var(--sidebar-width);
 }
 
+/* Sidebar-collapsed: show all action buttons inline, hide ellipsis trigger */
+.sidebar-collapsed .action-bar .action-bar-buttons {
+    display: inline-flex !important;
+    position: relative;
+    bottom: auto;
+    right: auto;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    background: transparent;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-collapsed .action-bar .action-bar-trigger {
+    display: none !important;
+}
+
+.sidebar-collapsed .action-bar .action-bar-buttons::after {
+    display: none !important;
+}
+
+/* Peek state: revert to ellipsis when hovering collapsed sidebar */
+.sidebar-peeking .action-bar .action-bar-buttons {
+    display: none !important;
+}
+
+.sidebar-peeking .action-bar .action-bar-trigger {
+    display: inline-flex !important;
+}
+
+.sidebar-peeking .action-bar .action-bar-buttons::after {
+    display: block !important;
+}
+
 /* Main Content Area */
 .main-wrapper {
     margin-top: var(--top-navbar-height);

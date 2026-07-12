@@ -485,12 +485,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </button>
 
                                     <div class="action-bar-buttons">
-                                        <a href="{{ route('documents.show', $document) }}"
-                                           class="btn btn-sm btn-info action-btn"
-                                           title="View document">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-
                                         <a href="{{ $canEdit ? route('documents.edit', $document) : 'javascript:void(0);' }}"
                                            class="btn btn-sm btn-warning action-btn {{ $canEdit ? '' : 'action-btn--disabled' }}"
                                            title="{{ $editTooltip }}"

@@ -21,7 +21,7 @@
             </button>
             <a href="{{ route('dashboard') }}" class="navbar-brand">
                 <img src="{{ asset('favicon.png') }}" alt="favicon" class="navbar-brand-icon">
-                <span class="navbar-brand-text">LGU DocTrack</span>
+                <span class="navbar-brand-text">LGU Doctrack</span>
             </a>
         </div>
         <div class="navbar-right">
