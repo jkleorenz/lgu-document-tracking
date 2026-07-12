@@ -21,14 +21,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // #region agent log
-        $sessionDir = storage_path('framework/sessions');
-        $exists = is_dir($sessionDir);
-        $writable = $exists && is_writable($sessionDir);
-        $logPath = base_path('.cursor/debug.log');
-        @file_put_contents($logPath, json_encode(['hypothesisId'=>'H1','location'=>'AppServiceProvider::boot','message'=>'Session dir check','data'=>['sessionDir'=>$sessionDir,'exists'=>$exists,'writable'=>$writable],'timestamp'=>round(microtime(true)*1000),'sessionId'=>'debug-session','runId'=>'run1'])."\n", FILE_APPEND | LOCK_EX);
-        // #endregion
-
         // Define gates for additional access control
         Gate::define('verify-users', function ($user) {
             return $user->hasRole('Administrator');
@@ -36,10 +28,6 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('manage-documents', function ($user) {
             return $user->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff', 'Department Head']);
-        });
-
-        Gate::define('view-all-documents', function ($user) {
-            return $user->hasAnyRole(['Administrator', 'Mayor']);
         });
 
         Gate::define('archive-documents', function ($user) {

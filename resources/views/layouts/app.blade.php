@@ -15,10 +15,10 @@
     @auth
     <!-- Sidebar -->
     <nav class="sidebar">
-        <div class="sidebar-brand">
-            <h5><i class="bi bi-file-text"></i> LGU DocTrack</h5>
+        <a href="{{ route('dashboard') }}" class="sidebar-brand text-decoration-none">
+            <h5><img src="{{ asset('favicon.png') }}" alt="favicon" style="height:24px; width:24px; margin-right:6px;"> LGU DocTrack</h5>
             <small>Document Management System</small>
-        </div>
+        </a>
         
         <ul class="nav flex-column">
             <li class="nav-item">
@@ -69,12 +69,18 @@
         </ul>
     </nav>
 
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
     <!-- Main Wrapper -->
     <div class="main-wrapper">
         <!-- Top Navigation Bar -->
         <nav class="top-navbar">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation">
+                        <i class="bi bi-list"></i>
+                    </button>
                     <span class="text-muted"><i class="bi bi-calendar3"></i> {{ date('F d, Y') }}</span>
                 </div>
                 <div class="dropdown">
@@ -169,6 +175,50 @@
     });
     </script>
     
+    <!-- Sidebar Toggle Script -->
+    <script>
+    (function() {
+        const toggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const body = document.body;
+
+        if (!toggle || !sidebar || !overlay) return;
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+            body.classList.add('sidebar-open');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            body.classList.remove('sidebar-open');
+        }
+
+        toggle.addEventListener('click', function() {
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+
+        overlay.addEventListener('click', closeSidebar);
+
+        sidebar.querySelectorAll('.nav-link').forEach(function(link) {
+            link.addEventListener('click', closeSidebar);
+        });
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 991) {
+                closeSidebar();
+            }
+        });
+    })();
+    </script>
+
     <!-- Global Notification Badge Update Script -->
     <script>
     // Update notification badge on page load and periodically

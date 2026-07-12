@@ -5,12 +5,9 @@
 @section('content')
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Profile</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Profile'],
+        ]" />
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="fw-bold"><i class="bi bi-person-circle"></i> My Profile</h2>
             <a href="{{ route('profile.edit') }}" class="btn btn-primary">

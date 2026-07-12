@@ -5,13 +5,10 @@
 @section('content')
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('users.index') }}">Users</a></li>
-                <li class="breadcrumb-item active">Create User</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Users', 'url' => route('users.index')],
+            ['label' => 'Create User'],
+        ]" />
         <h2 class="fw-bold"><i class="bi bi-person-plus"></i> Create New User</h2>
     </div>
 

@@ -22,13 +22,10 @@
 
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('archive.index') }}">Archive</a></li>
-                <li class="breadcrumb-item active">{{ $document->document_number }}</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Archive', 'url' => route('archive.index')],
+            ['label' => $document->document_number],
+        ]" />
         <div class="card mb-4 shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-primary">
@@ -230,7 +227,7 @@
                 </div>
                 <div class="card-body text-center">
                     @if($document->qr_code_path)
-                    <img src="{{ asset($document->qr_code_path) }}" alt="QR Code" id="qr-code-image-archive" class="img-fluid mb-3" style="max-width: 250px;">
+                    <img src="{{ route('documents.qr-code', $document) }}" alt="QR Code" id="qr-code-image-archive" class="img-fluid mb-3" style="max-width: 250px;">
                     <div class="d-grid gap-2">
                         <a href="{{ route('documents.print-qr', $document) }}" class="btn btn-primary" target="_blank">
                             <i class="bi bi-printer"></i> Print QR Code
@@ -279,7 +276,7 @@ function saveQRCodeArchive() {
     
     // Get the image source
     const imageUrl = qrCodeImage.src;
-    const documentNumber = '{{ $document->document_number }}';
+    const documentNumber = @json($document->document_number);
     
     // Create a new image to load the QR code
     const img = new Image();

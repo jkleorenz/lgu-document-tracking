@@ -441,12 +441,37 @@
             transform: translateY(0);
         }
     }
+
+    @media (max-width: 767.98px) {
+        #scanner_input {
+            font-size: 1rem;
+            padding: 0.75rem 1rem;
+        }
+        .mode-toggle-card .card-body {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .inline-session-stats {
+            gap: 12px;
+            font-size: 0.85rem;
+        }
+        .scanner-input-wrapper .received-label {
+            display: none !important;
+        }
+        .d-flex.gap-2.mt-4 {
+            flex-wrap: wrap;
+        }
+        .d-flex.gap-2.mt-4 .btn {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+    }
 </style>
 
 <div class="container-fluid">
     <div class="mb-4">
         <h2 class="fw-bold"><i class="bi bi-qr-code-scan"></i> QR Code Scanner</h2>
-        <p class="text-muted">Scan document QR codes to receive document</p>
+        <p class="text-muted d-none d-sm-block">Scan document QR codes to receive document</p>
     </div>
 
     <!-- Document Result Display (Hidden by default, shown after scan) -->
@@ -803,6 +828,14 @@
 // Multi-Scan Mode: Global State Management
 // ==============================================
 
+// Safe HTML helper - escapes user data for use in innerHTML
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(String(str)));
+    return div.innerHTML;
+}
+
 let currentDocumentId = null;
 let currentDocumentNumber = null;
 let currentDocumentTitle = null;
@@ -918,13 +951,13 @@ function showScannedDocumentsModal() {
             listItem.innerHTML = `
                 <div class="d-flex w-100 justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                        <h6 class="mb-1 document-title">${doc.title}</h6>
-                        <p class="mb-1 document-number"><i class="bi bi-file-earmark-text"></i> ${doc.document_number}</p>
+                        <h6 class="mb-1 document-title">${escapeHtml(doc.title)}</h6>
+                        <p class="mb-1 document-number"><i class="bi bi-file-earmark-text"></i> ${escapeHtml(doc.document_number)}</p>
                         <small class="document-status">
-                            <span class="badge bg-${statusColor}">${doc.status}</span>
+                            <span class="badge bg-${escapeHtml(statusColor)}">${escapeHtml(doc.status)}</span>
                         </small>
                     </div>
-                    <small class="text-muted ms-3">${scanTime}</small>
+                    <small class="text-muted ms-3">${escapeHtml(scanTime)}</small>
                 </div>
             `;
             
@@ -1314,7 +1347,7 @@ function displayDocument(doc, detailsUrl) {
     document.getElementById('doc-description').textContent = doc.description || 'No description provided';
     document.getElementById('view-full-details').href = detailsUrl;
     
-    document.getElementById('doc-location').innerHTML = `<strong>${doc.department}</strong>`;
+    document.getElementById('doc-location').innerHTML = `<strong>${escapeHtml(doc.department)}</strong>`;
     
     const statusColors = {
         'Approved': 'success',
@@ -1329,7 +1362,7 @@ function displayDocument(doc, detailsUrl) {
         'Archived': 'secondary'
     };
     const statusColor = statusColors[doc.status] || 'secondary';
-    const statusBadge = `<span class="badge bg-${statusColor}">${doc.status}</span>`;
+    const statusBadge = `<span class="badge bg-${escapeHtml(statusColor)}">${escapeHtml(doc.status)}</span>`;
     
     document.getElementById('doc-status-badge').innerHTML = statusBadge;
     
@@ -2102,7 +2135,7 @@ function displayDocument(doc, detailsUrl) {
     
     // Current Location (big alert box)
     document.getElementById('doc-location').innerHTML = `
-        <strong>${doc.department}</strong>
+        <strong>${escapeHtml(doc.department)}</strong>
     `;
     
     // Status badge with color coding
@@ -2119,7 +2152,7 @@ function displayDocument(doc, detailsUrl) {
         'Archived': 'secondary'
     };
     const statusColor = statusColors[doc.status] || 'secondary';
-    const statusBadge = `<span class="badge bg-${statusColor}">${doc.status}</span>`;
+    const statusBadge = `<span class="badge bg-${escapeHtml(statusColor)}">${escapeHtml(doc.status)}</span>`;
     
     document.getElementById('doc-status-badge').innerHTML = statusBadge;
     

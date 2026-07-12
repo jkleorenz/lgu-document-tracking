@@ -5,13 +5,10 @@
 @section('content')
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('documents.index') }}">Documents</a></li>
-                <li class="breadcrumb-item active">Create Document</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Documents', 'url' => route('documents.index')],
+            ['label' => 'Create Document'],
+        ]" />
         <h2 class="fw-bold"><i class="bi bi-file-plus"></i> Generate Document QR</h2>
     </div>
 

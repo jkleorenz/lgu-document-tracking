@@ -92,6 +92,118 @@
 
     }
 
+    @media (max-width: 767.98px) {
+        .btn-uniform {
+            min-width: 38px;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            font-size: 0;
+        }
+        .btn-uniform i {
+            font-size: 1rem;
+        }
+        .btn-uniform:not(:has(i:only-child)) {
+            min-width: auto;
+            width: auto;
+            height: 38px;
+            padding: 0 10px;
+            font-size: 0.8rem;
+            gap: 4px;
+        }
+
+        .card-header.bg-white.py-3 {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 12px;
+        }
+        .card-header.bg-white.py-3 > h5 {
+            width: 100%;
+            word-break: break-word;
+        }
+        .card-header.bg-white.py-3 .d-flex.gap-2 {
+            width: 100%;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .detail-table,
+        .detail-table tr,
+        .detail-table th,
+        .detail-table td {
+            display: block;
+            width: 100% !important;
+        }
+        .detail-table th {
+            min-width: 0 !important;
+            padding-bottom: 2px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+        }
+        .detail-table td {
+            text-align: left;
+            padding-top: 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .detail-table td:last-child {
+            border-bottom: none;
+        }
+
+        .timeline .d-flex.mb-3 {
+            flex-direction: row;
+            gap: 12px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        /* Connected vertical line */
+        .timeline .d-flex.mb-3::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+
+        .timeline .d-flex.mb-3:last-child::before {
+            bottom: 50%;
+        }
+
+        /* Dot indicator */
+        .timeline .d-flex.mb-3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 2px #e2e8f0;
+        }
+
+        /* Date - compact */
+        .timeline .text-muted.me-3 {
+            min-width: auto !important;
+            margin-bottom: 0;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Status content */
+        .timeline .border-start.border-2 {
+            border-left: none !important;
+            padding-left: 0 !important;
+        }
+    }
+
 </style>
 
 
@@ -100,19 +212,10 @@
 
     <div class="mb-4">
 
-        <nav aria-label="breadcrumb">
-
-            <ol class="breadcrumb">
-
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-
-                <li class="breadcrumb-item"><a href="{{ route('documents.index') }}">Documents</a></li>
-
-                <li class="breadcrumb-item active">{{ $document->document_number }}</li>
-
-            </ol>
-
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Documents', 'url' => route('documents.index')],
+            ['label' => $document->document_number],
+        ]" />
 
         <div class="card mb-4 shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -265,11 +368,11 @@
 
                 <div class="card-body">
 
-                    <table class="table table-borderless">
+                    <table class="table table-borderless detail-table">
 
                         <tr>
 
-                            <th width="200">Document Number:</th>
+                            <th width="200" data-label="Document Number">Document Number:</th>
 
                             <td><strong>{{ $document->document_number }}</strong></td>
 
@@ -277,7 +380,7 @@
 
                         <tr>
 
-                            <th>Title:</th>
+                            <th data-label="Title">Title:</th>
 
                             <td>{{ $document->title }}</td>
 
@@ -285,7 +388,7 @@
 
                         <tr>
 
-                            <th>Type:</th>
+                            <th data-label="Type">Type:</th>
 
                             <td><span class="badge bg-secondary">{{ $document->document_type }}</span></td>
 
@@ -293,7 +396,7 @@
 
                         <tr>
 
-                            <th>Current Status:</th>
+                            <th data-label="Current Status">Current Status:</th>
 
                             <td>
 
@@ -409,7 +512,7 @@
 
                         <tr>
 
-                            <th>Current Department:</th>
+                            <th data-label="Current Department">Current Department:</th>
 
                             <td>
 
@@ -433,7 +536,7 @@
 
                         <tr>
 
-                            <th>Last Location:</th>
+                            <th data-label="Last Location">Last Location:</th>
 
                             <td>{{ $lastLocation ?? 'N/A' }}</td>
 
@@ -441,7 +544,7 @@
 
                         <tr>
 
-                            <th>Created By:</th>
+                            <th data-label="Created By">Created By:</th>
 
                             <td>{{ $document->creator ? $document->creator->name : 'Unknown' }}</td>
 
@@ -449,7 +552,7 @@
 
                         <tr>
 
-                            <th>Current Handler:</th>
+                            <th data-label="Current Handler">Current Handler:</th>
 
                             <td>
 
@@ -469,7 +572,7 @@
 
                         <tr>
 
-                            <th>Created Date:</th>
+                            <th data-label="Created Date">Created Date:</th>
 
                             <td>{{ $document->created_at->format('F d, Y h:i A') }}</td>
 
@@ -479,7 +582,7 @@
 
                         <tr>
 
-                            <th>Archived Date:</th>
+                            <th data-label="Archived Date">Archived Date:</th>
 
                             <td>{{ $document->archived_at->format('F d, Y h:i A') }}</td>
 
@@ -489,7 +592,7 @@
 
                         <tr>
 
-                            <th>Description:</th>
+                            <th data-label="Description">Description:</th>
 
                             <td>{{ $document->description ?? 'No description provided' }}</td>
 
@@ -1023,7 +1126,7 @@ function saveQRCode() {
 
     const imageUrl = `${qrCodeImage.dataset.qrSrc}?download=1&v=${Date.now()}`;
 
-    const documentNumber = '{{ $document->document_number }}';
+    const documentNumber = @json($document->document_number);
 
     
 

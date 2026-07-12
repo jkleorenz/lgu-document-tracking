@@ -12,7 +12,7 @@ class QRCodeService
      * 
      * @param string $documentNumber - The unique document identifier
      * @param int $documentId - The document ID
-     * @return string - Path to the generated QR code image
+     * @return string - Path to the generated QR code image (relative to storage/app)
      */
     public function generateDocumentQRCode($documentNumber, $documentId)
     {
@@ -30,13 +30,15 @@ class QRCodeService
         $filename = 'qrcode_' . $documentNumber . '.svg';
         $path = 'qrcodes/' . $filename;
         
-        // Ensure directory exists
-        if (!file_exists(public_path('qrcodes'))) {
-            mkdir(public_path('qrcodes'), 0755, true);
+        // Ensure directory exists in storage
+        $storagePath = storage_path('app/' . $path);
+        $dir = dirname($storagePath);
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
         }
         
-        // Save QR code to public directory
-        file_put_contents(public_path($path), $qrCode);
+        // Save QR code to storage (not public)
+        file_put_contents($storagePath, $qrCode);
         
         return $path;
     }
@@ -61,12 +63,14 @@ class QRCodeService
         $filename = 'printable_qrcode_' . $document->document_number . '.svg';
         $path = 'qrcodes/' . $filename;
         
-        // Ensure directory exists
-        if (!file_exists(public_path('qrcodes'))) {
-            mkdir(public_path('qrcodes'), 0755, true);
+        // Ensure directory exists in storage
+        $storagePath = storage_path('app/' . $path);
+        $dir = dirname($storagePath);
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
         }
         
-        file_put_contents(public_path($path), $qrCode);
+        file_put_contents($storagePath, $qrCode);
         
         return $path;
     }
@@ -74,13 +78,13 @@ class QRCodeService
     /**
      * Delete QR code file
      * 
-     * @param string $path - Path to the QR code file
+     * @param string $path - Path to the QR code file (relative to storage/app)
      * @return bool
      */
     public function deleteQRCode($path)
     {
-        $fullPath = public_path($path);
-        
+        $fullPath = storage_path('app/' . $path);
+
         if (file_exists($fullPath)) {
             return unlink($fullPath);
         }

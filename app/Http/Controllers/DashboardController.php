@@ -150,36 +150,5 @@ class DashboardController extends Controller
         
         return view('dashboard.staff', $data);
     }
-
-    /**
-     * Department Head Dashboard
-     * Shows documents forwarded to their department
-     */
-    private function departmentHeadDashboard()
-    {
-        $user = Auth::user();
-        
-        $data = [
-            'departmentDocuments' => Document::where('department_id', $user->department_id)
-                ->active()
-                ->count(),
-            'forReview' => Document::where('department_id', $user->department_id)
-                ->whereIn('status', ['Received', 'Under Review', 'Forwarded'])
-                ->active()
-                ->count(),
-            'priorityDocuments' => Document::where('department_id', $user->department_id)
-                ->where('is_priority', true)
-                ->active()
-                ->count(),
-            'recentDocuments' => Document::with(['creator', 'currentHandler'])
-                ->where('department_id', $user->department_id)
-                ->active()
-                ->latest()
-                ->take(10)
-                ->get(),
-        ];
-        
-        return view('dashboard.department-head', $data);
-    }
 }
 

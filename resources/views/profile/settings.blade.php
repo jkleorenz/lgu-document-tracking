@@ -5,12 +5,9 @@
 @section('content')
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Settings</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Settings'],
+        ]" />
         <h2 class="fw-bold"><i class="bi bi-gear"></i> Account Settings</h2>
     </div>
 

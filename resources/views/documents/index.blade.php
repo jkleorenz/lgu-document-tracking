@@ -173,6 +173,48 @@
             max-width: 120px;
         }
     }
+
+    @media (max-width: 767.98px) {
+        .table tbody td:nth-child(2),
+        .table tbody td:nth-child(3) {
+            max-width: none;
+            overflow: visible;
+        }
+
+        .table thead th:last-child,
+        .table tbody td:last-child {
+            position: static;
+            box-shadow: none;
+            min-width: auto;
+            background-color: transparent;
+        }
+
+        .table tbody tr.table-warning,
+        .table tbody tr.table-warning td,
+        .table tbody tr.table-warning:hover td {
+            --bs-table-bg: transparent;
+            background-color: transparent !important;
+        }
+
+        .title-cell::after,
+        .title-cell::before {
+            display: none !important;
+        }
+
+        .title-cell-text {
+            overflow: visible;
+            white-space: normal;
+        }
+
+        .title-cell {
+            max-width: 100%;
+        }
+
+        .table tbody td:last-child .d-flex {
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+    }
 </style>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -189,15 +231,15 @@
         <div class="card-header">
             <h6 class="mb-0">
                 <i class="bi bi-funnel"></i> Filters
-                @if(request()->hasAny(['search', 'status', 'department', 'priority']))
+                @if(request()->hasAny(['search', 'status', 'department', 'priority']) || request('sort') === 'oldest')
                 <span class="badge bg-info ms-2">Active</span>
                 @endif
             </h6>
         </div>
         <div class="card-body">
             <form method="GET" action="{{ route('documents.index') }}" id="filterForm">
-                <div class="row g-3">
-                    <div class="col-md-3">
+                <div class="row g-2">
+                    <div class="col-md-2">
                         <label class="form-label small">Search</label>
                         <input type="text" name="search" class="form-control" placeholder="Search documents..." value="{{ request('search') }}">
                     </div>
@@ -227,17 +269,21 @@
                     </div>
                     @endrole
                     <div class="col-md-2">
+                        <label class="form-label small">Sort By</label>
+                        <select name="sort" class="form-select">
+                            <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>Newest First</option>
+                            <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
                         <label class="form-label small">Priority</label>
-                        <div class="form-check mt-2">
+                        <div class="form-check mt-2" style="white-space: nowrap;">
                             <input class="form-check-input" type="checkbox" name="priority" id="priority" value="1" {{ request('priority') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="priority">
-                                Priority Only
-                            </label>
+                            <label class="form-check-label" for="priority">Priority Only</label>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label small">&nbsp;</label>
-                        <div>
+                    <div class="col-auto d-flex align-items-end">
+                        <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-info">
                                 <i class="bi bi-funnel"></i> Filter
                             </button>
@@ -251,30 +297,6 @@
         </div>
     </div>
 
-    <!-- Results Summary -->
-    @if(request()->hasAny(['search', 'status', 'department', 'priority']))
-    <div class="alert alert-info">
-        <strong><i class="bi bi-info-circle"></i> Showing filtered results:</strong>
-        @if(request('search'))
-            <span class="badge bg-primary">Search: "{{ request('search') }}"</span>
-        @endif
-        @if(request('status'))
-            <span class="badge bg-primary">Status: {{ request('status') === 'for_review' ? 'For Review' : request('status') }}</span>
-        @endif
-        @if(request('department'))
-            @php
-                $dept = $departments->find(request('department'));
-            @endphp
-            @if($dept)
-                <span class="badge bg-primary">Department: {{ $dept->name }}</span>
-            @endif
-        @endif
-        @if(request('priority'))
-            <span class="badge bg-warning">Priority Only</span>
-        @endif
-        <span class="ms-2">{{ $documents->total() }} {{ Str::plural('document', $documents->total()) }} found</span>
-    </div>
-    @endif
 
     <!-- Documents Table -->
     <div class="card">
@@ -299,13 +321,13 @@
                     <tbody>
                         @forelse($documents as $document)
                         <tr class="{{ $document->is_priority ? 'table-warning' : '' }} clickable-row" data-href="{{ route('documents.show', $document) }}">
-                            <td class="text-center">
+                            <td class="text-center" data-label="Document #">
                                 <strong>{{ $document->document_number }}</strong>
                                 @if($document->is_priority)
                                 <br><span class="badge badge-priority">PRIORITY</span>
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="Title">
                                 <div class="d-flex align-items-center" style="max-width: 100%;">
                                     <span class="title-cell" data-full-title="{{ $document->title }}" style="min-width: 0;">
                                         <span class="title-cell-text">{{ $document->title }}</span>
@@ -333,15 +355,15 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="text-center"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ Str::limit($document->document_type, 10) }}</span></td>
-                            <td class="text-center">
+                            <td class="text-center" data-label="Type"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ $document->document_type }}</span></td>
+                            <td class="text-center" data-label="Department">
                                 @if(in_array($document->status, ['Forwarded', 'Pending']))
                                 <span class="text-muted">N/A</span>
                                 @else
                                 {{ $document->department ? $document->department->code : 'N/A' }}
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" data-label="Status">
                                 @php
                                     // For archived documents, get the pre-archive status for display
                                     $displayStatus = $document->status;
@@ -369,8 +391,8 @@
                                     @endif
                                 </span>
                             </td>
-                            <td class="text-center"><small>{{ $document->created_at->format('M d, Y') }}</small></td>
-                            <td class="text-end" onclick="event.stopPropagation();">
+                            <td class="text-center" data-label="Date"><small>{{ $document->created_at->format('M d, Y') }}</small></td>
+                            <td class="text-end" data-label="Actions" onclick="event.stopPropagation();">
                                 <div class="d-flex gap-1 justify-content-end">
                                     @php
                                         $currentUser = auth()->user();

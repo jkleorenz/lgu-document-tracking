@@ -5,13 +5,10 @@
 @section('content')
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('users.index') }}">Users</a></li>
-                <li class="breadcrumb-item active">Pending Verifications</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Users', 'url' => route('users.index')],
+            ['label' => 'Pending Verifications'],
+        ]" />
         <h2 class="fw-bold"><i class="bi bi-person-exclamation"></i> Pending User Verifications</h2>
         <p class="text-muted">Review and approve user registration requests</p>
     </div>

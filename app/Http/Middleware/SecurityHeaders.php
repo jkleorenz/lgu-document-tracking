@@ -30,12 +30,16 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         
         // Content Security Policy
+        // Note: script-src and style-src keep 'unsafe-inline' due to widespread inline scripts and styles
+        // TODO: Refactor inline scripts/styles to external files to remove unsafe-inline
         $csp = "default-src 'self'; " .
                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " .
                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " .
                "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " .
                "img-src 'self' data: https:; " .
                "connect-src 'self'; " .
+               "object-src 'none'; " .
+               "base-uri 'self'; " .
                "frame-ancestors 'none';";
         $response->headers->set('Content-Security-Policy', $csp);
         

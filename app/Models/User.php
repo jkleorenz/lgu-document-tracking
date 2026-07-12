@@ -27,10 +27,6 @@ class User extends Authenticatable
         'department_id',
         'status',
         'profile_picture',
-        'failed_login_attempts',
-        'locked_until',
-        'last_login_at',
-        'last_login_ip',
     ];
 
     /**
@@ -64,30 +60,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user account is pending verification
-     */
-    public function isPending(): bool
-    {
-        return $this->status === 'pending';
-    }
-
-    /**
      * Get the department that the user belongs to
      */
     public function department()
     {
         return $this->belongsTo(Department::class);
-    }
-
-    /**
-     * Get the profile picture URL
-     */
-    public function getProfilePictureUrlAttribute()
-    {
-        if ($this->profile_picture) {
-            return asset('storage/' . $this->profile_picture);
-        }
-        return null;
     }
 
     /**

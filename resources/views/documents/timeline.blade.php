@@ -6,14 +6,11 @@
 <div class="container-fluid">
     <!-- Header -->
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('documents.index') }}">Documents</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('documents.show', $document) }}">{{ $document->document_number }}</a></li>
-                <li class="breadcrumb-item active">Timeline</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Documents', 'url' => route('documents.index')],
+            ['label' => $document->document_number, 'url' => route('documents.show', $document)],
+            ['label' => 'Timeline'],
+        ]" />
         
         <div class="d-flex justify-content-between align-items-start mb-4">
             <div>

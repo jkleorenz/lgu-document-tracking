@@ -11,34 +11,6 @@ use Illuminate\Support\Facades\Log;
 class NotificationService
 {
     /**
-     * Notify user about new document
-     */
-    public function notifyNewDocument($document, $recipientId)
-    {
-        return Notification::createNotification(
-            $recipientId,
-            'New Document Created',
-            "Document '{$document->title}' has been created and assigned to {$document->department->name}.",
-            'info',
-            $document->id
-        );
-    }
-
-    /**
-     * Notify user about document status update
-     */
-    public function notifyStatusUpdate($document, $recipientId, $newStatus)
-    {
-        return Notification::createNotification(
-            $recipientId,
-            'Document Status Updated',
-            "Document '{$document->title}' status has been updated to {$newStatus}.",
-            'success',
-            $document->id
-        );
-    }
-
-    /**
      * Notify user about priority document
      */
     public function notifyPriorityDocument($document, $recipientId)
@@ -62,20 +34,6 @@ class NotificationService
             'Document Forwarded',
             "Document '{$document->title}' has been forwarded to you.",
             'info',
-            $document->id
-        );
-    }
-
-    /**
-     * Notify user about document archiving
-     */
-    public function notifyDocumentArchived($document, $recipientId)
-    {
-        return Notification::createNotification(
-            $recipientId,
-            'Document Archived',
-            "Document '{$document->title}' has been archived.",
-            'success',
             $document->id
         );
     }
@@ -113,7 +71,7 @@ class NotificationService
      */
     public function notifyAdministrators($title, $message, $type = 'info', $documentId = null, $excludeUserIds = null)
     {
-        $admins = User::role('Administrator')
+        $admins = User::role(['Administrator', 'Mayor'])
             ->where('status', 'verified');
         
         // Exclude specific users if provided (to avoid duplicate notifications)
@@ -297,7 +255,7 @@ class NotificationService
         // B. Notify Administrator (all events)
         // Exclude forwarder if they're an admin to avoid duplicate (they already know they forwarded it)
         $excludeAdminIds = [];
-        if ($forwarder->hasRole('Administrator')) {
+        if ($forwarder->hasRole(['Administrator', 'Mayor'])) {
             $excludeAdminIds[] = $forwarder->id;
         }
         $this->notifyAdministrators(
@@ -319,7 +277,7 @@ class NotificationService
      */
     public function onDocumentReceivedViaQRScan($document, $scanner, $scannerDepartment)
     {
-        $scannerIsAdmin = $scanner->hasRole('Administrator');
+        $scannerIsAdmin = $scanner->hasRole(['Administrator', 'Mayor']);
         $scannerIsCreator = $document->created_by == $scanner->id;
         
         // Build the message once
@@ -334,7 +292,7 @@ class NotificationService
             } else {
                 $creator = User::find($document->created_by);
             }
-            $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
+            $creatorIsAdmin = $creator && $creator->hasRole(['Administrator', 'Mayor']);
         }
         
         // A. Notify Creator (ALWAYS notify if creator exists and is not the scanner)
@@ -376,7 +334,7 @@ class NotificationService
      */
     public function onDocumentScannedViaQR($document, $scanner, $scannerDepartment, $statusChanged = false)
     {
-        $scannerIsAdmin = $scanner->hasRole('Administrator');
+        $scannerIsAdmin = $scanner->hasRole(['Administrator', 'Mayor']);
         $scannerIsCreator = $document->created_by == $scanner->id;
         
         // Build appropriate message based on what changed
@@ -395,7 +353,7 @@ class NotificationService
             } else {
                 $creator = User::find($document->created_by);
             }
-            $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
+            $creatorIsAdmin = $creator && $creator->hasRole(['Administrator', 'Mayor']);
         }
         
         // A. Notify Creator (ALWAYS notify if creator exists and is not the scanner)
@@ -447,7 +405,7 @@ class NotificationService
                 $document->load('creator');
             }
             $creator = $document->creator;
-            $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
+            $creatorIsAdmin = $creator && $creator->hasRole(['Administrator', 'Mayor']);
             $creatorId = $document->created_by;
         }
         
@@ -467,7 +425,7 @@ class NotificationService
         
         // B. Notify Creator (status change notification - separate from department notification)
         // Creator gets notified regardless of which department they're in
-        if ($document->created_by && $document->created_by != $returnedBy->id && !$creatorIsAdmin) {
+        if ($document->created_by && $document->created_by != $returnedBy->id) {
             $this->notifyCreator(
                 $document,
                 'Document Returned',
@@ -479,7 +437,7 @@ class NotificationService
         // C. Notify Administrator (all events)
         // Exclude the returner if they're an admin, and exclude creator if they're also an admin
         $excludeAdminIds = [];
-        if ($returnedBy->hasRole('Administrator')) {
+        if ($returnedBy->hasRole(['Administrator', 'Mayor'])) {
             $excludeAdminIds[] = $returnedBy->id;
         }
         if ($creatorIsAdmin) {
@@ -512,7 +470,7 @@ class NotificationService
             } else {
                 $creator = User::find($document->created_by);
             }
-            $creatorIsAdmin = $creator && $creator->hasRole('Administrator');
+            $creatorIsAdmin = $creator && $creator->hasRole(['Administrator', 'Mayor']);
         }
         
         // A. Notify Creator (always notify if creator is not the one completing)
@@ -530,7 +488,7 @@ class NotificationService
         // Exclude the completer if they're an admin, and exclude creator if they're also an admin
         // (to avoid duplicate notifications since creator already got notified above)
         $excludeUserIds = [];
-        if ($completedBy->hasRole('Administrator')) {
+        if ($completedBy->hasRole(['Administrator', 'Mayor'])) {
             $excludeUserIds[] = $completedBy->id;
         }
         if ($creatorIsAdmin && $document->created_by) {
@@ -578,7 +536,7 @@ class NotificationService
                 $creator = User::find($document->created_by);
             }
             if ($creator) {
-                $creatorIsAdmin = $creator->hasRole('Administrator');
+                $creatorIsAdmin = $creator->hasRole(['Administrator', 'Mayor']);
             }
         }
         
@@ -656,7 +614,7 @@ class NotificationService
         // Exclude the archiver if they're an admin, and exclude creator if they're also an admin
         // (to avoid duplicate notifications since creator already got notified above)
         $excludeUserIds = [];
-        if ($archivedBy->hasRole('Administrator')) {
+        if ($archivedBy->hasRole(['Administrator', 'Mayor'])) {
             $excludeUserIds[] = $archivedBy->id;
         }
         if ($creatorIsAdmin && $document->created_by) {
@@ -704,7 +662,7 @@ class NotificationService
                 $creator = User::find($document->created_by);
             }
             if ($creator) {
-                $creatorIsAdmin = $creator->hasRole('Administrator');
+                $creatorIsAdmin = $creator->hasRole(['Administrator', 'Mayor']);
             }
         }
         

@@ -172,14 +172,6 @@ class Document extends Model
     }
 
     /**
-     * Scope to get only archived documents
-     */
-    public function scopeArchived($query)
-    {
-        return $query->whereNotNull('archived_at');
-    }
-
-    /**
      * Scope to get only active (non-archived) documents
      */
     public function scopeActive($query)

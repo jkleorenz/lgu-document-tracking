@@ -46,7 +46,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/picture', [ProfileController::class, 'updateProfilePicture'])->name('profile.picture');
     Route::delete('/profile/picture', [ProfileController::class, 'removeProfilePicture'])->name('profile.picture.remove');
-    Route::get('/profile/picture/{path}', [ProfileController::class, 'serveProfilePicture'])->where('path', '.*')->name('profile.picture.serve');
     Route::get('/settings', [ProfileController::class, 'settings'])->name('settings');
     Route::put('/settings/password', [ProfileController::class, 'updatePassword'])->name('settings.password');
     
@@ -76,7 +75,7 @@ Route::middleware(['auth'])->group(function () {
     
     // QR Code Scanner
     Route::get('/scan', [ScanController::class, 'index'])->name('scan.index');
-    Route::post('/scan', [ScanController::class, 'scan'])->name('scan.process');
+    Route::post('/scan', [ScanController::class, 'scan'])->name('scan.process')->middleware('throttle:scan');
     Route::post('/scan/quick-update', [ScanController::class, 'quickUpdate'])
         ->name('scan.quick-update');
     Route::post('/scan/complete', [ScanController::class, 'complete'])->name('scan.complete');
@@ -122,8 +121,6 @@ Route::middleware(['auth'])->group(function () {
             ->name('users.password.reset');
         Route::post('/users/{user}/password/reset', [UserController::class, 'resetPassword'])
             ->name('users.password.reset.store');
-        Route::get('/users/{user}/password/view', [UserController::class, 'viewPassword'])
-            ->name('users.password.view');
     });
 });
 

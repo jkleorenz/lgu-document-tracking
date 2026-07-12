@@ -8,7 +8,6 @@ use App\Models\AuditLog;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
@@ -130,10 +129,10 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'password' => ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()->symbols()->uncompromised()],
             'phone' => ['nullable', 'string', 'max:20'],
             'department_id' => ['required', 'exists:departments,id'],
-            'role' => ['required', 'string'],
+            'role' => ['required', 'string', 'in:Administrator,LGU Staff,Department Head'],
         ]);
 
         $user = User::create([
@@ -203,7 +202,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'department_id' => ['required', 'exists:departments,id'],
-            'role' => ['required', 'string'],
+            'role' => ['required', 'string', 'in:Administrator,LGU Staff,Department Head'],
             'status' => ['required', 'in:pending,verified,rejected'],
         ]);
 
@@ -285,7 +284,7 @@ class UserController extends Controller
         $this->authorize('reset user passwords');
 
         $validated = $request->validate([
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'password' => ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()->symbols()->uncompromised()],
         ]);
 
         // Use the provided password
@@ -296,34 +295,11 @@ class UserController extends Controller
             'password' => Hash::make($newPassword),
         ]);
 
-        // Store temporary password in cache for viewing (expires in 1 hour)
-        $cacheKey = 'user_temp_password_' . $user->id;
-        Cache::put($cacheKey, $newPassword, now()->addHour());
-
         // Audit log
         AuditLog::log('user.password_reset', auth()->id(), User::class, $user->id, "Password reset for user {$user->name} ({$user->email}) by administrator", null, ['password_reset' => true], request()->ip(), request()->userAgent());
 
-        return redirect()->route('users.password.view', $user)
-            ->with('success', "Password has been reset successfully for {$user->name}.");
-    }
-
-    /**
-     * View user's temporary password (Admin only)
-     * Shows the password that was set during the last reset (if within cache expiration)
-     */
-    public function viewPassword(User $user)
-    {
-        $this->authorize('view user passwords');
-
-        $cacheKey = 'user_temp_password_' . $user->id;
-        $tempPassword = Cache::get($cacheKey);
-
-        if (!$tempPassword) {
-            return redirect()->route('users.show', $user)
-                ->with('error', 'No temporary password found. Please reset the password first to view it.');
-        }
-
-        return view('users.view-password', compact('user', 'tempPassword'));
+        return redirect()->route('users.show', $user)
+            ->with('success', "Password has been reset successfully for {$user->name}. You must now share the new password with the user through a secure channel.");
     }
 }
 

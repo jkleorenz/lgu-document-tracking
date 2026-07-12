@@ -102,7 +102,7 @@
             @endphp
 
             @if($printPath)
-            <img src="{{ asset($printPath) }}" alt="QR Code">
+            <img src="{{ route('documents.qr-code', $document) }}" alt="QR Code">
             @else
             <p style="font-size: 8pt;">QR Code not available</p>
             @endif

@@ -4,51 +4,6 @@
 
 @section('content')
 <style>
-    /* Custom Pagination - No Arrows, Text Only */
-    .pagination {
-        font-size: 0.875rem;
-        gap: 4px;
-    }
-    
-    .pagination .page-link {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        min-width: 40px;
-        text-align: center;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
-        color: #495057;
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-    
-    .pagination .page-link:hover {
-        background-color: #e9ecef;
-        border-color: #adb5bd;
-        color: #212529;
-    }
-    
-    .pagination .page-item.active .page-link {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        color: white;
-        font-weight: 600;
-    }
-    
-    .pagination .page-item.disabled .page-link {
-        color: #6c757d;
-        background-color: #fff;
-        border-color: #dee2e6;
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    /* Previous/Next text styling */
-    .pagination .page-item:first-child .page-link,
-    .pagination .page-item:last-child .page-link {
-        padding: 0.5rem 1rem;
-    }
-    
     /* Title column - allow truncation but keep icons visible */
     .table tbody td:nth-child(2) {
         max-width: 250px;
@@ -200,11 +155,38 @@
             max-width: 120px;
         }
     }
+
+    @media (max-width: 767.98px) {
+        .table tbody td:nth-child(2),
+        .table tbody td:nth-child(3) {
+            max-width: none;
+            overflow: visible;
+        }
+
+        .title-cell::after,
+        .title-cell::before {
+            display: none !important;
+        }
+
+        .title-cell-text {
+            overflow: visible;
+            white-space: normal;
+        }
+
+        .title-cell {
+            max-width: 100%;
+        }
+
+        .table tbody td:last-child .d-flex {
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+    }
 </style>
 <div class="container-fluid">
     <div class="mb-4">
         <h2 class="fw-bold"><i class="bi bi-archive"></i> Archived Documents</h2>
-        <p class="text-muted">View and manage archived documents</p>
+        <p class="text-muted d-none d-sm-block">View and manage archived documents</p>
     </div>
 
     <!-- Search and Filters -->
@@ -267,8 +249,8 @@
                     <tbody>
                         @forelse($archivedDocuments as $document)
                         <tr class="clickable-row" data-href="{{ route('archive.show', $document) }}">
-                            <td class="text-center"><strong>{{ $document->document_number }}</strong></td>
-                            <td>
+                            <td class="text-center" data-label="Document #"><strong>{{ $document->document_number }}</strong></td>
+                            <td data-label="Title">
                                 <span class="title-cell" data-full-title="{{ $document->title }}">
                                     <span class="title-cell-text">{{ $document->title }}</span>
                                 </span>
@@ -287,12 +269,12 @@
                                 <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.9rem;"></i>
                                 @endif
                             </td>
-                            <td class="text-center"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ Str::limit($document->document_type, 10) }}</span></td>
-                            <td class="text-center">{{ $document->department->code ?? 'N/A' }}</td>
-                            <td class="text-center">
+                            <td class="text-center" data-label="Type"><span class="badge bg-secondary type-badge" title="{{ $document->document_type }}">{{ $document->document_type }}</span></td>
+                            <td class="text-center" data-label="Department">{{ $document->department->code ?? 'N/A' }}</td>
+                            <td class="text-center" data-label="Created By">
                                 <span class="creator-name" title="{{ $document->creator->name ?? 'N/A' }}">{{ Str::limit($document->creator->name ?? 'N/A', 12) }}</span>
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" data-label="Archived Date">
                                 @if($document->archived_at)
                                     <small>{{ $document->archived_at->format('M d, Y') }}</small><br>
                                     <small class="text-muted">{{ $document->archived_at->diffForHumans() }}</small>
@@ -300,7 +282,7 @@
                                     <small class="text-muted">N/A</small>
                                 @endif
                             </td>
-                            <td class="text-center" onclick="event.stopPropagation();">
+                            <td class="text-center" data-label="Actions" onclick="event.stopPropagation();">
                                 <div class="d-flex gap-1 justify-content-center">
                                     @can('archive-documents')
                                     <form method="POST"
@@ -358,11 +340,12 @@
                 </table>
             </div>
 
-            <div class="mt-3 d-flex justify-content-between align-items-center">
+            <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div class="text-muted small">
                     Showing {{ $archivedDocuments->firstItem() ?? 0 }} to {{ $archivedDocuments->lastItem() ?? 0 }} of {{ $archivedDocuments->total() }} results
                 </div>
-                <nav aria-label="Archived document pagination">
+                <div class="pagination-wrap">
+                    <nav aria-label="Archived document pagination">
                     <ul class="pagination mb-0">
                         {{-- Previous Page Link --}}
                         @if ($archivedDocuments->onFirstPage())
@@ -444,6 +427,7 @@
                         @endif
                     </ul>
                 </nav>
+                </div>
             </div>
         </div>
     </div>

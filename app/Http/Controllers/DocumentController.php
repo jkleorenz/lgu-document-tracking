@@ -28,6 +28,25 @@ class DocumentController extends Controller
     }
 
     /**
+     * Check if the user is authorized to access the given document.
+     * Users can access documents in their department, plus Administrator/Mayor have full access.
+     */
+    protected function authorizeDocumentAccess(Document $document): void
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('Administrator') || $user->hasRole('Mayor')) {
+            return;
+        }
+
+        if ($user->department_id && $user->department_id === $document->department_id) {
+            return;
+        }
+
+        abort(403, 'You are not authorized to access this document.');
+    }
+
+    /**
      * Display a listing of documents
      */
     public function index(Request $request)
@@ -38,19 +57,19 @@ class DocumentController extends Controller
         // Documents page shows: Active, Received, Return, and Completed documents
         // Completed documents include both active and archived-completed (status='Completed' with archived_at set)
         // We exclude documents with status='Archived' (manually archived, not completed)
-        
+
         // Base filter: Exclude manually archived documents (status='Archived')
         // But include completed documents even if they have archived_at set
-        $query->where(function($q) use ($user) {
+        $query->where(function ($q) use ($user) {
             // Include non-archived documents
             $q->whereNull('archived_at');
-            
+
             // Only Administrators and Mayors see completed documents in the main documents table
             if (!$user->hasRole('LGU Staff') && !$user->hasRole('Department Head')) {
                 // OR completed documents that are archived (archived-completed)
-                $q->orWhere(function($completedQ) {
+                $q->orWhere(function ($completedQ) {
                     $completedQ->where('status', 'Completed')
-                               ->whereNotNull('archived_at');
+                        ->whereNotNull('archived_at');
                 });
             }
         })->where('status', '!=', 'Archived');
@@ -60,60 +79,60 @@ class DocumentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('document_number', 'like', "%{$search}%")
-                  ->orWhere('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
         // Apply status filter
         if ($request->filled('status')) {
             $status = $request->status;
-            
+
             if ($status === 'Active') {
                 // Active: documents that are not yet completed, including Forwarded documents
                 // Forwarded documents are considered active even if not yet received
                 // For LGU Staff/Dept Head: Documents they created OR documents forwarded to their department
                 // For Admin: All documents not yet completed (including Forwarded)
                 $query->whereNull('archived_at')
-                      ->where('status', '!=', 'Completed')
-                      ->where('status', '!=', 'Archived')
-                      ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return']);
-                
+                    ->where('status', '!=', 'Completed')
+                    ->where('status', '!=', 'Archived')
+                    ->whereIn('status', ['Forwarded', 'Received', 'Under Review', 'Pending', 'Return']);
+
                 // For LGU Staff and Department Head: Active = documents they created OR documents forwarded to their department
                 if ($user->hasRole('LGU Staff') || $user->hasRole('Department Head')) {
-                    $query->where(function($q) use ($user) {
+                    $query->where(function ($q) use ($user) {
                         // Documents created by the user
                         $q->where('created_by', $user->id)
-                          // OR documents forwarded to their department (including Forwarded status)
-                          ->orWhere(function($deptQ) use ($user) {
-                              if ($user->department_id) {
-                                  $deptQ->where('department_id', $user->department_id);
-                              }
-                          });
+                            // OR documents forwarded to their department (including Forwarded status)
+                            ->orWhere(function ($deptQ) use ($user) {
+                                if ($user->department_id) {
+                                    $deptQ->where('department_id', $user->department_id);
+                                }
+                            });
                     });
                 }
                 // Administrators see all non-completed documents including Forwarded (no additional filter)
             } elseif ($status === 'Completed') {
                 // Completed: include both active and archived-completed documents
-                $query->where(function($q) {
+                $query->where(function ($q) {
                     $q->where('status', 'Completed');
                 });
             } elseif ($status === 'Return') {
                 // Return: only active (non-archived) Return documents
                 $query->where('status', 'Return')
-                      ->whereNull('archived_at');
+                    ->whereNull('archived_at');
             } elseif ($status === 'Received') {
                 // Received: only active (non-archived) Received documents
                 $query->where('status', 'Received')
-                      ->whereNull('archived_at');
+                    ->whereNull('archived_at');
             } elseif ($status === 'for_review') {
                 // For review: active documents with Received, Under Review, or Forwarded status
                 $query->whereIn('status', ['Received', 'Under Review', 'Forwarded'])
-                      ->whereNull('archived_at');
+                    ->whereNull('archived_at');
             } else {
                 // For other statuses, filter by status and exclude archived
                 $query->where('status', $status)
-                      ->whereNull('archived_at');
+                    ->whereNull('archived_at');
             }
         } else {
             // "All Status": Show all non-archived documents (Active, Received, Return, Completed)
@@ -128,15 +147,15 @@ class DocumentController extends Controller
             // 1. Documents they created
             // 2. Documents forwarded to their department
             // (This applies to Received, Return, Completed, and "All Status" filters)
-            $query->where(function($q) use ($user) {
+            $query->where(function ($q) use ($user) {
                 // Documents created by the user
                 $q->where('created_by', $user->id)
-                  // OR documents forwarded to their department
-                  ->orWhere(function($deptQ) use ($user) {
-                      if ($user->department_id) {
-                          $deptQ->where('department_id', $user->department_id);
-                      }
-                  });
+                    // OR documents forwarded to their department
+                    ->orWhere(function ($deptQ) use ($user) {
+                        if ($user->department_id) {
+                            $deptQ->where('department_id', $user->department_id);
+                        }
+                    });
             });
         }
         // Administrators and Mayor can see all documents (no additional filter)
@@ -151,8 +170,19 @@ class DocumentController extends Controller
             $query->where('is_priority', true);
         }
 
-        // Order by priority first, then by latest
-        $documents = $query->with('statusLogs')->orderBy('is_priority', 'desc')->latest()->paginate(15)->withQueryString();
+        // Apply sorting
+        $sort = $request->get('sort', 'newest');
+
+        // Order by priority first, then by the selected sort order
+        $documents = $query->with('statusLogs')
+            ->orderBy('is_priority', 'desc')
+            ->when($sort === 'oldest', function ($q) {
+                return $q->orderBy('created_at', 'asc');
+            }, function ($q) {
+                return $q->orderBy('created_at', 'desc');
+            })
+            ->paginate(15)
+            ->withQueryString();
         $departments = Department::active()->orderBy('name')->get();
 
         return view('documents.index', compact('documents', 'departments'));
@@ -167,7 +197,7 @@ class DocumentController extends Controller
         if (!Auth::user()->hasAnyRole(['Administrator', 'Mayor', 'LGU Staff', 'Department Head'])) {
             abort(403, 'Only administrators, mayor, LGU staff, and department heads can create documents.');
         }
-        
+
         $departments = Department::active()->orderBy('name')->get();
         $documentTypes = [
             'Certification',
@@ -179,7 +209,7 @@ class DocumentController extends Controller
             'Service Record',
             'Others'
         ];
-        
+
         return view('documents.create', compact('departments', 'documentTypes'));
     }
 
@@ -204,13 +234,13 @@ class DocumentController extends Controller
         ]);
 
         // Use custom type if "Others" is selected
-        $documentType = $validated['document_type'] === 'Others' 
-            ? $validated['document_type_other'] 
+        $documentType = $validated['document_type'] === 'Others'
+            ? $validated['document_type_other']
             : $validated['document_type'];
 
         $maxRetries = 3;
         $retryCount = 0;
-        
+
         while ($retryCount < $maxRetries) {
             DB::beginTransaction();
             try {
@@ -255,9 +285,9 @@ class DocumentController extends Controller
                 $oldDepartment = $creator->department ?? null;
                 if (!$oldDepartment) {
                     // If creator has no department, create a dummy department object for notification
-                    $oldDepartment = (object)['id' => null, 'name' => 'System'];
+                    $oldDepartment = (object) ['id' => null, 'name' => 'System'];
                 }
-                
+
                 // Notify using new notification system
                 // Note: Creator is not notified when they forward themselves (handled in onDocumentForwarded)
                 $this->notificationService->onDocumentForwarded(
@@ -274,10 +304,12 @@ class DocumentController extends Controller
 
             } catch (\PDOException $e) {
                 DB::rollBack();
-                
+
                 // Handle specific database errors for concurrent access
-                if (strpos($e->getMessage(), 'Duplicate entry') !== false || 
-                    strpos($e->getMessage(), 'UNIQUE constraint') !== false) {
+                if (
+                    strpos($e->getMessage(), 'Duplicate entry') !== false ||
+                    strpos($e->getMessage(), 'UNIQUE constraint') !== false
+                ) {
                     $retryCount++;
                     if ($retryCount >= $maxRetries) {
                         return back()->withInput()
@@ -287,14 +319,15 @@ class DocumentController extends Controller
                     usleep(100000 * $retryCount); // 100ms, 200ms, 300ms
                     continue;
                 }
-                
+
                 return back()->withInput()
-                    ->withErrors(['error' => 'Database error: ' . $e->getMessage()]);
-                    
+                    ->withErrors(['error' => 'A database error occurred. Please try again.']);
+
             } catch (\Exception $e) {
                 DB::rollBack();
+                Log::error('Failed to create document: ' . $e->getMessage());
                 return back()->withInput()
-                    ->withErrors(['error' => 'Failed to create document: ' . $e->getMessage()]);
+                    ->withErrors(['error' => 'Failed to create document. Please try again.']);
             }
         }
     }
@@ -304,16 +337,10 @@ class DocumentController extends Controller
      */
     public function show(Document $document)
     {
-        // Check if user has permission to view this document
-        $user = Auth::user();
-        
-        // LGU Staff, Department Head, Administrators, and Mayor can view all documents (needed for QR scanning and tracking)
-        if (!$user->hasRole('Administrator') && !$user->hasRole('Mayor') && !$user->hasRole('LGU Staff') && !$user->hasRole('Department Head')) {
-            abort(403, 'Unauthorized access to this document.');
-        }
+        $this->authorizeDocumentAccess($document);
 
         $document->load(['creator', 'department', 'currentHandler', 'statusLogs.updatedBy']);
-        
+
         // Calculate last location (previous department before current)
         $lastLocation = 'N/A';
         if ($document->department_id) {
@@ -322,11 +349,13 @@ class DocumentController extends Controller
                 ->with('updatedBy.department')
                 ->orderBy('action_date', 'desc')
                 ->get();
-            
+
             // Find the first department in logs that's different from current department
             foreach ($statusLogs as $log) {
-                if ($log->updatedBy && $log->updatedBy->department_id && 
-                    $log->updatedBy->department_id != $document->department_id) {
+                if (
+                    $log->updatedBy && $log->updatedBy->department_id &&
+                    $log->updatedBy->department_id != $document->department_id
+                ) {
                     if (!$log->updatedBy->relationLoaded('department')) {
                         $log->updatedBy->load('department');
                     }
@@ -334,14 +363,16 @@ class DocumentController extends Controller
                     break;
                 }
             }
-            
+
             // If no previous department found, check creator's department
             if ($lastLocation === 'N/A' && $document->creator) {
                 if (!$document->creator->relationLoaded('department')) {
                     $document->creator->load('department');
                 }
-                if ($document->creator->department_id && 
-                    $document->creator->department_id != $document->department_id) {
+                if (
+                    $document->creator->department_id &&
+                    $document->creator->department_id != $document->department_id
+                ) {
                     $lastLocation = $document->creator->department ? $document->creator->department->name : 'N/A';
                 }
             }
@@ -356,9 +387,9 @@ class DocumentController extends Controller
             $document->refresh();
         } catch (\Throwable $e) {
             // Log the error but allow the page to load
-            Log::error('Failed to ensure QR code for document '.$document->id.': '.$e->getMessage());
+            Log::error('Failed to ensure QR code for document ' . $document->id . ': ' . $e->getMessage());
         }
-        
+
         return view('documents.show', compact('document', 'lastLocation', 'departments'));
     }
 
@@ -368,7 +399,7 @@ class DocumentController extends Controller
     public function edit(Document $document)
     {
         $this->authorize('manage-documents');
-        
+
         // Only creator, admin, or mayor can edit
         if (!Auth::user()->hasAnyRole(['Administrator', 'Mayor']) && $document->created_by !== Auth::id()) {
             abort(403, 'Unauthorized to edit this document.');
@@ -385,7 +416,7 @@ class DocumentController extends Controller
             'Service Record',
             'Others'
         ];
-        
+
         return view('documents.edit', compact('document', 'departments', 'documentTypes'));
     }
 
@@ -411,25 +442,27 @@ class DocumentController extends Controller
         ]);
 
         // Use custom type if "Others" is selected
-        $documentType = $validated['document_type'] === 'Others' 
-            ? $validated['document_type_other'] 
+        $documentType = $validated['document_type'] === 'Others'
+            ? $validated['document_type_other']
             : $validated['document_type'];
 
         DB::beginTransaction();
         try {
             // Check if document is being forwarded to another department
-            if (!empty($validated['forward_to_department']) && 
-                $validated['forward_to_department'] != $document->department_id) {
-                
+            if (
+                !empty($validated['forward_to_department']) &&
+                $validated['forward_to_department'] != $document->department_id
+            ) {
+
                 $oldDepartment = $document->department;
                 $newDepartmentId = $validated['forward_to_department'];
                 $newDepartment = Department::findOrFail($newDepartmentId);
-                
+
                 // Update to forwarded department
                 $validated['department_id'] = $newDepartmentId;
                 $validated['document_type'] = $documentType;
                 $document->update($validated);
-                
+
                 // Create status log for forwarding
                 DocumentStatusLog::createLog(
                     $document->id,
@@ -438,13 +471,13 @@ class DocumentController extends Controller
                     'Forwarded',
                     "Forwarded from {$oldDepartment->name} to {$newDepartment->name}"
                 );
-                
+
                 // Update status back to indicate forwarding
                 $document->update(['status' => 'Under Review']);
-                
+
                 // Get current user info
                 $forwarder = Auth::user();
-                
+
                 // EVENT 1: Document Forwarded
                 // Refresh document to get updated relationships
                 $document->refresh();
@@ -454,23 +487,24 @@ class DocumentController extends Controller
                     $newDepartment,
                     $forwarder
                 );
-                
+
                 DB::commit();
                 return redirect()->route('documents.show', $document)
                     ->with('success', "Document {$document->document_number} ({$document->title}) was updated and forwarded to {$newDepartment->name} successfully.");
             }
-            
+
             // Normal update without forwarding
             $validated['document_type'] = $documentType;
             $document->update($validated);
-            
+
             DB::commit();
             return redirect()->route('documents.show', $document)
                 ->with('success', "Document {$document->document_number} ({$document->title}) was updated successfully.");
-                
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to update document: ' . $e->getMessage()]);
+            Log::error('Failed to update document: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to update document. Please try again.']);
         }
     }
 
@@ -512,26 +546,28 @@ class DocumentController extends Controller
         DB::beginTransaction();
         try {
             // Check if document is being forwarded to another department
-            if (!empty($validated['forward_to_department']) && 
-                $validated['forward_to_department'] != $document->department_id) {
-                
+            if (
+                !empty($validated['forward_to_department']) &&
+                $validated['forward_to_department'] != $document->department_id
+            ) {
+
                 $newDepartmentId = $validated['forward_to_department'];
                 $newDepartment = Department::findOrFail($newDepartmentId);
-                
+
                 // Get current user info
                 $forwarder = Auth::user();
                 $forwarderRole = $forwarder->roles->first()->name ?? 'User';
-                
+
                 // Check if both status change and forwarding are happening
                 $isStatusChange = $validated['status'] !== 'Forwarded' && $validated['status'] !== $oldStatus;
-                
+
                 if ($isStatusChange) {
                     // Create a single combined log entry for both actions
                     $combinedRemarks = "Approved and forwarded from {$oldDepartment->name} to {$newDepartment->name}";
                     if (!empty($validated['remarks'])) {
                         $combinedRemarks .= ". " . $validated['remarks'];
                     }
-                    
+
                     DocumentStatusLog::createLog(
                         $document->id,
                         Auth::id(),
@@ -539,7 +575,7 @@ class DocumentController extends Controller
                         $validated['status'], // Status will be "Approved"
                         $combinedRemarks
                     );
-                    
+
                     // Do NOT notify document creator about forwarding
                     // Only notify the forwarded department
                 } else {
@@ -548,7 +584,7 @@ class DocumentController extends Controller
                     if (!empty($validated['remarks'])) {
                         $forwardRemarks .= ". " . $validated['remarks'];
                     }
-                    
+
                     DocumentStatusLog::createLog(
                         $document->id,
                         Auth::id(),
@@ -557,13 +593,13 @@ class DocumentController extends Controller
                         $forwardRemarks
                     );
                 }
-                
+
                 // Update department and status to Forwarded
                 $document->update([
                     'status' => 'Forwarded',
                     'department_id' => $newDepartmentId,
                 ]);
-                
+
                 // EVENT 1: Document Forwarded
                 // Refresh document to get updated relationships
                 $document->refresh();
@@ -573,16 +609,16 @@ class DocumentController extends Controller
                     $newDepartment,
                     $forwarder
                 );
-                
+
                 DB::commit();
-                
+
                 $message = ($validated['status'] !== 'Forwarded' && $validated['status'] !== $oldStatus)
                     ? "Document status changed to {$validated['status']} and forwarded to {$newDepartment->name} successfully!"
                     : "Document forwarded to {$newDepartment->name} successfully!";
-                    
+
                 return back()->with('success', $message);
             }
-            
+
             // Normal status update without forwarding
             $updates = [
                 'status' => $validated['status'],
@@ -592,14 +628,14 @@ class DocumentController extends Controller
             if ($validated['status'] === 'Approved') {
                 $updates['archived_at'] = now();
             }
-            
+
             // If status is Completed, auto-archive (document is finished)
             // Keep status as 'Completed' but set archived_at to mark it as archived-completed
             // This allows it to appear in both Documents page and Archive page
             if ($validated['status'] === 'Completed') {
                 $updates['archived_at'] = now();
             }
-            
+
             // If status is Return, clear archived_at so document remains active for review
             // Also update department if return_to_department is specified
             if ($validated['status'] === 'Return') {
@@ -631,8 +667,8 @@ class DocumentController extends Controller
 
             DB::commit();
 
-            $message = $validated['status'] === 'Approved' 
-                ? 'Document approved and archived successfully!' 
+            $message = $validated['status'] === 'Approved'
+                ? 'Document approved and archived successfully!'
                 : ($validated['status'] === 'Completed'
                     ? 'Document completed and archived successfully!'
                     : ($validated['status'] === 'Return'
@@ -643,7 +679,8 @@ class DocumentController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to update status: ' . $e->getMessage()]);
+            Log::error('Failed to update status: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to update document status. Please try again.']);
         }
     }
 
@@ -688,7 +725,7 @@ class DocumentController extends Controller
         try {
             // Save the old status BEFORE updating
             $oldStatus = $document->status;
-            
+
             $document->update([
                 'status' => 'Archived',
                 'archived_at' => now(),
@@ -707,20 +744,20 @@ class DocumentController extends Controller
             // Refresh document and ensure creator relationship is loaded
             // This is critical to ensure created_by is available for creator notifications
             $document->refresh();
-            
+
             // Explicitly load creator relationship to ensure created_by is preserved
             // Even if document was forwarded, created_by should remain the original creator
             if (!$document->relationLoaded('creator')) {
                 $document->load('creator');
             }
-            
+
             // Double-check: Ensure created_by field is set in memory (should never be null, but be defensive)
             // Note: We don't save here as the document is already updated and we're in a transaction
             if (!$document->created_by && $document->creator) {
                 // This should never happen, but if it does, set it in memory for notification purposes
                 $document->setAttribute('created_by', $document->creator->id);
             }
-            
+
             $this->notificationService->onDocumentArchivedNotCompleted(
                 $document,
                 Auth::user()
@@ -732,7 +769,8 @@ class DocumentController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to archive document: ' . $e->getMessage()]);
+            Log::error('Failed to archive document: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to archive document. Please try again.']);
         }
     }
 
@@ -780,7 +818,8 @@ class DocumentController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to approve document: ' . $e->getMessage()]);
+            Log::error('Failed to approve document: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to approve document. Please try again.']);
         }
     }
 
@@ -822,7 +861,7 @@ class DocumentController extends Controller
                 "Your document '{$document->title}' was rejected. Reason: " . $validated['rejection_reason'],
                 'danger'
             );
-            
+
             // Also notify administrators about rejection
             $this->notificationService->notifyAdministrators(
                 'Document Rejected',
@@ -837,7 +876,8 @@ class DocumentController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to reject document: ' . $e->getMessage()]);
+            Log::error('Failed to reject document: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to reject document. Please try again.']);
         }
     }
 
@@ -846,8 +886,9 @@ class DocumentController extends Controller
      */
     public function printQRCode(Document $document)
     {
+        $this->authorizeDocumentAccess($document);
         $qrCodePath = $this->qrCodeService->generatePrintableQRCode($document);
-        
+
         return view('documents.print-qr', compact('document', 'qrCodePath'));
     }
 
@@ -856,11 +897,13 @@ class DocumentController extends Controller
      */
     public function serveQrCode(Request $request, Document $document)
     {
+        $this->authorizeDocumentAccess($document);
+
         try {
             $forceRegenerate = $request->boolean('regenerate');
             $qrPath = $this->ensureDocumentQrCode($document, $forceRegenerate);
 
-            $fullPath = $qrPath ? public_path($qrPath) : null;
+            $fullPath = $qrPath ? storage_path('app/' . $qrPath) : null;
 
             if (!$fullPath || !file_exists($fullPath)) {
                 abort(404, 'QR code not available.');
@@ -871,13 +914,13 @@ class DocumentController extends Controller
             ];
 
             if ($request->boolean('download')) {
-                $filename = 'QRCode_'.$document->document_number.'.svg';
+                $filename = 'QRCode_' . $document->document_number . '.svg';
                 return response()->download($fullPath, $filename, $headers);
             }
 
             return response()->file($fullPath, $headers);
         } catch (\Throwable $e) {
-            Log::error('Failed to serve QR code for document '.$document->id.': '.$e->getMessage());
+            Log::error('Failed to serve QR code for document ' . $document->id . ': ' . $e->getMessage());
 
             return response('QR code unavailable.', 500);
         }
@@ -908,17 +951,18 @@ class DocumentController extends Controller
      */
     public function generateReport(Document $document, Request $request)
     {
+        $this->authorizeDocumentAccess($document);
         $format = $request->get('format', 'pdf'); // pdf or docx
-        
+
         // Load relationships
         $document->load(['creator', 'department', 'statusLogs.updatedBy.department']);
-        
+
         if ($format === 'pdf') {
             return $this->generatePDFReport($document);
         } elseif ($format === 'docx') {
             return $this->generateDOCXReport($document);
         }
-        
+
         abort(400, 'Invalid format. Please use pdf or docx.');
     }
 
@@ -939,13 +983,13 @@ class DocumentController extends Controller
     private function generateDOCXReport(Document $document)
     {
         $phpWord = new PhpWord();
-        
+
         // Set document properties
         $properties = $phpWord->getDocInfo();
         $properties->setCreator('LGU Document Tracking System');
         $properties->setTitle('Document Report - ' . $document->document_number);
         $properties->setSubject('Document Report');
-        
+
         // Add section with 2.54cm margins
         $section = $phpWord->addSection([
             'marginTop' => 1440,    // 2.54cm in twips (1cm = 567 twips)
@@ -953,44 +997,44 @@ class DocumentController extends Controller
             'marginLeft' => 1440,
             'marginRight' => 1440,
         ]);
-        
+
         // Remove default header/footer
         $section->addHeader();
         $section->addFooter();
-        
+
         // Title
         $titleRun = $section->addTextBlock()->addRun('DOCUMENT REPORT');
         $titleRun->setFontName('Segoe UI');
         $titleRun->setFontSize(18);
         $titleRun->setBold(true);
         $section->addTextBlock()->addRun('LGU Document Tracking System')->setFontSize(10);
-        
+
         // Add spacing
         $section->addTextBlock()->addRun('');
-        
+
         // Quick info row
         $infoSection = $section->addTextBlock();
         $infoSection->addRun('Document #: ' . $document->document_number)->setBold(true);
         $infoSection->addBreak();
         $infoSection->addRun('Generated: ' . now()->format('M d, Y h:i A'))->setFontSize(10);
-        
+
         $section->addTextBlock()->addRun('');
-        
+
         // Document Information Section
         $titleInfo = $section->addTextBlock()->addRun('DOCUMENT INFORMATION');
         $titleInfo->setFontSize(12)->setBold(true)->getStyle()->setUnderline(true);
-        
+
         // Style the heading with background (simulate with paragraph border)
         $style = $section->addTableStyle('infoTableStyle', [
             'borderSize' => 6,
             'borderColor' => '000000',
             'cellMargin' => 100,
         ]);
-        
+
         // Document Information Table
         $infoTable = $section->addTable('infoTableStyle');
         $infoTable->setWidth(new TblWidth(100, TblWidth::PERCENT));
-        
+
         // Define information rows
         $infoRows = [
             ['Title', $document->title],
@@ -1001,58 +1045,58 @@ class DocumentController extends Controller
             ['Created By', $document->creator ? $document->creator->name : 'Unknown'],
             ['Date Created', $document->created_at->format('M d, Y')],
         ];
-        
+
         if ($document->description) {
             $infoRows[] = ['Description', $document->description];
         }
-        
+
         foreach ($infoRows as $index => $row) {
             $rowObj = $infoTable->addRow();
             $rowObj->setHeight(350);
-            
+
             // Label cell
             $labelCell = $rowObj->addCell(2000);
             $labelCell->setVerticalAlignment(Cell::VALIGN_TOP);
             $labelRun = $labelCell->addParagraph()->addRun($row[0]);
             $labelRun->setBold(true)->setFontSize(10);
-            
+
             // Value cell
             $valueCell = $rowObj->addCell(4000);
             $valueCell->setVerticalAlignment(Cell::VALIGN_TOP);
             $valueRun = $valueCell->addParagraph()->addRun($row[1]);
             $valueRun->setFontSize(10);
         }
-        
+
         $section->addTextBlock()->addRun('');
-        
+
         // Document History Section
         $titleHistory = $section->addTextBlock()->addRun('DOCUMENT HISTORY');
         $titleHistory->setFontSize(12)->setBold(true)->getStyle()->setUnderline(true);
-        
+
         // Document History Table
         if ($document->statusLogs->count() > 0) {
             $historyTable = $section->addTable('infoTableStyle');
             $historyTable->setWidth(new TblWidth(100, TblWidth::PERCENT));
-            
+
             // Header row
             $headerRow = $historyTable->addRow();
             $headerRow->setHeight(300);
-            
+
             $headers = ['Date & Time', 'From', 'To', 'Updated By', 'Remarks'];
             $widths = [1800, 1200, 1200, 1800, 2800];
-            
+
             foreach ($headers as $index => $header) {
                 $cell = $headerRow->addCell($widths[$index]);
                 $cell->setVerticalAlignment(Cell::VALIGN_CENTER);
                 $run = $cell->addParagraph()->addRun($header);
                 $run->setBold(true)->setFontSize(9);
             }
-            
+
             // Data rows
             foreach ($document->statusLogs->take(10) as $index => $log) {
                 $rowObj = $historyTable->addRow();
                 $rowObj->setHeight(280);
-                
+
                 $data = [
                     $log->created_at->format('M d, Y'),
                     $log->old_status ?? 'N/A',
@@ -1060,7 +1104,7 @@ class DocumentController extends Controller
                     $log->updatedBy ? $log->updatedBy->name : 'System',
                     $log->remarks ?? '-',
                 ];
-                
+
                 foreach ($data as $dataIndex => $value) {
                     $cell = $rowObj->addCell($widths[$dataIndex]);
                     $cell->setVerticalAlignment(Cell::VALIGN_TOP);
@@ -1070,20 +1114,20 @@ class DocumentController extends Controller
         } else {
             $section->addTextBlock()->addRun('No document history available.')->setFontSize(10)->setItalic(true);
         }
-        
+
         // Footer
         $section->addTextBlock()->addRun('');
         $footer = $section->addTextBlock();
         $footerRun = $footer->addRun('Report generated by LGU Document Tracking System • Document #' . $document->document_number);
         $footerRun->setFontSize(8)->setItalic(true);
-        
+
         // Save to temporary file
         $filename = 'Document_Report_' . $document->document_number . '.docx';
         $tempFile = tempnam(sys_get_temp_dir(), 'docx_');
-        
+
         $writer = IOFactory::createWriter($phpWord, 'Word2007');
         $writer->save($tempFile);
-        
+
         return response()->download($tempFile, $filename)->deleteFileAfterSend(true);
     }
 
@@ -1094,12 +1138,12 @@ class DocumentController extends Controller
     {
         // Check if user has access to this document
         $user = Auth::user();
-        
+
         // LGU Staff, Department Head, Administrators, and Mayor can view all document timelines (needed for tracking)
         if (!$user->hasRole('Administrator') && !$user->hasRole('Mayor') && !$user->hasRole('LGU Staff') && !$user->hasRole('Department Head')) {
             abort(403, 'Unauthorized to view this document timeline.');
         }
-        
+
         return view('documents.timeline', compact('document'));
     }
 

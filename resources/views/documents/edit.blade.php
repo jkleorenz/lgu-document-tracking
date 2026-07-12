@@ -5,14 +5,11 @@
 @section('content')
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('documents.index') }}">Documents</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('documents.show', $document) }}">{{ $document->document_number }}</a></li>
-                <li class="breadcrumb-item active">Edit</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Documents', 'url' => route('documents.index')],
+            ['label' => $document->document_number, 'url' => route('documents.show', $document)],
+            ['label' => 'Edit'],
+        ]" />
         <h2 class="fw-bold"><i class="bi bi-pencil-square"></i> Edit Document</h2>
     </div>
 

@@ -10,13 +10,13 @@
             <p class="text-muted mb-0">Welcome back, {{ auth()->user()->name }}!</p>
         </div>
         <a href="{{ route('scan.index') }}" class="btn btn-primary">
-            <i class="bi bi-qr-code-scan"></i> Scan QR Code
+            <i class="bi bi-qr-code-scan"></i> <span class="d-none d-md-inline">Scan QR Code</span>
         </a>
     </div>
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-4 col-sm-6 mb-3">
             <a href="{{ route('documents.index', ['status' => 'Active']) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #0d6efd;">
                     <div class="card-body">
@@ -35,7 +35,7 @@
             </a>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-4 col-sm-6 mb-3">
             <a href="{{ route('documents.index', ['status' => 'Return']) }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #dc3545;">
                     <div class="card-body">
@@ -54,7 +54,7 @@
             </a>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-4 col-sm-6 mb-3">
             <a href="{{ route('archive.index') }}" class="text-decoration-none">
                 <div class="card stat-card clickable-card" style="border-left-color: #198754;">
                     <div class="card-body">
@@ -83,7 +83,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-4 col-sm-6">
                             <a href="{{ route('scan.index') }}" class="quick-action-btn">
                                 <div class="quick-action-icon bg-primary bg-opacity-10">
                                     <i class="bi bi-qr-code-scan text-primary"></i>
@@ -91,7 +91,7 @@
                                 <span class="text-primary">Scan QR Code</span>
                             </a>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 col-sm-6">
                             <a href="{{ route('documents.index') }}" class="quick-action-btn">
                                 <div class="quick-action-icon bg-info bg-opacity-10">
                                     <i class="bi bi-list-ul text-info"></i>
@@ -99,7 +99,7 @@
                                 <span class="text-info">View Documents</span>
                             </a>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 col-sm-6">
                             <a href="{{ route('notifications.index') }}" class="quick-action-btn">
                                 <div class="quick-action-icon bg-warning bg-opacity-10">
                                     <i class="bi bi-bell text-warning"></i>
@@ -132,19 +132,18 @@
                                     <th>Current Status</th>
                                     <th>Handler</th>
                                     <th>Created</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($recentDocuments as $document)
-                                <tr>
-                                    <td>
+                                <tr onclick="window.location='{{ route('documents.show', $document) }}';" style="cursor: pointer;">
+                                    <td data-label="Document #">
                                         <strong>{{ $document->document_number }}</strong>
                                         @if($document->is_priority)
                                         <br><span class="badge badge-priority">PRIORITY</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td data-label="Title">
                                         {{ Str::limit($document->title, 40) }}
                                         @if($document->status == 'Approved')
                                         <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.85rem;"></i>
@@ -153,29 +152,24 @@
                                         <i class="bi bi-x-circle-fill text-danger" title="Rejected" style="font-size: 0.85rem;"></i>
                                         @endif
                                     </td>
-                                    <td>{{ $document->department ? $document->department->name : 'N/A' }}</td>
-                                    <td>
+                                    <td data-label="Department">{{ $document->department ? $document->department->name : 'N/A' }}</td>
+                                    <td data-label="Status">
                                         <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Completed' ? 'primary' : ($document->status == 'Return' ? 'danger' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info')))) }}">
                                             {{ $document->status }}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td data-label="Handler">
                                         @if($document->currentHandler)
                                         {{ $document->currentHandler->name }}
                                         @else
                                         <span class="text-muted">Unassigned</span>
                                         @endif
                                     </td>
-                                    <td><small>{{ $document->created_at->format('M d, Y') }}</small></td>
-                                    <td>
-                                        <a href="{{ route('documents.show', $document) }}" class="btn btn-sm btn-info">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                    </td>
+                                    <td data-label="Created"><small>{{ $document->created_at->format('M d, Y') }}</small></td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">
+                                    <td colspan="6" class="text-center text-muted py-4">
                                         <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                         <p class="mb-0">No documents created yet</p>
                                         <a href="{{ route('documents.create') }}" class="btn btn-primary btn-sm mt-2">

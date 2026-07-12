@@ -39,65 +39,27 @@
     .btn-group .btn-sm:last-child {
         border-radius: 8px !important;
     }
-    
-    /* Custom Pagination - No Arrows, Text Only */
-    .pagination {
-        font-size: 0.875rem;
-        gap: 4px;
-    }
-    
-    .pagination .page-link {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        min-width: 40px;
-        text-align: center;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
-        color: #495057;
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-    
-    .pagination .page-link:hover {
-        background-color: #e9ecef;
-        border-color: #adb5bd;
-        color: #212529;
-    }
-    
-    .pagination .page-item.active .page-link {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        color: white;
-        font-weight: 600;
-    }
-    
-    .pagination .page-item.disabled .page-link {
-        color: #6c757d;
-        background-color: #fff;
-        border-color: #dee2e6;
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    /* Previous/Next text styling */
-    .pagination .page-item:first-child .page-link,
-    .pagination .page-item:last-child .page-link {
-        padding: 0.5rem 1rem;
+
+    @media (max-width: 767.98px) {
+        .btn-group {
+            flex-wrap: wrap;
+            gap: 4px;
+        }
     }
 </style>
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 header-inline">
         <h2 class="fw-bold"><i class="bi bi-people"></i> User Management</h2>
-        <div>
+        <div class="d-flex gap-2 flex-wrap">
             @if($pendingCount > 0)
-            <a href="{{ route('users.pending') }}" class="btn btn-warning me-2">
-                <i class="bi bi-person-exclamation"></i> Pending Verifications
+            <a href="{{ route('users.pending') }}" class="btn btn-warning">
+                <i class="bi bi-person-exclamation"></i> <span class="d-none d-md-inline">Pending Verifications</span>
                 <span class="badge bg-dark">{{ $pendingCount }}</span>
             </a>
             @endif
             <a href="{{ route('users.create') }}" class="btn btn-primary">
-                <i class="bi bi-person-plus"></i> Add New User
+                <i class="bi bi-person-plus"></i> <span class="d-none d-md-inline">Add New User</span>
             </a>
         </div>
     </div>
@@ -154,12 +116,12 @@
                     <tbody>
                         @forelse($users as $user)
                         <tr class="clickable-row" data-href="{{ route('users.show', $user) }}">
-                            <td>{{ $user->name }}</td>
-                            <td>{{ $user->email }}</td>
-                            <td class="text-center">{{ $user->department->name ?? 'N/A' }}</td>
-                            <td class="text-center"><span class="badge bg-primary">{{ $user->roles->first()->name ?? 'No Role' }}</span></td>
-                            <td class="text-center"><small>{{ $user->created_at->format('M d, Y') }}</small></td>
-                            <td class="text-center">
+                            <td data-label="Name">{{ $user->name }}</td>
+                            <td data-label="Email">{{ $user->email }}</td>
+                            <td class="text-center" data-label="Department">{{ $user->department->name ?? 'N/A' }}</td>
+                            <td class="text-center" data-label="Role"><span class="badge bg-primary">{{ $user->roles->first()->name ?? 'No Role' }}</span></td>
+                            <td class="text-center" data-label="Joined"><small>{{ $user->created_at->format('M d, Y') }}</small></td>
+                            <td class="text-center" data-label="Actions">
                                 <div class="btn-group">
                                     <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-info" title="View">
                                         <i class="bi bi-eye"></i>
@@ -197,11 +159,12 @@
                 </table>
             </div>
 
-            <div class="mt-3 d-flex justify-content-between align-items-center">
+            <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div class="text-muted small">
                     Showing {{ $users->firstItem() ?? 0 }} to {{ $users->lastItem() ?? 0 }} of {{ $users->total() }} results
                 </div>
-                <nav aria-label="User pagination">
+                <div class="pagination-wrap">
+                    <nav aria-label="User pagination">
                     <ul class="pagination mb-0">
                         {{-- Previous Page Link --}}
                         @if ($users->onFirstPage())
@@ -283,6 +246,7 @@
                         @endif
                     </ul>
                 </nav>
+                </div>
             </div>
         </div>
     </div>

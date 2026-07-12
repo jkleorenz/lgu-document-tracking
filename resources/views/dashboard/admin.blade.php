@@ -16,7 +16,7 @@
         <h5 class="text-muted mb-3"><i class="bi bi-file-text"></i> Document Overview</h5>
     </div>
     <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
             <a href="{{ route('documents.index', ['status' => 'Active']) }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
@@ -34,7 +34,7 @@
             </a>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
             <a href="{{ route('documents.index', ['status' => 'Completed']) }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
@@ -52,7 +52,7 @@
             </a>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
             <a href="{{ route('documents.index', ['priority' => '1', 'status' => 'Active']) }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
@@ -74,7 +74,7 @@
             </a>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
             <a href="{{ route('archive.index') }}" class="text-decoration-none">
                 <div class="card stat-card h-100 clickable-card">
                     <div class="card-body">
@@ -182,13 +182,11 @@
                             </thead>
                             <tbody>
                                 @forelse($recentDocuments as $document)
-                                <tr>
-                                    <td>
-                                        <a href="{{ route('documents.show', $document) }}" class="text-decoration-none">
-                                            {{ $document->document_number }}
-                                        </a>
+                                <tr onclick="window.location='{{ route('documents.show', $document) }}';" style="cursor: pointer;">
+                                    <td data-label="Document #">
+                                        <strong>{{ $document->document_number }}</strong>
                                     </td>
-                                    <td>
+                                    <td data-label="Title">
                                         {{ Str::limit($document->title, 35) }}
                                         @if($document->status == 'Approved')
                                         <i class="bi bi-check-circle-fill text-success" title="Approved" style="font-size: 0.85rem;"></i>
@@ -200,12 +198,12 @@
                                         <span class="badge badge-priority">PRIORITY</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td data-label="Status">
                                         <span class="badge bg-{{ $document->status == 'Approved' ? 'success' : ($document->status == 'Completed' ? 'primary' : ($document->status == 'Return' ? 'danger' : ($document->status == 'Received' ? 'success' : ($document->status == 'Pending' ? 'warning' : ($document->status == 'Rejected' ? 'danger' : 'info'))))) }}">
                                             {{ $document->status }}
                                         </span>
                                     </td>
-                                    <td><small>{{ $document->created_at->diffForHumans() }}</small></td>
+                                    <td data-label="Date"><small>{{ $document->created_at->diffForHumans() }}</small></td>
                                 </tr>
                                 @empty
                                 <tr>
@@ -243,12 +241,12 @@
                             <tbody>
                                 @foreach($pendingUsers as $user)
                                 <tr class="clickable-row" data-href="{{ route('users.show', $user) }}">
-                                    <td>{{ $user->name }}</td>
-                                    <td>{{ $user->email }}</td>
-                                    <td>{{ $user->department ? $user->department->name : 'N/A' }}</td>
-                                    <td><span class="badge bg-secondary">{{ $user->roles->first() ? $user->roles->first()->name : 'No Role' }}</span></td>
-                                    <td><small>{{ $user->created_at->diffForHumans() }}</small></td>
-                                    <td>
+                                    <td data-label="Name">{{ $user->name }}</td>
+                                    <td data-label="Email">{{ $user->email }}</td>
+                                    <td data-label="Department">{{ $user->department ? $user->department->name : 'N/A' }}</td>
+                                    <td data-label="Role"><span class="badge bg-secondary">{{ $user->roles->first() ? $user->roles->first()->name : 'No Role' }}</span></td>
+                                    <td data-label="Date"><small>{{ $user->created_at->diffForHumans() }}</small></td>
+                                    <td data-label="Actions">
                                         <div class="d-flex gap-2">
                                             <form method="POST" action="{{ route('users.verify', $user) }}">
                                                 @csrf
@@ -335,6 +333,13 @@
     .hover-shadow:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transform: translateY(-2px);
+    }
+
+    @media (max-width: 767.98px) {
+        .hover-shadow:hover {
+            box-shadow: none;
+            transform: none;
+        }
     }
 </style>
 @endpush

@@ -104,17 +104,44 @@
         width: 150px;
         color: #495057;
     }
+
+    @media (max-width: 767.98px) {
+        .card-body > .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 12px;
+        }
+        .card-body > .d-flex.justify-content-between .d-flex.gap-2 {
+            width: 100%;
+            display: flex;
+            gap: 8px;
+        }
+        .card-body > .d-flex.justify-content-between .btn {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .col-md-4.border-end {
+            border-right: none !important;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .col-md-4.border-end:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            width: auto;
+            min-width: 100px;
+        }
+    }
 </style>
 
 <div class="container-fluid">
     <div class="mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('users.index') }}">Users</a></li>
-                <li class="breadcrumb-item active">{{ $user->name }}</li>
-            </ol>
-        </nav>
+        <x-breadcrumb :items="[
+            ['label' => 'Users', 'url' => route('users.index')],
+            ['label' => $user->name],
+        ]" />
         <div class="card mb-4 shadow-sm">
             <div class="card-header bg-white py-3">
                 <h5 class="mb-0 fw-bold text-primary">
@@ -131,9 +158,6 @@
                     <div class="d-flex gap-2">
                         <a href="{{ route('users.password.reset', $user) }}" class="btn btn-info">
                             <i class="bi bi-key"></i> Reset Password
-                        </a>
-                        <a href="{{ route('users.password.view', $user) }}" class="btn btn-secondary">
-                            <i class="bi bi-eye"></i> View Password
                         </a>
                         <a href="{{ route('users.edit', $user) }}" class="btn btn-warning">
                             <i class="bi bi-pencil"></i> Edit User

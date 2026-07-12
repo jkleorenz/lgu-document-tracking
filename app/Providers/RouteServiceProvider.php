@@ -75,39 +75,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perHour(3)->by($request->ip());
         });
 
-        // Password reset rate limiting: 3 attempts per hour per IP
-        RateLimiter::for('password-reset', function (Request $request) {
-            return Limit::perHour(3)->by($request->ip());
+        // Scan rate limiting: 30 requests per minute per user (prevents document enumeration)
+        RateLimiter::for('scan', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Forgot password rate limiting: 3 attempts per hour per email+IP
-        RateLimiter::for('forgot-password', function (Request $request) {
-            $email = $request->input('email');
-            $key = $email ? $request->ip().':'.$email : $request->ip();
-            return Limit::perHour(3)
-                ->by($key)
-                ->response(function (Request $request, array $headers) {
-                    return back()->withErrors([
-                        'email' => 'Too many password reset requests. Please try again in 1 hour.',
-                    ])->withHeaders($headers);
-                });
-        });
-
-        // Reset password rate limiting: 5 attempts per hour per IP
-        RateLimiter::for('reset-password', function (Request $request) {
-            return Limit::perHour(5)
-                ->by($request->ip())
-                ->response(function (Request $request, array $headers) {
-                    return back()->withErrors([
-                        'token' => 'Too many password reset attempts. Please try again later.',
-                    ])->withHeaders($headers);
-                });
-        });
-
-        // General API rate limiting for authenticated users
-        RateLimiter::for('api-authenticated', function (Request $request) {
-            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
-        });
     }
 }
 

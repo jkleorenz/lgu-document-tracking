@@ -48,15 +48,4 @@ class LoginAttempt extends Model
         
         return $recentFailures >= $maxAttempts;
     }
-
-    /**
-     * Get recent failed attempts count for an email
-     */
-    public static function getRecentFailedAttempts(string $email, int $hours = 1): int
-    {
-        return self::where('email', $email)
-            ->where('success', false)
-            ->where('attempted_at', '>=', now()->subHours($hours))
-            ->count();
-    }
 }

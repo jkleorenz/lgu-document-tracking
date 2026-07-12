@@ -73,7 +73,12 @@ window.SwalHelper = {
     },
 
     validationError(errors = []) {
-        const items = errors.map((error) => `<li>${error}</li>`).join('');
+        const escapeHtml = (str) => {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        };
+        const items = errors.map((error) => `<li>${escapeHtml(error)}</li>`).join('');
         return swalTheme.fire({
             icon: 'error',
             title: 'Validation Error',
